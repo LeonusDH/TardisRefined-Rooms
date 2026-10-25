@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "ZPZ",
+    "EHE",
+    "ZPZ"
+  ],
+  "key": {
+    "Z": { "item": "tardis_refined:zeiton_ingot" },
+    "P": { "item": "minecraft:polished_deepslate" },
+    "E": { "item": "minecraft:ender_pearl" },
+    "H": { "item": "minecraft:hopper" }
+  },
+  "result": { "id": "tardis_rooms:tardis_interface", "count": 1 }
+}

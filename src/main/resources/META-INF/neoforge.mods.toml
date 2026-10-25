@@ -1,0 +1,57 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "PolyForm-Noncommercial-1.0.0"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "TARDIS Refined: Rooms"
+authors = "LeonusDH"
+# Переводы описания — в языковых файлах, ключ fml.menu.mods.info.description.tardis_rooms
+description = '''A hand-built TARDIS interior: grow rooms and corridors with the sonic screwdriver on a grid, instead of Tardis Refined's endless procedural ARS corridors. The TARDIS Interface carries items, fluids, energy and redstone between rooms and to the outside, plus Mekanism chemicals and AE2 ME networks.'''
+
+[[mixins]]
+config = "tardis_rooms.mixins.json"
+
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neo_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "[${minecraft_version},1.22)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "tardis_refined"
+type = "required"
+versionRange = "[2.1.6,)"
+ordering = "AFTER"
+side = "BOTH"
+
+# Необязательная совместимость: если мод установлен, версия должна быть не старее той, под которую собран аддон.
+[[dependencies.${mod_id}]]
+modId = "mekanism"
+type = "optional"
+versionRange = "[10.7,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "ae2"
+type = "optional"
+versionRange = "[19.2,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "jade"
+type = "optional"
+versionRange = "[15.10,)"
+ordering = "NONE"
+side = "BOTH"

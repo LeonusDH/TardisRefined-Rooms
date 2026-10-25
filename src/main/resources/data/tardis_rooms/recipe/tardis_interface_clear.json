@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "redstone",
+  "ingredients": [ { "item": "tardis_rooms:tardis_interface" } ],
+  "result": { "id": "tardis_rooms:tardis_interface", "count": 1 }
+}

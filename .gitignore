@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+run/
+runs/
+
+# Локальные зависимости (TR из PR #618) и логи сборки
+libs/
+*.log
+
+# Кэш датагена
+src/generated/resources/.cache/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+out/
+bin/
+
+# ОС
+.DS_Store
+Thumbs.db
+desktop.ini

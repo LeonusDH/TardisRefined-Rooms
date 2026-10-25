@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "leonus.tardis_rooms.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "TardisChunkGeneratorMixin",
+    "ShellBaseBlockEntityMixin",
+    "GlobalDoorBlockEntityMixin",
+    "StructureTemplateAccessor"
+  ],
+  "client": [
+    "client.FactoryConsoleModelMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
