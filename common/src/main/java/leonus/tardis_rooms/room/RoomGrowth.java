@@ -44,7 +44,7 @@ public final class RoomGrowth {
         Map<Integer, Map<Long, Boolean>> cache = new HashMap<>();
         Map<ResourceLocation, Fit> out = new HashMap<>();
         Set<Object> before = null; // связность «до» одна на все варианты — считаем раз и только если понадобится
-        for (PieceCatalog.Option o : PieceCatalog.options(node)) {
+        for (PieceCatalog.Option o : PieceCatalog.options(node, leonus.tardis_rooms.room.custom.CustomRooms.INSTANCE.infos())) {
             Optional<PieceCatalog.Plan> plan = PieceCatalog.plan(o.id(), node);
             if (plan.isEmpty()) { out.put(o.id(), Fit.OFF_GRID); continue; }
             if (!isFree(level, plan.get(), cache, replacing)) { out.put(o.id(), Fit.BLOCKED); continue; }
@@ -132,7 +132,7 @@ public final class RoomGrowth {
         if (found.isEmpty()) { msg(player, TRoomsText.MSG_INVALID); return; }
         Node node = found.get();
         if (Lattice.isForbidden(level, node.targetX(), node.targetZ(), node.floorY())) { msg(player, TRoomsText.MSG_FORBIDDEN); return; }
-        if (PieceCatalog.options(node).stream().noneMatch(o -> o.id().equals(pieceId))) { msg(player, TRoomsText.MSG_UNKNOWN_PIECE); return; }
+        if (PieceCatalog.options(node, leonus.tardis_rooms.room.custom.CustomRooms.INSTANCE.infos()).stream().noneMatch(o -> o.id().equals(pieceId))) { msg(player, TRoomsText.MSG_UNKNOWN_PIECE); return; }
         Optional<PieceCatalog.Plan> plan = PieceCatalog.plan(pieceId, node);
         if (plan.isEmpty()) { msg(player, TRoomsText.MSG_OFF_GRID); return; }
         if (!isFree(level, plan.get(), new HashMap<>(), replacing)) { msg(player, TRoomsText.MSG_OCCUPIED); return; }

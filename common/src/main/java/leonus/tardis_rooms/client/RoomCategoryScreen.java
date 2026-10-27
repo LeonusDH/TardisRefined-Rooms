@@ -33,7 +33,7 @@ public class RoomCategoryScreen extends RoomMonitorScreen {
         super((replaceCore.equals(BlockPos.ZERO) ? TRoomsText.SCREEN_TITLE : TRoomsText.SCREEN_REPLACE_TITLE).text(), nodePos, nodeAt(nodePos));
         this.replaceCore = replaceCore;
         this.parent = parent;
-        this.options = PieceCatalog.options(node);
+        this.options = PieceCatalog.options(node, ClientCustomRooms.list());
         this.previewNow = options.get(0).preview();
         ClientFits.reset();
         Platform.sendToServer(new FitRequestPayload(nodePos, replaceCore));

@@ -9,6 +9,7 @@ import leonus.tardis_rooms.registry.RegEntry;
 import leonus.tardis_rooms.iface.AE2Compat;
 import leonus.tardis_rooms.iface.MekanismCompat;
 import leonus.tardis_rooms.iface.NeoForgeInterfaceTransport;
+import leonus.tardis_rooms.network.CustomRoomsPayload;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
 import leonus.tardis_rooms.network.GrowRoomPayload;
@@ -96,7 +97,7 @@ public final class TardisRoomsNeoForge {
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar("7")
+        event.registrar("8")
                 .playToServer(GrowRoomPayload.TYPE, GrowRoomPayload.STREAM_CODEC, server(GrowRoomPayload::handle))
                 .playToServer(FitRequestPayload.TYPE, FitRequestPayload.STREAM_CODEC, server(FitRequestPayload::handle))
                 .playToClient(FitResultPayload.TYPE, FitResultPayload.STREAM_CODEC, client(FitResultPayload::handle))
@@ -105,6 +106,7 @@ public final class TardisRoomsNeoForge {
                 .playToServer(ManagePayloads.Remove.TYPE, ManagePayloads.Remove.STREAM_CODEC, server(ManagePayloads.Remove::handle))
                 .playToServer(MapPayloads.Request.TYPE, MapPayloads.Request.STREAM_CODEC, server(MapPayloads.Request::handle))
                 .playToClient(MapPayloads.Info.TYPE, MapPayloads.Info.STREAM_CODEC, client(MapPayloads.Info::handle))
+                .playToClient(CustomRoomsPayload.TYPE, CustomRoomsPayload.STREAM_CODEC, client(CustomRoomsPayload::handle))
                 .playToServer(InterfacePayload.TYPE, InterfacePayload.STREAM_CODEC, server(InterfacePayload::handle))
                 .playToServer(ScrewdriverModePayload.TYPE, ScrewdriverModePayload.STREAM_CODEC, server(ScrewdriverModePayload::handle));
     }

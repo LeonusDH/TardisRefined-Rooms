@@ -25,12 +25,18 @@ public final class PreviewRenderer {
         };
     }
 
+    /**
+     * {@code entry} — сторона входа в мире; если превью нарисовано в своей ориентации ({@code entrySide}), поворачиваем по ней.
+     * Помещение больше 48 блоков уменьшаем, чтобы влезло в квадрат.
+     */
     public static void draw(GuiGraphics g, PieceCatalog.Preview p, Direction entry, float alpha) {
         int w = p.widthBlocks() * PX, h = p.depthBlocks() * PX;
+        float scale = Math.min(1f, SIZE / (float) Math.max(w, h));
         PoseStack pose = g.pose();
         pose.pushPose();
         pose.translate(SIZE / 2f, SIZE / 2f, 0);
-        pose.mulPose(Axis.ZP.rotationDegrees(rotationFor(entry)));
+        pose.mulPose(Axis.ZP.rotationDegrees(rotationFor(p.entrySide() != null ? p.entrySide() : entry)));
+        pose.scale(scale, scale, 1f);
         pose.translate(-w / 2f, -h / 2f, 0);
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1f, 1f, 1f, alpha);

@@ -2,6 +2,7 @@ package leonus.tardis_rooms.room;
 
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.lang.TRoomsText;
+import leonus.tardis_rooms.room.custom.CustomRoomInfo;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -29,7 +30,19 @@ import java.util.function.Consumer;
  * подписи и превью, сервер — план постройки (какие модули на каких этажах займёт и как строить).
  */
 public final class PieceCatalog {
-    public enum Group { CORRIDOR, ROOM, LIFT, PRESET, SPECIAL }
+    public enum Group {
+        CORRIDOR, ROOM, LIFT, PRESET, SPECIAL, DATAPACK;
+
+        /** Группа меню для помещения из датапака по её имени в JSON. */
+        public static Group ofCustom(String name) {
+            return switch (name) {
+                case "corridor" -> CORRIDOR;
+                case "room" -> ROOM;
+                case "special" -> SPECIAL;
+                default -> DATAPACK;
+            };
+        }
+    }
 
     public enum CorridorShape {
         STRAIGHT(true, false, false), LEFT(false, true, false), RIGHT(false, false, true),
@@ -83,8 +96,16 @@ public final class PieceCatalog {
     public static final ResourceLocation GRAVITY_WELL = rl("gravity_well");
     public static final ResourceLocation HALL_2F = rl("room/hall_2f");
 
-    /** Превью: текстура, её размер в блоках и центр прохода входа (в блоках от левого верхнего угла). */
-    public record Preview(ResourceLocation texture, int widthBlocks, int depthBlocks, int entryX, int entryZ) {}
+    /**
+     * Превью: текстура, её размер в блоках и центр прохода входа (в блоках от левого верхнего угла).
+     * {@code entrySide} — сторона входа на самой текстуре, если она нарисована не по сторонам света мира
+     * (помещения из датапаков: план шаблона без поворота); null — текстура уже повёрнута как в мире.
+     */
+    public record Preview(ResourceLocation texture, int widthBlocks, int depthBlocks, int entryX, int entryZ, Direction entrySide) {
+        public Preview(ResourceLocation texture, int widthBlocks, int depthBlocks, int entryX, int entryZ) {
+            this(texture, widthBlocks, depthBlocks, entryX, entryZ, null);
+        }
+    }
 
     public record Option(Group group, ResourceLocation id, Component label, Component tooltip, Preview preview) {}
 
@@ -132,7 +153,11 @@ public final class PieceCatalog {
 
     // ---------- список вариантов для узла ----------
 
-    public static List<Option> options(Node node) {
+    /**
+     * Варианты для узла. {@code custom} — помещения из датапаков: на сервере {@code CustomRooms.INSTANCE.infos()},
+     * на клиенте — присланные сервером ({@code ClientCustomRooms.list()}).
+     */
+    public static List<Option> options(Node node, List<CustomRoomInfo> custom) {
         List<Option> list = new ArrayList<>();
         Direction facing = node.side();
         for (CorridorShape shape : CorridorShape.values()) {
@@ -177,7 +202,16 @@ public final class PieceCatalog {
         for (ARSStructurePiece p : TRARSStructurePieceRegistry.CORRIDORS) list.add(preset(p, TRoomsText.PRESET_CORRIDOR, i++, facing));
         list.add(new Option(Group.SPECIAL, GRAVITY_WELL, TRoomsText.GRAVITY_WELL.text(),
                 TRoomsText.GRAVITY_WELL_TOOLTIP.text(), trPreview("gravity_well", facing)));
+        for (CustomRoomInfo c : custom) list.add(custom(c));
         return list;
+    }
+
+    private static Option custom(CustomRoomInfo c) {
+        int[] e = c.entranceBlock();
+        Component tip = c.description().map(Component::copy)
+                .orElseGet(() -> TRoomsText.CUSTOM_TOOLTIP.text(c.id().getNamespace()));
+        return new Option(Group.ofCustom(c.group()), c.id(), c.name().copy(), tip,
+                new Preview(c.previewTexture(), c.widthBlocks(), c.depthBlocks(), e[0], e[1], c.entrance().side()));
     }
 
     private static Option preset(ARSStructurePiece p, TRoomsText name, int index, Direction facing) {

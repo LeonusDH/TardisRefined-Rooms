@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.fabric.client;
 
 import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.network.CustomRoomsPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
 import leonus.tardis_rooms.network.ManagePayloads;
 import leonus.tardis_rooms.network.MapPayloads;
@@ -18,6 +19,7 @@ public final class TardisRoomsFabricClient implements ClientModInitializer {
         client(FitResultPayload.TYPE, FitResultPayload::handle);
         client(ManagePayloads.Info.TYPE, ManagePayloads.Info::handle);
         client(MapPayloads.Info.TYPE, MapPayloads.Info::handle);
+        client(CustomRoomsPayload.TYPE, CustomRoomsPayload::handle);
         ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> InterfaceTools.appendTooltip(stack, lines));
     }
 

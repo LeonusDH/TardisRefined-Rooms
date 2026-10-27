@@ -119,6 +119,8 @@ public final class InterfaceTools {
             return wrench(player, level, pos, hit.getDirection(), wbe);
         }
         if (!configMode(stack)) return UseResult.PASS;
+        // Наши блоки (узел, блок управления, заглушка) отвечают на отвёртку в любом режиме.
+        if (level.getBlockState(pos).getBlock() instanceof leonus.tardis_rooms.room.ProtectedBlock) return UseResult.PASS;
         if (!(level.getBlockEntity(pos) instanceof InterfaceBlockEntity be)) {
             // Свои действия отвёртки TR в режиме настройки не выполняются, а сам блок (сундук, дверь) работает как обычно.
             // Блок вызываем сами и без предмета: некоторые блоки TR (астральный манипулятор) сами реагируют на отвёртку в руке.

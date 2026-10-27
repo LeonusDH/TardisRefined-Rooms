@@ -48,6 +48,9 @@ public enum TRoomsText {
     GROUP_ROOM_TOOLTIP("screen.tardis_rooms.group.room.tooltip", "Empty dead-end rooms"),
     GROUP_SPECIAL("screen.tardis_rooms.group.special", "Special"),
     GROUP_SPECIAL_TOOLTIP("screen.tardis_rooms.group.special.tooltip", "Tardis Refined Gravity Well"),
+    GROUP_DATAPACK("screen.tardis_rooms.group.datapack", "From datapacks"),
+    GROUP_DATAPACK_TOOLTIP("screen.tardis_rooms.group.datapack.tooltip", "Rooms added by datapacks"),
+    CUSTOM_TOOLTIP("piece.tardis_rooms.custom.tooltip", "From datapack: %s"),
     // ---------- Menu: room map ----------
     MAP("screen.tardis_rooms.map", "Map"),
     MAP_FLOOR_125("screen.tardis_rooms.map.floor_125", "Top level"),

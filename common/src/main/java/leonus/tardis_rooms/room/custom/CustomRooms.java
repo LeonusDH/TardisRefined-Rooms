@@ -33,7 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Помещения из датапаков: читает {@code data/<ns>/tardis_rooms/rooms/*.json} при загрузке мира и по /reload,
@@ -45,12 +44,13 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "rooms");
     public static final CustomRooms INSTANCE = new CustomRooms();
     /** Группы меню, в которые можно положить помещение. */
-    private static final Set<String> GROUPS = Set.of("corridor", "room", "special", CustomRoom.DEFAULT_GROUP);
+    public static final List<String> GROUPS = List.of("corridor", "room", "special", CustomRoom.DEFAULT_GROUP);
 
     /** Проверенное помещение: описание, размер в модулях и шаблоны по этажам. */
     public record Loaded(ResourceLocation id, CustomRoom def, int width, int depth, List<StructureTemplate> templates) {}
 
     private volatile Map<ResourceLocation, Loaded> rooms = Map.of();
+    private volatile List<CustomRoomInfo> infos = List.of();
 
     private CustomRooms() {
         super(GSON, "tardis_rooms/rooms");
@@ -59,6 +59,16 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
     /** Все годные помещения (в порядке id). */
     public Map<ResourceLocation, Loaded> all() {
         return rooms;
+    }
+
+    /** То же, что видят клиенты: для меню и проверки «влезает ли». */
+    public List<CustomRoomInfo> infos() {
+        return infos;
+    }
+
+    /** Послать игроку текущий список (при входе и после /reload). */
+    public static void sync(net.minecraft.server.level.ServerPlayer player) {
+        leonus.tardis_rooms.platform.Platform.sendToPlayer(player, new leonus.tardis_rooms.network.CustomRoomsPayload(INSTANCE.infos()));
     }
 
     public Optional<Loaded> get(ResourceLocation id) {
@@ -72,6 +82,7 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
             load(files, resources);
         } catch (Exception e) {
             rooms = Map.of();
+            infos = List.of();
             TardisRooms.LOGGER.error("Could not load datapack rooms", e);
         }
     }
@@ -92,7 +103,10 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
             }
             out.put(id, room);
         }
+        List<CustomRoomInfo> list = new ArrayList<>();
+        for (Loaded l : out.values()) list.add(CustomRoomInfo.of(l));
         rooms = Collections.unmodifiableMap(out);
+        infos = List.copyOf(list);
         TardisRooms.LOGGER.info("Loaded {} datapack room(s){}", out.size(), out.isEmpty() ? "" : ": " + out.keySet());
     }
 
@@ -100,15 +114,18 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
 
     private static Loaded check(ResourceLocation id, CustomRoom def, ResourceManager resources, List<String> problems) {
         if (!GROUPS.contains(def.group())) problems.add("unknown group \"" + def.group() + "\" (use one of " + GROUPS + ")");
-        if (def.floors() < 1 || def.floors() > 2) problems.add("needs one or two structures (one per floor), got " + def.floors());
-        if (!problems.isEmpty()) return null;
+        if (def.floors() < 1 || def.floors() > 2) {
+            problems.add("needs one or two structures (one per floor), got " + def.floors());
+            return null;
+        }
 
+        // Читаем все шаблоны, чтобы сообщить обо всех отсутствующих сразу.
         List<StructureTemplate> templates = new ArrayList<>();
         for (ResourceLocation s : def.structures()) {
             StructureTemplate t = readTemplate(s, resources, problems);
-            if (t == null) return null;
-            templates.add(t);
+            if (t != null) templates.add(t);
         }
+        if (templates.size() != def.floors()) return null;
         Vec3i size = templates.get(0).getSize();
         if (size.getX() % Lattice.MODULE != 0 || size.getZ() % Lattice.MODULE != 0 || size.getX() == 0 || size.getZ() == 0) {
             problems.add("structure " + def.structures().get(0) + " is " + size.getX() + "×" + size.getZ()

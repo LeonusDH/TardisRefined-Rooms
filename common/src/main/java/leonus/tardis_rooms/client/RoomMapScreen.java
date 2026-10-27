@@ -56,7 +56,7 @@ public class RoomMapScreen extends RoomMonitorScreen {
         this.option = option;
         this.floor = node.floorY();
         this.plan = option == null ? Map.of() : PieceCatalog.plan(option.id(), node).map(PieceCatalog.Plan::footprint).orElse(Map.of());
-        for (PieceCatalog.Option o : PieceCatalog.options(node)) labels.put(o.id(), o.label());
+        for (PieceCatalog.Option o : PieceCatalog.options(node, ClientCustomRooms.list())) labels.put(o.id(), o.label());
         request();
     }
 

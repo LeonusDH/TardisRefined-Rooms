@@ -5,6 +5,7 @@ import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.iface.FabricInterfaceTransport;
+import leonus.tardis_rooms.network.CustomRoomsPayload;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
 import leonus.tardis_rooms.network.GrowRoomPayload;
@@ -16,6 +17,7 @@ import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.registry.RegEntry;
 import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -57,6 +59,7 @@ public final class TardisRoomsFabric implements ModInitializer {
         addToCreativeTabs();
         FabricEvents.register();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new FabricReloadListener(CustomRooms.ID, CustomRooms.INSTANCE));
+        ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS.register((player, joined) -> CustomRooms.sync(player));
         TardisRooms.LOGGER.info("TARDIS Refined: Rooms loaded");
     }
 
@@ -100,6 +103,7 @@ public final class TardisRoomsFabric implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(FitResultPayload.TYPE, FitResultPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ManagePayloads.Info.TYPE, ManagePayloads.Info.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(MapPayloads.Info.TYPE, MapPayloads.Info.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(CustomRoomsPayload.TYPE, CustomRoomsPayload.STREAM_CODEC);
     }
 
     /** Пакет с клиента: обработчик — на главном потоке сервера, с игроком, который его прислал. */
