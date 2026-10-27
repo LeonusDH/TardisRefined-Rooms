@@ -10,3 +10,4 @@ pluginManagement {
 rootProject.name = 'tardis-rooms'
 include 'common'
 include 'neoforge'
+include 'fabric'

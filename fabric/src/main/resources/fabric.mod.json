@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "TARDIS Refined: Rooms",
+  "description": "A hand-built TARDIS interior: grow rooms and corridors with the sonic screwdriver on a grid, instead of Tardis Refined's endless procedural ARS corridors. The TARDIS Interface carries items, fluids, energy and redstone between rooms and to the outside, plus AE2 ME networks.",
+  "authors": [
+    "LeonusDH"
+  ],
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "leonus.tardis_rooms.fabric.TardisRoomsFabric"
+    ],
+    "client": [
+      "leonus.tardis_rooms.fabric.client.TardisRoomsFabricClient"
+    ]
+  },
+  "mixins": [
+    "tardis_rooms.mixins.json",
+    "tardis_rooms-fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "~${minecraft_version}",
+    "fabric-api": ">=0.110.0",
+    "tardis_refined": ">=2.1.6",
+    "forgeconfigapiport": "*"
+  }
+}
