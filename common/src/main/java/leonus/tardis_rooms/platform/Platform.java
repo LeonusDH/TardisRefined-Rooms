@@ -6,10 +6,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.nio.file.Path;
+import java.util.function.BiFunction;
 
 /**
  * То, что у каждого загрузчика своё. Реализация — в классе {@code leonus.tardis_rooms.platform.<платформа>.PlatformImpl}
@@ -43,6 +47,12 @@ public final class Platform {
     /** Звук блока с учётом места и того, кто с ним взаимодействует (у некоторых модов звук зависит от мира). */
     @ExpectPlatform
     public static SoundType soundType(BlockState state, LevelReader level, BlockPos pos, Entity entity) {
+        throw new AssertionError();
+    }
+
+    /** Тип блока-сущности для этих блоков (в ванили конструктор типа закрыт, каждый загрузчик открывает его по-своему). */
+    @ExpectPlatform
+    public static <T extends BlockEntity> BlockEntityType<T> blockEntityType(BiFunction<BlockPos, BlockState, T> factory, Block... blocks) {
         throw new AssertionError();
     }
 

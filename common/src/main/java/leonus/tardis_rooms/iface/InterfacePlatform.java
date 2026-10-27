@@ -4,16 +4,12 @@ import dev.architectury.injectables.annotations.ExpectPlatform;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
 
-/**
- * Интерфейс ТАРДИС: то, что у каждого загрузчика своё. Реализация — {@code leonus.tardis_rooms.iface.<платформа>.InterfacePlatformImpl}.
- * Блок-сущность передаётся как {@link BlockEntity}: это всегда {@code InterfaceBlockEntity}.
- */
+/** Интерфейс ТАРДИС: то, что у каждого загрузчика своё. Реализация — {@code leonus.tardis_rooms.iface.<платформа>.InterfacePlatformImpl}. */
 public final class InterfacePlatform {
     /** Передача ресурсов для этого интерфейса. */
     @ExpectPlatform
-    public static InterfaceTransport createTransport(BlockEntity be) {
+    public static InterfaceTransport createTransport(InterfaceBlockEntity be) {
         throw new AssertionError();
     }
 
@@ -36,7 +32,7 @@ public final class InterfacePlatform {
     }
 
     @ExpectPlatform
-    public static ItemInteractionResult useMemoryCard(ItemStack stack, BlockEntity be, Player player) {
+    public static ItemInteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
         throw new AssertionError();
     }
 

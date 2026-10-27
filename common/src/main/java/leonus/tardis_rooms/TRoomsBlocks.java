@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
+import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.registry.RegEntry;
 import net.minecraft.world.level.block.Block;
 
@@ -40,7 +41,7 @@ public final class TRoomsBlocks {
     public static final RegEntry<DataComponentType<InterfaceLink>> INTERFACE_LINK = RegEntry.of(Registries.DATA_COMPONENT_TYPE, "interface_link",
             () -> DataComponentType.<InterfaceLink>builder().persistent(InterfaceLink.CODEC).networkSynchronized(InterfaceLink.STREAM_CODEC).build());
     public static final RegEntry<BlockEntityType<InterfaceBlockEntity>> INTERFACE_BE =
-            RegEntry.of(Registries.BLOCK_ENTITY_TYPE, "tardis_interface", () -> BlockEntityType.Builder.of(InterfaceBlockEntity::new, INTERFACE.get()).build(null));
+            RegEntry.of(Registries.BLOCK_ENTITY_TYPE, "tardis_interface", () -> Platform.blockEntityType(InterfaceBlockEntity::new, INTERFACE.get()));
 
     /** Заглушка прохода: панель, закрывающая тупик. Неразрушима, убирается при пристройке. */
     public static final RegEntry<ProtectedBlock> ROOM_WALL = block("room_wall", ProtectedBlock::new,

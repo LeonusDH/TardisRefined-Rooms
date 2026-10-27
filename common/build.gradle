@@ -8,6 +8,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     // Только ради класса ModConfigSpec (на NeoForge он свой, на Fabric его даёт этот мод).
     modCompileOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${rootProject.forge_config_api_port_version}"
+    // Tardis Refined — только для компиляции общего кода. Берём jar для NeoForge: в нём те же общие классы TR с именами Mojang.
+    // Платформенные классы TR (пакеты *.neoforge) в common не использовать.
+    compileOnly files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
 }
 
 // Общие ресурсы обеих платформ. Английский перевод генерирует датаген (gradlew :neoforge:runData) в src/generated/resources;

@@ -18,7 +18,10 @@ public class ProtectedBlock extends Block {
         super(properties);
     }
 
-    @Override
+    /**
+     * Игрок ломает блок: не даём. Без {@code @Override}: на NeoForge метод с этим именем есть у Block (и вызывается им
+     * на клиенте и на сервере), на других платформах запрет делает событие поломки блока.
+     */
     public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
         if (!level.isClientSide()) player.displayClientMessage(TRoomsText.MSG_PROTECTED.text(), true);
         return false;

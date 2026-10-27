@@ -5,7 +5,7 @@ import net.minecraft.core.Direction;
 
 /**
  * Передача ресурсов одного интерфейса — то, что у каждого загрузчика своё (NeoForge: capabilities, Fabric: Transfer API).
- * Создаёт {@link InterfacePlatform#createTransport}; настройки, связь и очередь граней — в {@code InterfaceBlockEntity}.
+ * Создаёт {@link InterfacePlatform#createTransport}; настройки, связь и очередь граней — в {@link InterfaceBlockEntity}.
  */
 public interface InterfaceTransport {
     /**

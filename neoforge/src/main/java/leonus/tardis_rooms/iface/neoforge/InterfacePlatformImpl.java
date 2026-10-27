@@ -8,12 +8,11 @@ import leonus.tardis_rooms.iface.NeoForgeInterfaceTransport;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
 
 /** Реализация {@link leonus.tardis_rooms.iface.InterfacePlatform} для NeoForge. */
 public final class InterfacePlatformImpl {
-    public static InterfaceTransport createTransport(BlockEntity be) {
-        return new NeoForgeInterfaceTransport((InterfaceBlockEntity) be);
+    public static InterfaceTransport createTransport(InterfaceBlockEntity be) {
+        return new NeoForgeInterfaceTransport(be);
     }
 
     public static boolean chemicalsAvailable() {
@@ -28,8 +27,8 @@ public final class InterfacePlatformImpl {
         return AE2Compat.isMemoryCard(stack);
     }
 
-    public static ItemInteractionResult useMemoryCard(ItemStack stack, BlockEntity be, Player player) {
-        return AE2Compat.useMemoryCard(stack, (InterfaceBlockEntity) be, player);
+    public static ItemInteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
+        return AE2Compat.useMemoryCard(stack, be, player);
     }
 
     private InterfacePlatformImpl() {}
