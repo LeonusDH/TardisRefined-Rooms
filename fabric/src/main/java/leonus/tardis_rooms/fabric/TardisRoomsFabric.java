@@ -4,6 +4,7 @@ import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
+import leonus.tardis_rooms.iface.FabricInterfaceTransport;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
 import leonus.tardis_rooms.network.GrowRoomPayload;
@@ -17,6 +18,8 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -46,6 +49,7 @@ public final class TardisRoomsFabric implements ModInitializer {
         NeoForgeConfigRegistry.INSTANCE.register(TardisRooms.MODID, ModConfig.Type.COMMON, TardisRoomsConfig.SPEC, TardisRooms.COMMON_CONFIG);
         NeoForgeConfigRegistry.INSTANCE.register(TardisRooms.MODID, ModConfig.Type.CLIENT, TardisRoomsConfig.CLIENT_SPEC, TardisRooms.CLIENT_CONFIG);
         registerEntries();
+        registerStorages();
         registerPayloads();
         addToCreativeTabs();
         FabricEvents.register();
@@ -62,6 +66,14 @@ public final class TardisRoomsFabric implements ModInitializer {
             Object value = Registry.register(registry, e.id(), e.factory().get());
             e.bind((java.util.function.Supplier) () -> value);
         }
+    }
+
+    /** Хранилища интерфейса для труб (Transfer API) и энергия (Team Reborn Energy, если установлен). */
+    private static void registerStorages() {
+        var type = TRoomsBlocks.INTERFACE_BE.get();
+        ItemStorage.SIDED.registerForBlockEntity((be, side) -> FabricInterfaceTransport.of(be).items(), type);
+        FluidStorage.SIDED.registerForBlockEntity((be, side) -> FabricInterfaceTransport.of(be).fluids(), type);
+        FabricInterfaceTransport.registerEnergy();
     }
 
     private static final ResourceKey<CreativeModeTab> TR_TAB =

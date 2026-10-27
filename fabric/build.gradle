@@ -33,6 +33,9 @@ dependencies {
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
     shadowBundle(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
 
+    // Энергия: Team Reborn Energy — стандарт на Fabric. Необязательна: её обычно вкладывают в себя технические моды.
+    modCompileOnly("teamreborn:energy:${rootProject.reborn_energy_version}") { transitive = false }
+
     // Tardis Refined для Fabric: только для компиляции, в игре ставится отдельным модом.
     modCompileOnly files("${rootDir}/libs/${rootProject.tr_fabric_jar}")
 }
