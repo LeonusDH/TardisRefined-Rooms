@@ -3,6 +3,7 @@
 build/
 run/
 runs/
+.architectury-transformer/
 
 # Локальные зависимости (TR из PR #618) и логи сборки
 libs/

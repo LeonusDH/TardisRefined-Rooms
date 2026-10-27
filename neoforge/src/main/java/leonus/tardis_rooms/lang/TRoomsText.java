@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * Все строки мода: ключ перевода и английский текст рядом (как {@code LocalizationEnum} в Applied Energistics 2).
- * Английский {@code en_us.json} генерирует датаген ({@code gradlew runData}, см. {@link TRoomsLangProvider});
+ * Английский {@code en_us.json} генерирует датаген ({@code gradlew :neoforge:runData}, см. {@link TRoomsLangProvider});
  * остальные языки — обычные файлы в {@code assets/tardis_rooms/lang/}.
  * Новую строку добавляй сюда и используй в коде через {@link #text()}.
  */

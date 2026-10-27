@@ -1,0 +1,77 @@
+plugins {
+    id 'com.gradleup.shadow'
+}
+
+architectury {
+    platformSetupLoomIde()
+    neoForge()
+}
+
+base { archivesName = "${rootProject.mod_id}-neoforge" }
+
+configurations {
+    // Код из common: в разработке — как есть, в готовый jar — после преобразования под NeoForge.
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentNeoForge.extendsFrom common
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+loom {
+    runs {
+        // gradlew :neoforge:runData — английский перевод из TRoomsText в src/generated/resources (файл хранится в репозитории).
+        data {
+            data()
+            programArgs '--all', '--mod', rootProject.mod_id
+            programArgs '--output', file('src/generated/resources').absolutePath
+            programArgs '--existing', file('src/main/resources').absolutePath
+        }
+    }
+}
+
+dependencies {
+    neoForge "net.neoforged:neoforge:${rootProject.neo_version}"
+
+    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+    shadowBundle(project(path: ':common', configuration: 'transformProductionNeoForge')) { transitive = false }
+
+    // Tardis Refined: только для компиляции, в игре ставится отдельным модом. Датагену нужен и при запуске.
+    modCompileOnly files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
+    modLocalRuntime files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
+    // Необязательная совместимость: химикаты Mekanism, сеть ME и карта памяти AE2, подсказки Jade. Без этих модов аддон работает как обычно.
+    modCompileOnly "mekanism:Mekanism:${rootProject.minecraft_version}-${rootProject.mekanism_version}:api"
+    modCompileOnly "org.appliedenergistics:appliedenergistics2:${rootProject.ae2_version}"
+    modCompileOnly "maven.modrinth:jade:${rootProject.jade_version}"
+}
+
+// Остальные языки — обычные файлы в src/main/resources/assets/tardis_rooms/lang/.
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+    exclude '.cache'
+}
+
+processResources {
+    def props = [mod_id: rootProject.mod_id, mod_version: rootProject.mod_version,
+                 neo_version: rootProject.neo_version, minecraft_version: rootProject.minecraft_version]
+    inputs.properties(props)
+    filesMatching('META-INF/neoforge.mods.toml') { expand(props) }
+}
+
+shadowJar {
+    exclude 'fabric.mod.json'
+    exclude 'architectury.common.json'
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = 'dev-shadow'
+}
+
+remapJar {
+    inputFile.set(shadowJar.archiveFile)
+    dependsOn shadowJar
+}

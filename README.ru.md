@@ -70,17 +70,21 @@
    cd TardisRefined
    git fetch origin pull/618/head
    git checkout FETCH_HEAD
-   ./gradlew :forge:runData   # только в первый раз: создаёт модели, рецепты и переводы
+   ./gradlew :forge:downloadAssets   # только в первый раз, вместе со следующей строкой
+   ./gradlew :forge:runData          # создаёт модели, рецепты и переводы; когда сообщит, что файлы записаны, закройте его
    ./gradlew :forge:build
    ```
-2. Скопируйте `forge/build/libs/forge-tardis_refined-mc1.21.1-v2.1.6.jar` в папку `libs/` этого проекта под именем `tardis_refined-neoforge-1.21.1-2.1.6-pr618.jar`. Чтобы оставить исходное имя, вместо этого поменяйте `tardis_refined_jar` в `gradle.properties`.
+2. Скопируйте `forge/build/libs/forge-tardis_refined-mc1.21.1-v2.1.6.jar` в папку `libs/` этого проекта под именем `tardis_refined-neoforge-1.21.1-2.1.6-pr618.jar`. Чтобы оставить исходное имя, вместо этого поменяйте `tr_neoforge_jar` в `gradle.properties`.
 3. Соберите аддон:
    ```sh
    ./gradlew build
    ```
-   Jar появится в `build/libs/`. На Windows то же самое делает `build.bat`: он сам находит JDK 21 и пишет вывод в `build.log`.
+   Jar появится в `neoforge/build/libs/`. На Windows то же самое делает `build.bat`: он сам находит JDK 21 и пишет вывод в `build.log`.
 
-Английский перевод генерируется из `TRoomsText` командой `./gradlew runData`. Остальные языки — обычные файлы в `src/main/resources/assets/tardis_rooms/lang/`.
+> [!NOTE]
+> Java считает `!` в пути разделителем внутри путей к jar, поэтому, если в пути к папке проекта есть `!`, игра (датаген, тестовые запуски) не запускается. `build.bat` обходит это, подключая папку как временный диск; если запускаете Gradle вручную, используйте путь без `!`.
+
+Английский перевод генерируется из `TRoomsText` командой `./gradlew :neoforge:runData`. Остальные языки — обычные файлы в `neoforge/src/main/resources/assets/tardis_rooms/lang/`.
 
 ## Участие
 

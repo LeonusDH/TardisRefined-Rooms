@@ -19,6 +19,27 @@ foreach ($c in ($cands | Select-Object -Unique)) {
 if (-not $jdk) { "NO JDK 21 FOUND" | Out-File $log -Append -Encoding utf8; "=== EXIT 99" | Out-File $log -Append -Encoding utf8; exit 99 }
 "USING JDK $jdk" | Out-File $log -Append -Encoding utf8
 $env:JAVA_HOME = $jdk; $env:Path = "$jdk\bin;$env:Path"
-# stderr склеивается внутри cmd: иначе PowerShell оборачивает каждую строку javac/Gradle в NativeCommandError
-cmd /c "gradlew.bat build --console=plain --no-daemon 2>&1" | Out-File $log -Append -Encoding utf8
-"=== EXIT $LASTEXITCODE" | Out-File $log -Append -Encoding utf8
+# Java не переносит «!» в пути (это разделитель в адресах jar:file:…!/…): игра (датаген, runClient) не находит Minecraft.
+# Поэтому на время сборки подключаем папку как отдельный диск без «!» в пути.
+$drive = $null
+$code = 1
+try {
+  if ($PSScriptRoot.Contains('!')) {
+    # Диск, оставшийся с прошлого запуска (например, окно закрыли посреди сборки), — отключаем.
+    foreach ($line in (subst)) {
+      if ($line -match '^([A-Z]):\\: => (.+)$' -and $Matches[2].TrimEnd('\') -eq $PSScriptRoot.TrimEnd('\')) { subst "$($Matches[1]):" /d | Out-Null }
+    }
+    $used = (Get-PSDrive -PSProvider FileSystem).Name
+    $drive = @('X','W','V','U','T','S','R','Q') | Where-Object { $used -notcontains $_ } | Select-Object -First 1
+    if (-not $drive) { "NO FREE DRIVE LETTER" | Out-File $log -Append -Encoding utf8; $code = 98; return }
+    subst "${drive}:" "$PSScriptRoot"
+    Set-Location "${drive}:\"
+    "USING DRIVE ${drive}: for $PSScriptRoot" | Out-File $log -Append -Encoding utf8
+  }
+  # stderr склеивается внутри cmd: иначе PowerShell оборачивает каждую строку javac/Gradle в NativeCommandError
+  cmd /c "gradlew.bat build --console=plain --no-daemon 2>&1" | Out-File $log -Append -Encoding utf8
+  $code = $LASTEXITCODE
+} finally {
+  if ($drive) { Set-Location $PSScriptRoot; subst "${drive}:" /d | Out-Null }
+  "=== EXIT $code" | Out-File $log -Append -Encoding utf8
+}

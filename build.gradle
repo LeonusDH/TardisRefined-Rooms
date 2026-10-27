@@ -1,70 +1,49 @@
+// Мультиплатформенный проект на Architectury, по образцу самого Tardis Refined:
+// common — общий код, neoforge (и позже fabric) — то, что зависит от загрузчика.
+// API Architectury не используется: игроку не нужен лишний мод, только TR и загрузчик.
 plugins {
-    id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.+'
+    id 'architectury-plugin' version '3.5-SNAPSHOT'
+    id 'dev.architectury.loom' version '1.17-SNAPSHOT' apply false
+    id 'com.gradleup.shadow' version '9.4.2' apply false
 }
 
-version = "${minecraft_version}-${mod_version}"
-group = 'leonus.tardis_rooms'
-base { archivesName = mod_id }
+architectury {
+    minecraft = rootProject.minecraft_version
+}
 
-repositories {
-    mavenCentral() // AE2
-    maven { url = 'https://modmaven.dev/' } // Mekanism
-    exclusiveContent { // Jade
-        forRepository { maven { url = 'https://api.modrinth.com/maven' } }
-        filter { includeGroup 'maven.modrinth' }
+subprojects {
+    apply plugin: 'dev.architectury.loom'
+
+    loom {
+        silentMojangMappingsLicense()
+    }
+
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings loom.officialMojangMappings()
     }
 }
 
-configurations {
-    // Только для запусков из Gradle (runData, runClient): в собранный мод не попадает.
-    localRuntime
-    runtimeClasspath.extendsFrom localRuntime
-}
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'architectury-plugin'
 
-neoForge {
-    version = project.neo_version
-    runs {
-        data {
-            data()
-            programArguments.addAll '--mod', mod_id, '--all',
-                    '--output', file('src/generated/resources/').absolutePath,
-                    '--existing', file('src/main/resources/').absolutePath
+    group = rootProject.maven_group
+    version = "${rootProject.minecraft_version}-${rootProject.mod_version}"
+
+    repositories {
+        mavenCentral() // AE2
+        maven { url = 'https://modmaven.dev/' } // Mekanism
+        maven { url = 'https://maven.neoforged.net/releases/' }
+        exclusiveContent { // Jade
+            forRepository { maven { url = 'https://api.modrinth.com/maven' } }
+            filter { includeGroup 'maven.modrinth' }
         }
     }
-    mods {
-        "${mod_id}" { sourceSet(sourceSets.main) }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 21
+        options.compilerArgs << '-Xlint:deprecation'
     }
-}
-
-dependencies {
-    // TARDIS Refined из PR #618 пока нигде не опубликован: jar собирается из ветки PR и кладётся в libs/ (папка не хранится в репозитории, см. README).
-    // Только для компиляции: в игре TR ставится отдельным модом.
-    compileOnly files("libs/${tardis_refined_jar}")
-    // Датагену нужен сам TR: аддон без него не загружается.
-    localRuntime files("libs/${tardis_refined_jar}")
-    // Необязательная совместимость: химикаты Mekanism, сеть ME и карта памяти AE2, подсказки Jade. Без этих модов аддон работает как обычно.
-    compileOnly "mekanism:Mekanism:${minecraft_version}-${mekanism_version}:api"
-    compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"
-    compileOnly "maven.modrinth:jade:${jade_version}"
-}
-
-// ---------- переводы ----------
-// Английский генерирует датаген из TRoomsText: gradlew runData → src/generated/resources (файл хранится в репозитории).
-// Остальные языки — обычные файлы в src/main/resources/assets/tardis_rooms/lang/.
-sourceSets.main.resources {
-    srcDir 'src/generated/resources'
-    exclude '.cache'
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release = 21
-    options.compilerArgs << '-Xlint:deprecation'
-}
-
-tasks.named('processResources', ProcessResources) {
-    def props = [mod_id: mod_id, mod_version: mod_version, neo_version: neo_version, minecraft_version: minecraft_version]
-    inputs.properties(props)
-    filesMatching('META-INF/neoforge.mods.toml') { expand(props) }
 }

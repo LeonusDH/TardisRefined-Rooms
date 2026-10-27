@@ -70,17 +70,21 @@ You need JDK 21. Mekanism, AE2 and Jade come from Maven automatically. Tardis Re
    cd TardisRefined
    git fetch origin pull/618/head
    git checkout FETCH_HEAD
-   ./gradlew :forge:runData   # first time only: generates models, recipes and translations
+   ./gradlew :forge:downloadAssets   # first time only, together with the next line
+   ./gradlew :forge:runData          # generates models, recipes and translations; close it once it reports the files are written
    ./gradlew :forge:build
    ```
-2. Copy `forge/build/libs/forge-tardis_refined-mc1.21.1-v2.1.6.jar` into this project's `libs/` folder as `tardis_refined-neoforge-1.21.1-2.1.6-pr618.jar`. To keep the original name, change `tardis_refined_jar` in `gradle.properties` instead.
+2. Copy `forge/build/libs/forge-tardis_refined-mc1.21.1-v2.1.6.jar` into this project's `libs/` folder as `tardis_refined-neoforge-1.21.1-2.1.6-pr618.jar`. To keep the original name, change `tr_neoforge_jar` in `gradle.properties` instead.
 3. Build the addon:
    ```sh
    ./gradlew build
    ```
-   The jar ends up in `build/libs/`. On Windows, `build.bat` does the same: it finds a JDK 21 and writes the output to `build.log`.
+   The jar ends up in `neoforge/build/libs/`. On Windows, `build.bat` does the same: it finds a JDK 21 and writes the output to `build.log`.
 
-English translations are generated from `TRoomsText` with `./gradlew runData`. Other languages are plain files in `src/main/resources/assets/tardis_rooms/lang/`.
+> [!NOTE]
+> Java treats `!` in a path as a separator inside jar paths, so if the project folder has `!` in its path, the game (data generation, test runs) fails to start. `build.bat` works around it by mapping the folder to a temporary drive letter; when running Gradle by hand, use a path without `!`.
+
+English translations are generated from `TRoomsText` with `./gradlew :neoforge:runData`. Other languages are plain files in `neoforge/src/main/resources/assets/tardis_rooms/lang/`.
 
 ## Contributing
 
