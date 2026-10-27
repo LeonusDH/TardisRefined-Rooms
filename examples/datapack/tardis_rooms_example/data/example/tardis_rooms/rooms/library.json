@@ -1,0 +1,23 @@
+{
+  "name": "Library",
+  "description": "Bookshelves along the walls and a lectern in the middle",
+  "group": "room",
+  "structure": "example:rooms/library",
+  "entrance": {
+    "x": 0,
+    "z": 0,
+    "side": "south"
+  },
+  "exits": [
+    {
+      "x": 0,
+      "z": 0,
+      "side": "north"
+    }
+  ],
+  "control_block": [
+    11,
+    1,
+    15
+  ]
+}

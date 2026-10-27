@@ -14,10 +14,12 @@ import leonus.tardis_rooms.network.MapPayloads;
 import leonus.tardis_rooms.network.ScrewdriverModePayload;
 import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.registry.RegEntry;
+import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.minecraft.core.Registry;
@@ -28,6 +30,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -53,6 +56,7 @@ public final class TardisRoomsFabric implements ModInitializer {
         registerPayloads();
         addToCreativeTabs();
         FabricEvents.register();
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new FabricReloadListener(CustomRooms.ID, CustomRooms.INSTANCE));
         TardisRooms.LOGGER.info("TARDIS Refined: Rooms loaded");
     }
 

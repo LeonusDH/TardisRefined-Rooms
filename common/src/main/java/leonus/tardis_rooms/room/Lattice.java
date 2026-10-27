@@ -42,7 +42,7 @@ public final class Lattice {
     }
     public static final List<Direction> SIDES = List.of(Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST);
 
-    static final int OPEN_MIN = 8, OPEN_MAX = 10, OPEN_DY_MIN = 2, OPEN_DY_MAX = 5;
+    public static final int OPEN_MIN = 8, OPEN_MAX = 10, OPEN_DY_MIN = 2, OPEN_DY_MAX = 5;
     public static final int NODE_A = 9, NODE_DY = 3;
     /**
      * Верх заглушки. Проход 2..5, но верхний ряд у прохода бывает разный: с одних сторон модуля это ступеньки
