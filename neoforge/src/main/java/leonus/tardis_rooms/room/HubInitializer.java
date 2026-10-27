@@ -12,6 +12,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -25,10 +26,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import whocraft.tardis_refined.TardisRefined;
 import whocraft.tardis_refined.registry.TRBlockRegistry;
 
@@ -51,11 +48,9 @@ public final class HubInitializer {
     static final int LAYOUT_TR = 0, LAYOUT_SMALL = 1;
     private static final Deque<ResourceKey<Level>> PENDING = new ArrayDeque<>();
 
-    public static void register(IEventBus bus) {
-        bus.addListener(HubInitializer::onJoin);
-        bus.addListener(HubInitializer::onServerTick);
-        // Очередь статическая: в одиночной игре сервер перезапускается при каждом входе в мир.
-        bus.addListener((ServerStoppedEvent e) -> PENDING.clear());
+    /** Сервер остановлен. Очередь статическая: в одиночной игре сервер перезапускается при каждом входе в мир. */
+    public static void onServerStopped() {
+        PENDING.clear();
     }
 
     /** Упрощение ещё возможно: хаб TR, и упрощать разрешено. Пока не вышло — пробуем при каждом входе. */
@@ -63,17 +58,19 @@ public final class HubInitializer {
         return d.layout == LAYOUT_TR && TardisRoomsConfig.simplifyHub();
     }
 
-    private static void onJoin(EntityJoinLevelEvent event) {
-        if (event.getLevel() instanceof ServerLevel level && event.getEntity() instanceof ServerPlayer && Lattice.isTardisLevel(level)) {
+    /** Сущность появилась в мире (вызывает платформа): игрок вошёл в ТАРДИС — подготовить её хаб на ближайшем тике. */
+    public static void onEntityJoin(Level world, Entity entity) {
+        if (world instanceof ServerLevel level && entity instanceof ServerPlayer && Lattice.isTardisLevel(level)) {
             HubData d = data(level);
             if ((!d.prepared || wantsRebuild(d)) && !PENDING.contains(level.dimension())) PENDING.add(level.dimension());
         }
     }
 
-    private static void onServerTick(ServerTickEvent.Post event) {
+    /** Конец тика сервера (вызывает платформа): готовим не больше одной ТАРДИС за тик. */
+    public static void onServerTick(MinecraftServer server) {
         ResourceKey<Level> key = PENDING.poll();
         if (key == null) return;
-        ServerLevel level = event.getServer().getLevel(key);
+        ServerLevel level = server.getLevel(key);
         if (level == null) return;
         HubData data = data(level);
         boolean rebuild = wantsRebuild(data);

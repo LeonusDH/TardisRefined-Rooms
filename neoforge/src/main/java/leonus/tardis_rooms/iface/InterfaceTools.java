@@ -4,13 +4,21 @@ import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.InterfacePayload;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.List;
 import whocraft.tardis_refined.common.items.ScrewdriverItem;
 
 /**
@@ -50,35 +58,42 @@ public final class InterfaceTools {
     }
 
     /** Ключи других модов: метки common-тегов, которыми их помечают Mekanism, AE2, Thermal и другие. */
-    private static final java.util.List<net.minecraft.tags.TagKey<net.minecraft.world.item.Item>> WRENCHES = java.util.List.of(
-            net.minecraft.tags.ItemTags.create(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("c", "tools/wrench")),
-            net.minecraft.tags.ItemTags.create(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("c", "tools/wrenches")),
-            net.minecraft.tags.ItemTags.create(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("c", "wrenches")));
+    private static final List<TagKey<Item>> WRENCHES = List.of(
+            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "tools/wrench")),
+            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "tools/wrenches")),
+            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "wrenches")));
 
     public static boolean isWrench(ItemStack s) {
         for (var t : WRENCHES) if (s.is(t)) return true;
         return false;
     }
 
-    /** Ключ по интерфейсу: Shift + ПКМ — снять в инвентарь, ПКМ — переключить режим грани, по которой кликнули. */
-    private static boolean wrench(PlayerInteractEvent.RightClickBlock event, InterfaceBlockEntity be) {
-        Player player = event.getEntity();
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        if (event.getLevel().isClientSide()) return true;
-        if (!player.mayBuild() || !event.getLevel().mayInteract(player, event.getPos())) return true;
-        if (player.isShiftKeyDown()) {
-            be.dismantle(player);
-        } else if (event.getFace() != null) {
-            net.minecraft.core.Direction d = event.getFace();
-            FaceMode m = be.face(d).next();
-            be.setFace(d, m);
-            player.displayClientMessage(TRoomsText.MSG_INTERFACE_FACE.text(faceName(d).text(), faceModeName(m).text().withStyle(ChatFormatting.AQUA)), true);
-        }
-        return true;
+    /**
+     * Что сделать с кликом по блоку. {@code handled = false} — не наше, всё как обычно; иначе событие отменяется
+     * с результатом {@code result} (платформа переводит это в отмену события своего загрузчика).
+     */
+    public record UseResult(boolean handled, InteractionResult result) {
+        public static final UseResult PASS = new UseResult(false, InteractionResult.PASS);
+        public static final UseResult CONSUMED = new UseResult(true, InteractionResult.SUCCESS);
+
+        static UseResult handled(InteractionResult result) { return new UseResult(true, result); }
     }
 
-    public static TRoomsText faceName(net.minecraft.core.Direction d) {
+    /** Ключ по интерфейсу: Shift + ПКМ — снять в инвентарь, ПКМ — переключить режим грани, по которой кликнули. */
+    private static UseResult wrench(Player player, Level level, BlockPos pos, Direction face, InterfaceBlockEntity be) {
+        if (level.isClientSide()) return UseResult.CONSUMED;
+        if (!player.mayBuild() || !level.mayInteract(player, pos)) return UseResult.CONSUMED;
+        if (player.isShiftKeyDown()) {
+            be.dismantle(player);
+        } else if (face != null) {
+            FaceMode m = be.face(face).next();
+            be.setFace(face, m);
+            player.displayClientMessage(TRoomsText.MSG_INTERFACE_FACE.text(faceName(face).text(), faceModeName(m).text().withStyle(ChatFormatting.AQUA)), true);
+        }
+        return UseResult.CONSUMED;
+    }
+
+    public static TRoomsText faceName(Direction d) {
         return switch (d) {
             case DOWN -> TRoomsText.FACE_DOWN;
             case UP -> TRoomsText.FACE_UP;
@@ -97,54 +112,56 @@ public final class InterfaceTools {
         };
     }
 
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        Player player = event.getEntity();
-        if (isWrench(event.getItemStack()) && event.getLevel().getBlockEntity(event.getPos()) instanceof InterfaceBlockEntity wbe) {
-            wrench(event, wbe);
-            return;
+    /** ПКМ по блоку предметом {@code stack}. */
+    public static UseResult onUseBlock(Player player, Level level, BlockHitResult hit, ItemStack stack) {
+        BlockPos pos = hit.getBlockPos();
+        if (isWrench(stack) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity wbe) {
+            return wrench(player, level, pos, hit.getDirection(), wbe);
         }
-        if (!configMode(event.getItemStack())) return;
-        boolean iface = event.getLevel().getBlockEntity(event.getPos()) instanceof InterfaceBlockEntity;
-        if (!iface) {
-            // Свои действия отвёртки TR в режиме настройки не выполняются; сам блок (сундук, дверь) работает как обычно.
-            event.setUseItem(net.neoforged.neoforge.common.util.TriState.FALSE);
-            return;
+        if (!configMode(stack)) return UseResult.PASS;
+        if (!(level.getBlockEntity(pos) instanceof InterfaceBlockEntity be)) {
+            // Свои действия отвёртки TR в режиме настройки не выполняются, а сам блок (сундук, дверь) работает как обычно.
+            // Блок вызываем сами и без предмета: некоторые блоки TR (астральный манипулятор) сами реагируют на отвёртку в руке.
+            // С Shift игра и так не трогает блок, если в руке предмет.
+            if (player.isSecondaryUseActive()) return UseResult.handled(InteractionResult.PASS);
+            return UseResult.handled(level.getBlockState(pos).useWithoutItem(level, player, hit));
         }
-        if (!player.isShiftKeyDown()) return; // ПКМ — меню интерфейса
-        InterfaceBlockEntity be = (InterfaceBlockEntity) event.getLevel().getBlockEntity(event.getPos());
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        if (event.getLevel().isClientSide()) return;
+        if (!player.isShiftKeyDown()) return UseResult.PASS; // ПКМ — меню интерфейса
+        if (level.isClientSide()) return UseResult.CONSUMED;
         if (be.id() == 0) {
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_NO_ID.text(), true);
-            return;
+            return UseResult.CONSUMED;
         }
-        event.getItemStack().set(TRoomsBlocks.INTERFACE_LINK.get(), be.link());
+        stack.set(TRoomsBlocks.INTERFACE_LINK.get(), be.link());
         player.displayClientMessage(TRoomsText.MSG_INTERFACE_COPIED.text(hex(be.id())), true);
+        return UseResult.CONSUMED;
     }
 
-    /** Shift+ЛКМ: ломать не даём, а на сервер отправляем «вписать идентификатор» (отмена на клиенте не дошла бы до сервера). */
-    public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        Player player = event.getEntity();
-        if (!player.isShiftKeyDown() || !configMode(player.getMainHandItem())) return;
-        if (!(event.getLevel().getBlockEntity(event.getPos()) instanceof InterfaceBlockEntity)) return;
-        event.setCanceled(true);
-        if (event.getLevel().isClientSide() && event.getAction() == PlayerInteractEvent.LeftClickBlock.Action.START) {
-            PacketDistributor.sendToServer(new InterfacePayload(event.getPos(), InterfacePayload.PASTE, 0));
-        }
+    /**
+     * ЛКМ по блоку. {@code true} — ломать не даём. Shift+ЛКМ по интерфейсу в режиме настройки — «вписать идентификатор»:
+     * это решает сервер, поэтому клиент отправляет запрос ({@link #requestPaste}).
+     */
+    public static boolean onAttackBlock(Player player, Level level, BlockPos pos) {
+        if (!player.isShiftKeyDown() || !configMode(player.getMainHandItem())) return false;
+        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity;
     }
 
-    /** ПКМ в пустоту в режиме настройки: действие отвёртки TR не выполняется; с Shift — забыть идентификатор. */
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        Player player = event.getEntity();
-        ItemStack stack = event.getItemStack();
-        if (!configMode(stack)) return;
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        if (event.getLevel().isClientSide() || !player.isShiftKeyDown()) return;
+    /** Клиент: попросить сервер вписать идентификатор из отвёртки (отмена на клиенте не дошла бы до сервера). */
+    public static void requestPaste(BlockPos pos) {
+        PacketDistributor.sendToServer(new InterfacePayload(pos, InterfacePayload.PASTE, 0));
+    }
+
+    /**
+     * ПКМ в пустоту. {@code true} — действие предмета отменяется (клик считается обработанным).
+     * В режиме настройки действие отвёртки TR не выполняется; с Shift — забыть идентификатор.
+     */
+    public static boolean onUseItem(Player player, Level level, ItemStack stack) {
+        if (!configMode(stack)) return false;
+        if (level.isClientSide() || !player.isShiftKeyDown()) return true;
         if (stack.remove(TRoomsBlocks.INTERFACE_LINK.get()) != null) {
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_FORGOTTEN.text(), true);
         }
+        return true;
     }
 
     /** Вписать в интерфейс идентификатор из отвёртки в руке (сервер). */
@@ -161,13 +178,12 @@ public final class InterfaceTools {
     }
 
     /** Подсказка отвёртки: режим и запомненный идентификатор. */
-    public static void onTooltip(ItemTooltipEvent event) {
-        ItemStack stack = event.getItemStack();
+    public static void appendTooltip(ItemStack stack, List<Component> tooltip) {
         if (!isScrewdriver(stack)) return;
-        event.getToolTip().add(TRoomsText.SCREWDRIVER_MODE.text(modeName(mode(stack)).text().withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
+        tooltip.add(TRoomsText.SCREWDRIVER_MODE.text(modeName(mode(stack)).text().withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
         InterfaceLink link = stack.get(TRoomsBlocks.INTERFACE_LINK.get());
         if (link != null && link.id() != 0) {
-            event.getToolTip().add(TRoomsText.IFACE_SCREWDRIVER_ID.text(hex(link.id())).withStyle(ChatFormatting.GRAY));
+            tooltip.add(TRoomsText.IFACE_SCREWDRIVER_ID.text(hex(link.id())).withStyle(ChatFormatting.GRAY));
         }
     }
 

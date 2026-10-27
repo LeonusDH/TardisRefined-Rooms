@@ -64,22 +64,10 @@ public class JadePlugin implements IWailaPlugin {
             tooltip.add(st.text());
             int id = d.getInt("id");
             if (id != 0) tooltip.add(TRoomsText.IFACE_ID.text(Component.literal(InterfaceData.hex(id)).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
-            if (st != Status.CONNECTED) return;
-            tooltip.add(TRoomsText.IFACE_PEERS.text(d.getInt("peers")).withStyle(ChatFormatting.GRAY));
-            tooltip.add(TRoomsText.IFACE_FLOW.text(flow(Flow.of(d.getByte("flow")))).withStyle(ChatFormatting.GRAY));
-            int types = d.getInt("types");
-            MutableComponent on = Component.empty();
-            boolean first = true;
-            for (TransferType t : TransferType.values()) {
-                if (!t.available() || (types & t.bit()) == 0) continue;
-                if (!first) on.append(", ");
-                on.append(name(t));
-                first = false;
-            }
-            if (!first) tooltip.add(on.withStyle(ChatFormatting.DARK_GRAY));
+            // Режимы сторон — собственная настройка интерфейса: видны и без связи.
             int faceBits = d.getInt("faces");
             MutableComponent faces = Component.empty();
-            first = true;
+            boolean first = true;
             for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
                 leonus.tardis_rooms.iface.FaceMode m = InterfaceData.face(faceBits, dir);
                 if (m == leonus.tardis_rooms.iface.FaceMode.DEFAULT) continue;
@@ -90,6 +78,19 @@ public class JadePlugin implements IWailaPlugin {
                 first = false;
             }
             if (!first) tooltip.add(TRoomsText.JADE_INTERFACE_FACES.text(faces).withStyle(ChatFormatting.GRAY));
+            if (st != Status.CONNECTED) return;
+            tooltip.add(TRoomsText.IFACE_PEERS.text(d.getInt("peers")).withStyle(ChatFormatting.GRAY));
+            tooltip.add(TRoomsText.IFACE_FLOW.text(flow(Flow.of(d.getByte("flow")))).withStyle(ChatFormatting.GRAY));
+            int types = d.getInt("types");
+            MutableComponent on = Component.empty();
+            first = true;
+            for (TransferType t : TransferType.values()) {
+                if (!t.available() || (types & t.bit()) == 0) continue;
+                if (!first) on.append(", ");
+                on.append(name(t));
+                first = false;
+            }
+            if (!first) tooltip.add(on.withStyle(ChatFormatting.DARK_GRAY));
         }
 
         private static MutableComponent name(TransferType t) {

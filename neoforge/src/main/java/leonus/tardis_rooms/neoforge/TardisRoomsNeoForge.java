@@ -7,8 +7,6 @@ import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.registry.RegEntry;
 
 import leonus.tardis_rooms.iface.AE2Compat;
-import leonus.tardis_rooms.iface.InterfaceNetwork;
-import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.MekanismCompat;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
@@ -17,7 +15,6 @@ import leonus.tardis_rooms.network.InterfacePayload;
 import leonus.tardis_rooms.network.ManagePayloads;
 import leonus.tardis_rooms.network.MapPayloads;
 import leonus.tardis_rooms.network.ScrewdriverModePayload;
-import leonus.tardis_rooms.room.HubInitializer;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -32,7 +29,6 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -53,17 +49,12 @@ public final class TardisRoomsNeoForge {
         container.registerConfig(ModConfig.Type.COMMON, TardisRoomsConfig.SPEC, TardisRooms.COMMON_CONFIG);
         container.registerConfig(ModConfig.Type.CLIENT, TardisRoomsConfig.CLIENT_SPEC, TardisRooms.CLIENT_CONFIG);
         registerEntries(modBus);
-        NeoForge.EVENT_BUS.addListener(InterfaceTools::onRightClickBlock);
-        NeoForge.EVENT_BUS.addListener(InterfaceTools::onLeftClickBlock);
-        NeoForge.EVENT_BUS.addListener(InterfaceTools::onRightClickItem);
-        NeoForge.EVENT_BUS.addListener(InterfaceTools::onTooltip);
-        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) leonus.tardis_rooms.client.ClientEvents.register();
+        NeoForgeEvents.register(NeoForge.EVENT_BUS);
+        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) leonus.tardis_rooms.neoforge.client.NeoForgeClientEvents.register();
         modBus.addListener(TardisRoomsNeoForge::registerCapabilities);
         modBus.addListener(TardisRoomsNeoForge::addToCreativeTabs);
-        NeoForge.EVENT_BUS.addListener((ServerStoppedEvent e) -> InterfaceNetwork.clear());
         modBus.addListener(TardisRoomsNeoForge::registerPayloads);
         modBus.addListener(leonus.tardis_rooms.lang.TRoomsLangProvider::gather);
-        HubInitializer.register(NeoForge.EVENT_BUS);
         TardisRooms.LOGGER.info("TARDIS Refined: Rooms loaded");
     }
 
