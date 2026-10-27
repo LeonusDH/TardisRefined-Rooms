@@ -1,12 +1,15 @@
 package leonus.tardis_rooms.platform.neoforge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import leonus.tardis_rooms.client.BlockPreview;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.RenderShape;
@@ -16,21 +19,28 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 
 /** Реализация {@link leonus.tardis_rooms.platform.ClientPlatform} для NeoForge. */
 public final class ClientPlatformImpl {
-    /** Как BlockRenderDispatcher.renderSingleBlock, но цвет — для настоящей позиции блока. */
+    private static final Direction[] SIDES_AND_NONE = {Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, null};
+
+    /**
+     * Как BlockRenderDispatcher.renderSingleBlock, но с данными модели для настоящей позиции блока (их берут модели, которые
+     * рисуют содержимое блока-сущности, — котёл с жидкостью из Amendments) и с окраской, как в мире ({@link BlockPreview}).
+     */
     public static void renderBlock(BlockState state, BlockAndTintGetter level, BlockPos pos, PoseStack poseStack,
                                    MultiBufferSource buffers, int light, int overlay) {
-        Minecraft mc = Minecraft.getInstance();
-        BlockRenderDispatcher dispatcher = mc.getBlockRenderer();
+        BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
         if (state.getRenderShape() != RenderShape.MODEL) {
             dispatcher.renderSingleBlock(state, poseStack, buffers, light, overlay, ModelData.EMPTY, null);
             return;
         }
         BakedModel model = dispatcher.getBlockModel(state);
-        int c = mc.getBlockColors().getColor(state, level, pos, 0);
-        float r = (c >> 16 & 0xFF) / 255f, g = (c >> 8 & 0xFF) / 255f, b = (c & 0xFF) / 255f;
-        for (RenderType rt : model.getRenderTypes(state, RandomSource.create(42), ModelData.EMPTY)) {
-            dispatcher.getModelRenderer().renderModel(poseStack.last(), buffers.getBuffer(RenderTypeHelper.getEntityRenderType(rt, false)),
-                    state, model, r, g, b, light, overlay, ModelData.EMPTY, rt);
+        ModelData data = model.getModelData(level, pos, state, level.getModelData(pos));
+        RandomSource random = RandomSource.create();
+        for (RenderType rt : model.getRenderTypes(state, RandomSource.create(42), data)) {
+            VertexConsumer consumer = buffers.getBuffer(RenderTypeHelper.getEntityRenderType(rt, false));
+            for (Direction side : SIDES_AND_NONE) {
+                random.setSeed(42L);
+                BlockPreview.putQuads(poseStack.last(), consumer, model.getQuads(state, side, random, data, rt), state, level, pos, light, overlay);
+            }
         }
     }
 
