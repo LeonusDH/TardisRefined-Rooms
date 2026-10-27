@@ -1,0 +1,20 @@
+{
+  "values": [
+    {
+      "id": "#c:tools/wrench",
+      "required": false
+    },
+    {
+      "id": "#c:tools/wrenches",
+      "required": false
+    },
+    {
+      "id": "#c:wrenches",
+      "required": false
+    },
+    {
+      "id": "techreborn:wrench",
+      "required": false
+    }
+  ]
+}

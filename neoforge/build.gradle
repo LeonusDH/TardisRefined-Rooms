@@ -45,10 +45,9 @@ dependencies {
     // Tardis Refined: только для компиляции, в игре ставится отдельным модом. Датагену нужен и при запуске.
     modCompileOnly files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
     modLocalRuntime files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
-    // Необязательная совместимость: химикаты Mekanism, сеть ME и карта памяти AE2, подсказки Jade. Без этих модов аддон работает как обычно.
+    // Необязательная совместимость: химикаты Mekanism, сеть ME и карта памяти AE2. Без этих модов аддон работает как обычно.
     modCompileOnly "mekanism:Mekanism:${rootProject.minecraft_version}-${rootProject.mekanism_version}:api"
     modCompileOnly "org.appliedenergistics:appliedenergistics2:${rootProject.ae2_version}"
-    modCompileOnly "maven.modrinth:jade:${rootProject.jade_version}"
 }
 
 processResources {

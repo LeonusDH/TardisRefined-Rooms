@@ -262,17 +262,18 @@ public class InterfaceSidesScreen extends Screen {
         ps.mulPose(transform());
         MultiBufferSource.BufferSource buf = g.bufferSource();
         Lighting.setupFor3DItems();
-        renderState(ps, buf, level.getBlockState(pos));
+        renderState(ps, buf, level, pos, level.getBlockState(pos));
         if (neighbours) {
             for (Direction d : Direction.values()) {
-                BlockState ns = level.getBlockState(pos.relative(d));
+                BlockPos np = pos.relative(d);
+                BlockState ns = level.getBlockState(np);
                 if (ns.isAir() || ns.getRenderShape() == RenderShape.INVISIBLE) continue;
                 // Соседи — уменьшенные и чуть отодвинутые, чтобы не загораживать грани интерфейса.
                 ps.pushPose();
                 ps.translate(0.5 + d.getStepX() * 1.25, 0.5 + d.getStepY() * 1.25, 0.5 + d.getStepZ() * 1.25);
                 ps.scale(0.6f, 0.6f, 0.6f);
                 ps.translate(-0.5, -0.5, -0.5);
-                renderState(ps, buf, ns);
+                renderState(ps, buf, level, np, ns);
                 ps.popPose();
             }
         }
@@ -296,10 +297,10 @@ public class InterfaceSidesScreen extends Screen {
         Lighting.setupFor3DItems();
     }
 
-    private static void renderState(PoseStack ps,
-                                    MultiBufferSource buf, BlockState state) {
+    private static void renderState(PoseStack ps, MultiBufferSource buf, net.minecraft.world.level.BlockAndTintGetter level,
+                                    BlockPos pos, BlockState state) {
         try {
-            ClientPlatform.renderBlock(state, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+            ClientPlatform.renderBlock(state, level, pos, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
         } catch (Exception ignored) {
             // Чужой блок, который не умеет рисоваться вне мира, — просто не показываем.
         }

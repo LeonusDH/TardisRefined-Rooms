@@ -132,12 +132,17 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     // ---------- связь ----------
 
+    /** Связь нужно пересчитать на ближайшем тике (блок только что загружен). */
+    private boolean loadPending;
+
     /**
      * Блок загружен в мир. Без {@code @Override}: на NeoForge метод с этим именем есть у BlockEntity (и вызывается им сам),
-     * на других платформах его вызывает событие загрузки блока-сущности.
+     * на других платформах его вызывает событие загрузки блока-сущности — а моды-мосты (Mekanism Fabricated) вызывают его
+     * и сами, прямо посреди загрузки чанка. Поэтому здесь только отметка: пересчёт обращается к миру и посреди загрузки
+     * чанка повесил бы сервер, ожидающий этот же чанк. Пересчитаем на ближайшем тике.
      */
     public void onLoad() {
-        if (level != null && !level.isClientSide()) refresh();
+        if (level != null && !level.isClientSide()) loadPending = true;
     }
 
     @Override
@@ -159,10 +164,12 @@ public class InterfaceBlockEntity extends BlockEntity {
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, InterfaceBlockEntity be) {
-        if ((level.getGameTime() + pos.asLong()) % CHECK_INTERVAL == 0) {
+        boolean periodic = (level.getGameTime() + pos.asLong()) % CHECK_INTERVAL == 0;
+        if (be.loadPending || periodic) {
+            be.loadPending = false;
             be.refresh();
-            be.transport.tick();
         }
+        if (periodic) be.transport.tick();
         if (be.data.faces() != 0 && (level.getGameTime() + pos.asLong()) % FACE_INTERVAL == 0) be.tickFaces();
     }
 

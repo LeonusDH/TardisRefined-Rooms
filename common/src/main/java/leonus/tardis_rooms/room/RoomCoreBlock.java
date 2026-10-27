@@ -19,6 +19,11 @@ public class RoomCoreBlock extends ProtectedBlock {
     }
 
     @Override
+    public TRoomsText breakMessage() {
+        return TRoomsText.MSG_USE_SCREWDRIVER_CORE;
+    }
+
+    @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!(stack.getItem() instanceof ScrewdriverItem)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openManage(pos);

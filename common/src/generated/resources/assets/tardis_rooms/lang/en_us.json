@@ -30,7 +30,7 @@
   "message.tardis_rooms.need_screwdriver": "Hold a screwdriver",
   "message.tardis_rooms.occupied": "The space behind this wall is already taken",
   "message.tardis_rooms.off_grid": "This block only fits the Tardis Refined grid",
-  "message.tardis_rooms.protected": "This block can only be removed through the room control block",
+  "message.tardis_rooms.protected": "This block is part of the TARDIS and can't be broken",
   "message.tardis_rooms.removed": "Space removed",
   "message.tardis_rooms.replaced": "Space replaced",
   "message.tardis_rooms.screwdriver_mode": "Screwdriver mode: %s",

@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.InterfacePayload;
 import net.minecraft.ChatFormatting;
@@ -57,15 +58,14 @@ public final class InterfaceTools {
         return m == MODE_CONFIG ? TRoomsText.SCREWDRIVER_MODE_CONFIG : TRoomsText.SCREWDRIVER_MODE_NORMAL;
     }
 
-    /** Ключи других модов: метки common-тегов, которыми их помечают Mekanism, AE2, Thermal и другие. */
-    private static final List<TagKey<Item>> WRENCHES = List.of(
-            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "tools/wrench")),
-            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "tools/wrenches")),
-            TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "wrenches")));
+    /**
+     * Ключи других модов — метка {@code tardis_rooms:wrenches} (data/tardis_rooms/tags/item/wrenches.json): общие метки ключей,
+     * которыми их помечают Mekanism, AE2, Powah и другие, плюс ключи без такой метки (Tech Reborn). Сборка может дополнить её датапаком.
+     */
+    private static final TagKey<Item> WRENCHES = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "wrenches"));
 
     public static boolean isWrench(ItemStack s) {
-        for (var t : WRENCHES) if (s.is(t)) return true;
-        return false;
+        return s.is(WRENCHES);
     }
 
     /**

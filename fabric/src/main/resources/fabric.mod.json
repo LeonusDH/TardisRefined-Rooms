@@ -15,6 +15,9 @@
     ],
     "client": [
       "leonus.tardis_rooms.fabric.client.TardisRoomsFabricClient"
+    ],
+    "jade": [
+      "leonus.tardis_rooms.compat.JadePlugin"
     ]
   },
   "mixins": [

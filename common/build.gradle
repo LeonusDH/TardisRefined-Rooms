@@ -11,6 +11,8 @@ dependencies {
     // Tardis Refined — только для компиляции общего кода. Берём jar для NeoForge: в нём те же общие классы TR с именами Mojang.
     // Платформенные классы TR (пакеты *.neoforge) в common не использовать.
     compileOnly files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
+    // Jade: подсказки об интерфейсе. API одинаковый на обеих платформах; плагин находит NeoForge по @WailaPlugin, Fabric — по точке входа jade.
+    modCompileOnly "maven.modrinth:jade:${rootProject.jade_version}+fabric"
 }
 
 // Общие ресурсы обеих платформ. Английский перевод генерирует датаген (gradlew :neoforge:runData) в src/generated/resources;

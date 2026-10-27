@@ -3,6 +3,7 @@ package leonus.tardis_rooms.neoforge;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.room.HubInitializer;
+import leonus.tardis_rooms.room.ProtectedBlock;
 import net.minecraft.world.InteractionResult;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -34,6 +35,11 @@ final class NeoForgeEvents {
     }
 
     private static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock e) {
+        // Защищённые блоки (узел, блок управления, заглушка) не даём даже начать ломать.
+        if (ProtectedBlock.onAttack(e.getEntity(), e.getLevel(), e.getPos())) {
+            e.setCanceled(true);
+            return;
+        }
         if (!InterfaceTools.onAttackBlock(e.getEntity(), e.getLevel(), e.getPos())) return;
         e.setCanceled(true);
         if (e.getLevel().isClientSide() && e.getAction() == PlayerInteractEvent.LeftClickBlock.Action.START) {

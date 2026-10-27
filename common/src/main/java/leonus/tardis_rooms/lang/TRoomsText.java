@@ -31,7 +31,7 @@ public enum TRoomsText {
     MSG_NEED_SCREWDRIVER("message.tardis_rooms.need_screwdriver", "Hold a screwdriver"),
     MSG_OCCUPIED("message.tardis_rooms.occupied", "The space behind this wall is already taken"),
     MSG_OFF_GRID("message.tardis_rooms.off_grid", "This block only fits the Tardis Refined grid"),
-    MSG_PROTECTED("message.tardis_rooms.protected", "This block can only be removed through the room control block"),
+    MSG_PROTECTED("message.tardis_rooms.protected", "This block is part of the TARDIS and can't be broken"),
     MSG_REMOVED("message.tardis_rooms.removed", "Space removed"),
     MSG_REPLACED("message.tardis_rooms.replaced", "Space replaced"),
     MSG_UNKNOWN_PIECE("message.tardis_rooms.unknown_piece", "No such room"),

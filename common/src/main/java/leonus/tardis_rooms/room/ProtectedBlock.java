@@ -23,7 +23,22 @@ public class ProtectedBlock extends Block {
      * на клиенте и на сервере), на других платформах запрет делает событие поломки блока.
      */
     public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
-        if (!level.isClientSide()) player.displayClientMessage(TRoomsText.MSG_PROTECTED.text(), true);
+        if (!level.isClientSide()) player.displayClientMessage(breakMessage().text(), true);
         return false;
+    }
+
+    /**
+     * Игрок начал бить блок (вызывает платформа на клиенте и на сервере). {@code true} — не даём даже начать: в творческом
+     * режиме такой блок иначе ломается с одного удара (и тут же возвращается). В выживании прочность −1 и так не даёт его сломать.
+     */
+    public static boolean onAttack(Player player, Level level, BlockPos pos) {
+        if (!player.isCreative() || !(level.getBlockState(pos).getBlock() instanceof ProtectedBlock pb)) return false;
+        if (level.isClientSide()) player.displayClientMessage(pb.breakMessage().text(), true);
+        return true;
+    }
+
+    /** Что сказать игроку, который пытается сломать блок. */
+    public TRoomsText breakMessage() {
+        return TRoomsText.MSG_PROTECTED;
     }
 }

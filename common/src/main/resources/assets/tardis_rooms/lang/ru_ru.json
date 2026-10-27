@@ -30,7 +30,7 @@
   "message.tardis_rooms.need_screwdriver": "Нужна отвёртка в руке",
   "message.tardis_rooms.occupied": "Место за стеной уже занято",
   "message.tardis_rooms.off_grid": "Этот блок ставится только по сетке Tardis Refined",
-  "message.tardis_rooms.protected": "Этот блок убирается только через блок управления помещением",
+  "message.tardis_rooms.protected": "Этот блок — часть ТАРДИС, сломать его нельзя",
   "message.tardis_rooms.removed": "Помещение удалено",
   "message.tardis_rooms.replaced": "Помещение заменено",
   "message.tardis_rooms.screwdriver_mode": "Режим отвёртки: %s",
