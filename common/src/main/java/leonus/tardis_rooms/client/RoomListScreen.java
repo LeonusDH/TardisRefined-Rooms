@@ -94,7 +94,7 @@ public class RoomListScreen extends RoomMonitorScreen {
                 }
             };
             Component tip = ok ? option.tooltip().copy().withStyle(ChatFormatting.BLUE)
-                    : ClientFits.reason(option.id()).text().withStyle(ChatFormatting.RED);
+                    : ClientFits.reason(option.id(), node).text().withStyle(ChatFormatting.RED);
             tip(entry, tip);
             if (option == current) entry.setChecked(true);
             list.children().add(entry);

@@ -134,7 +134,13 @@ public final class RoomGrowth {
         if (Lattice.isForbidden(level, node.targetX(), node.targetZ(), node.floorY())) { msg(player, TRoomsText.MSG_FORBIDDEN); return; }
         if (PieceCatalog.options(node, leonus.tardis_rooms.room.custom.CustomRooms.INSTANCE.infos()).stream().noneMatch(o -> o.id().equals(pieceId))) { msg(player, TRoomsText.MSG_UNKNOWN_PIECE); return; }
         Optional<PieceCatalog.Plan> plan = PieceCatalog.plan(pieceId, node);
-        if (plan.isEmpty()) { msg(player, TRoomsText.MSG_OFF_GRID); return; }
+        if (plan.isEmpty()) {
+            var custom = leonus.tardis_rooms.room.custom.CustomRooms.INSTANCE.get(pieceId);
+            msg(player, custom.isEmpty() ? TRoomsText.MSG_OFF_GRID
+                    : custom.get().def().rotatable() || custom.get().def().entrance().side() == node.side().getOpposite()
+                    ? TRoomsText.MSG_CUSTOM_NO_HEIGHT : TRoomsText.MSG_CUSTOM_DIRECTION);
+            return;
+        }
         if (!isFree(level, plan.get(), new HashMap<>(), replacing)) { msg(player, TRoomsText.MSG_OCCUPIED); return; }
         if (replacing != null) {
             if (!Connectivity.canReplace(level, replacing, plan.get())) { msg(player, TRoomsText.MSG_CUTS_OFF_REPLACE); return; }
@@ -285,6 +291,10 @@ public final class RoomGrowth {
 
     /** Ставит блок управления в пол помещения — в ближайшее к центру место, где можно стоять. */
     private static BlockPos placeCore(ServerLevel level, PieceCatalog.Plan plan) {
+        if (plan.coreExact() != null) {
+            level.setBlock(plan.coreExact(), TRoomsBlocks.ROOM_CORE.get().defaultBlockState(), Block.UPDATE_ALL);
+            return plan.coreExact();
+        }
         int floor = plan.coreFloor() != null ? plan.coreFloor()
                 : plan.footprint().keySet().stream().min(Integer::compare).orElse(Lattice.FLOOR_LOWER);
         Set<Long> mods = plan.footprint().get(floor);

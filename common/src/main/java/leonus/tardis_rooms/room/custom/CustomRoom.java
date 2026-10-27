@@ -24,12 +24,14 @@ import java.util.Optional;
  *   "structure": "example:rooms/library",     // или список — по шаблону на этаж, снизу вверх
  *   "entrance": {"x": 0, "z": 0, "side": "south"},   // выход, которым помещение пристраивается к узлу
  *   "exits": [{"x": 0, "z": 0, "side": "north"}],    // остальные выходы; "floor": 1 — на втором этаже
- *   "control_block": [11, 0, 11]             // необязательно; блок управления (y = 0 — пол нижнего этажа)
+ *   "control_block": [11, 0, 11],            // необязательно; блок управления (y = 0 — пол нижнего этажа)
+ *   "rotatable": false                       // необязательно (по умолчанию true): false — строится только от узла,
+ *                                            // смотрящего туда же, куда вход шаблона, без поворота
  * }
  * }</pre>
  */
 public record CustomRoom(Component name, Optional<Component> description, String group, List<ResourceLocation> structures,
-                         Exit entrance, List<Exit> exits, Optional<BlockPos> controlBlock) {
+                         Exit entrance, List<Exit> exits, Optional<BlockPos> controlBlock, boolean rotatable) {
 
     /** Выход: модуль шаблона (x, z), сторона и этаж (0 — нижний). */
     public record Exit(int x, int z, Direction side, int floor) {
@@ -53,7 +55,8 @@ public record CustomRoom(Component name, Optional<Component> description, String
             STRUCTURES.fieldOf("structure").forGetter(CustomRoom::structures),
             Exit.CODEC.fieldOf("entrance").forGetter(CustomRoom::entrance),
             Exit.CODEC.listOf().optionalFieldOf("exits", List.of()).forGetter(CustomRoom::exits),
-            BlockPos.CODEC.optionalFieldOf("control_block").forGetter(CustomRoom::controlBlock)
+            BlockPos.CODEC.optionalFieldOf("control_block").forGetter(CustomRoom::controlBlock),
+            Codec.BOOL.optionalFieldOf("rotatable", true).forGetter(CustomRoom::rotatable)
     ).apply(i, CustomRoom::new));
 
     public int floors() { return structures.size(); }

@@ -33,8 +33,14 @@ public final class ClientFits {
     public static boolean available(ResourceLocation id) { return !BLOCKED.contains(id) && !OFF_GRID.contains(id) && !CUTS_OFF.contains(id); }
 
     /** Причина, почему вариант недоступен. */
-    public static TRoomsText reason(ResourceLocation id) {
-        if (OFF_GRID.contains(id)) return TRoomsText.SCREEN_OFF_GRID;
+    public static TRoomsText reason(ResourceLocation id, leonus.tardis_rooms.room.Node node) {
+        if (OFF_GRID.contains(id)) {
+            // У помещений из датапаков пустой план — не то направление (поворачивать нельзя) или не хватает высоты.
+            for (leonus.tardis_rooms.room.custom.CustomRoomInfo r : ClientCustomRooms.list())
+                if (r.id().equals(id))
+                    return r.fitsDirection(node.side()) ? TRoomsText.SCREEN_CUSTOM_NO_HEIGHT : TRoomsText.SCREEN_CUSTOM_DIRECTION;
+            return TRoomsText.SCREEN_OFF_GRID;
+        }
         if (CUTS_OFF.contains(id)) return TRoomsText.SCREEN_CUTS_OFF;
         return TRoomsText.SCREEN_BLOCKED;
     }

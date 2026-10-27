@@ -3,6 +3,8 @@ package leonus.tardis_rooms.room;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.room.custom.CustomRoomInfo;
+import leonus.tardis_rooms.room.custom.CustomRoomPlan;
+import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -113,8 +115,15 @@ public final class PieceCatalog {
     public record ModSide(long module, Direction side) {}
 
     /** План постройки: модули и выходы по этажам и действие. */
-    /** {@code coreFloor} — уровень блока управления (null — нижний уровень помещения). */
-    public record Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot, Integer coreFloor) {
+    /**
+     * {@code coreFloor} — уровень блока управления (null — нижний уровень помещения);
+     * {@code coreExact} — точное место блока управления (помещения из датапаков), иначе ищется место у {@code coreSpot}.
+     */
+    public record Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot, Integer coreFloor, BlockPos coreExact) {
+        Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot, Integer coreFloor) {
+            this(footprint, exits, build, coreSpot, coreFloor, null);
+        }
+
         Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot) {
             this(footprint, exits, build, coreSpot, null);
         }
@@ -310,6 +319,8 @@ public final class PieceCatalog {
             ex.put(node.floorY(), trExits(cx, cz));
             return Optional.of(new Plan(fp, ex, lv -> placeTemplate(lv, id, origin.atY(node.floorY()))));
         }
+        Optional<CustomRooms.Loaded> custom = CustomRooms.INSTANCE.get(id);
+        if (custom.isPresent()) return CustomRoomPlan.plan(custom.get(), node);
         return Optional.empty();
     }
 

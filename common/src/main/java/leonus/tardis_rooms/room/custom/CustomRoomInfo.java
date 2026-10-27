@@ -25,11 +25,17 @@ import java.util.Optional;
  * ({@link MapColor#getPackedId}), 0 — пусто; ряды по z, в каждом x (как шаблон без поворота).
  */
 public record CustomRoomInfo(ResourceLocation id, Component name, Optional<Component> description, String group,
-                             int width, int depth, int floors, CustomRoom.Exit entrance, List<CustomRoom.Exit> exits, byte[] preview) {
+                             int width, int depth, int floors, CustomRoom.Exit entrance, List<CustomRoom.Exit> exits,
+                             boolean rotatable, byte[] preview) {
 
     /** Где клиент держит картинку превью (динамическая текстура, см. {@code ClientCustomRooms}). */
     public ResourceLocation previewTexture() {
         return ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "dynamic/preview/" + id.getNamespace() + "/" + id.getPath());
+    }
+
+    /** Можно ли строить от узла {@code nodeSide}: неповорачиваемое — только если вход шаблона уже смотрит на узел. */
+    public boolean fitsDirection(Direction nodeSide) {
+        return rotatable || entrance.side() == nodeSide.getOpposite();
     }
 
     public int widthBlocks() { return width * Lattice.MODULE; }
@@ -51,7 +57,7 @@ public record CustomRoomInfo(ResourceLocation id, Component name, Optional<Compo
     static CustomRoomInfo of(CustomRooms.Loaded room) {
         CustomRoom def = room.def();
         return new CustomRoomInfo(room.id(), def.name(), def.description(), def.group(), room.width(), room.depth(), def.floors(),
-                def.entrance(), def.exits(), preview(room));
+                def.entrance(), def.exits(), def.rotatable(), preview(room));
     }
 
     /**
@@ -102,6 +108,7 @@ public record CustomRoomInfo(ResourceLocation id, Component name, Optional<Compo
                 EXIT.encode(buf, i.entrance);
                 buf.writeVarInt(i.exits.size());
                 for (CustomRoom.Exit e : i.exits) EXIT.encode(buf, e);
+                buf.writeBoolean(i.rotatable);
                 buf.writeByteArray(i.preview);
             },
             buf -> {
@@ -114,7 +121,8 @@ public record CustomRoomInfo(ResourceLocation id, Component name, Optional<Compo
                 int n = buf.readVarInt();
                 List<CustomRoom.Exit> exits = new ArrayList<>(n);
                 for (int k = 0; k < n; k++) exits.add(EXIT.decode(buf));
+                boolean rotatable = buf.readBoolean();
                 byte[] preview = buf.readByteArray();
-                return new CustomRoomInfo(id, name, desc, group, w, d, floors, entrance, List.copyOf(exits), preview);
+                return new CustomRoomInfo(id, name, desc, group, w, d, floors, entrance, List.copyOf(exits), rotatable, preview);
             });
 }

@@ -113,6 +113,8 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
     // ---------- проверка ----------
 
     private static Loaded check(ResourceLocation id, CustomRoom def, ResourceManager resources, List<String> problems) {
+        if (id.getNamespace().equals(TardisRooms.MODID))
+            problems.add("the \"" + TardisRooms.MODID + "\" namespace is reserved for built-in rooms; put the file under your own namespace");
         if (!GROUPS.contains(def.group())) problems.add("unknown group \"" + def.group() + "\" (use one of " + GROUPS + ")");
         if (def.floors() < 1 || def.floors() > 2) {
             problems.add("needs one or two structures (one per floor), got " + def.floors());
