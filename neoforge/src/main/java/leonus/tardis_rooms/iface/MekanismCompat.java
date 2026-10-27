@@ -6,7 +6,7 @@ import mekanism.api.chemical.ChemicalStack;
 import mekanism.api.chemical.IChemicalHandler;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.ModList;
+import leonus.tardis_rooms.platform.Platform;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
@@ -18,7 +18,7 @@ import java.util.List;
  */
 public final class MekanismCompat {
     /** Установлен ли Mekanism (возможность регистрируем только тогда). */
-    public static final boolean LOADED = ModList.get().isLoaded("mekanism");
+    public static final boolean LOADED = Platform.isModLoaded("mekanism");
 
     /** Mekanism есть и совместимость не выключена в конфиге. */
     public static boolean enabled() {

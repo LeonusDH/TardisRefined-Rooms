@@ -35,6 +35,7 @@ allprojects {
         mavenCentral() // AE2
         maven { url = 'https://modmaven.dev/' } // Mekanism
         maven { url = 'https://maven.neoforged.net/releases/' }
+        maven { url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/' } // Forge Config API Port
         exclusiveContent { // Jade
             forRepository { maven { url = 'https://api.modrinth.com/maven' } }
             filter { includeGroup 'maven.modrinth' }

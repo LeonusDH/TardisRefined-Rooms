@@ -26,12 +26,12 @@ configurations {
 
 loom {
     runs {
-        // gradlew :neoforge:runData — английский перевод из TRoomsText в src/generated/resources (файл хранится в репозитории).
+        // gradlew :neoforge:runData — английский перевод из TRoomsText в common/src/generated/resources (файл хранится в репозитории).
         data {
             data()
             programArgs '--all', '--mod', rootProject.mod_id
-            programArgs '--output', file('src/generated/resources').absolutePath
-            programArgs '--existing', file('src/main/resources').absolutePath
+            programArgs '--output', project(':common').file('src/generated/resources').absolutePath
+            programArgs '--existing', project(':common').file('src/main/resources').absolutePath
         }
     }
 }
@@ -49,12 +49,6 @@ dependencies {
     modCompileOnly "mekanism:Mekanism:${rootProject.minecraft_version}-${rootProject.mekanism_version}:api"
     modCompileOnly "org.appliedenergistics:appliedenergistics2:${rootProject.ae2_version}"
     modCompileOnly "maven.modrinth:jade:${rootProject.jade_version}"
-}
-
-// Остальные языки — обычные файлы в src/main/resources/assets/tardis_rooms/lang/.
-sourceSets.main.resources {
-    srcDir 'src/generated/resources'
-    exclude '.cache'
 }
 
 processResources {

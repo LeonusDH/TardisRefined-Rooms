@@ -1,4 +1,10 @@
-package leonus.tardis_rooms;
+package leonus.tardis_rooms.neoforge;
+
+import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.TardisRoomsConfig;
+import leonus.tardis_rooms.platform.Platform;
+import leonus.tardis_rooms.registry.RegEntry;
 
 import leonus.tardis_rooms.iface.AE2Compat;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
@@ -12,6 +18,7 @@ import leonus.tardis_rooms.network.ManagePayloads;
 import leonus.tardis_rooms.network.MapPayloads;
 import leonus.tardis_rooms.network.ScrewdriverModePayload;
 import leonus.tardis_rooms.room.HubInitializer;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -21,57 +28,56 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+/** Точка входа на NeoForge: регистрация, конфиг, подписки на события. */
 @Mod(TardisRooms.MODID)
-public final class TardisRooms {
-    public static final String MODID = "tardis_rooms";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
-
-    public TardisRooms(IEventBus modBus, ModContainer container) {
+public final class TardisRoomsNeoForge {
+    public TardisRoomsNeoForge(IEventBus modBus, ModContainer container) {
         try {
-            Files.createDirectories(FMLPaths.CONFIGDIR.get().resolve(MODID));
+            Files.createDirectories(Platform.configDir().resolve(TardisRooms.MODID));
         } catch (IOException e) {
-            LOGGER.warn("Could not create config folder: {}", e.toString());
+            TardisRooms.LOGGER.warn("Could not create config folder: {}", e.toString());
         }
-        container.registerConfig(ModConfig.Type.COMMON, TardisRoomsConfig.SPEC, COMMON_CONFIG);
-        container.registerConfig(ModConfig.Type.CLIENT, TardisRoomsConfig.CLIENT_SPEC, CLIENT_CONFIG);
-        TRoomsBlocks.BLOCKS.register(modBus);
-        TRoomsBlocks.ITEMS.register(modBus);
-        TRoomsBlocks.BLOCK_ENTITIES.register(modBus);
-        TRoomsBlocks.COMPONENTS.register(modBus);
+        container.registerConfig(ModConfig.Type.COMMON, TardisRoomsConfig.SPEC, TardisRooms.COMMON_CONFIG);
+        container.registerConfig(ModConfig.Type.CLIENT, TardisRoomsConfig.CLIENT_SPEC, TardisRooms.CLIENT_CONFIG);
+        registerEntries(modBus);
         NeoForge.EVENT_BUS.addListener(InterfaceTools::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(InterfaceTools::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(InterfaceTools::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(InterfaceTools::onTooltip);
         if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) leonus.tardis_rooms.client.ClientEvents.register();
-        modBus.addListener(TardisRooms::registerCapabilities);
-        modBus.addListener(TardisRooms::addToCreativeTabs);
+        modBus.addListener(TardisRoomsNeoForge::registerCapabilities);
+        modBus.addListener(TardisRoomsNeoForge::addToCreativeTabs);
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent e) -> InterfaceNetwork.clear());
-        modBus.addListener(TardisRooms::registerPayloads);
+        modBus.addListener(TardisRoomsNeoForge::registerPayloads);
         modBus.addListener(leonus.tardis_rooms.lang.TRoomsLangProvider::gather);
         HubInitializer.register(NeoForge.EVENT_BUS);
-        LOGGER.info("TARDIS Refined: Rooms loaded");
+        TardisRooms.LOGGER.info("TARDIS Refined: Rooms loaded");
     }
 
-    /** Конфиги лежат в своей папке: config/tardis_rooms/. */
-    private static final String COMMON_CONFIG = MODID + "/common.toml";
-    private static final String CLIENT_CONFIG = MODID + "/client.toml";
-
-    /** Отладочная запись в лог — только при debug = true в config/tardis_rooms/common.toml. */
-    public static void debug(String message, Object... args) {
-        if (TardisRoomsConfig.debug()) LOGGER.info("[debug] " + message, args);
+    /** Всё, что объявлено через RegEntry, — в DeferredRegister своего реестра (по одному на реестр). */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void registerEntries(IEventBus modBus) {
+        TRoomsBlocks.init();
+        Map<ResourceKey<?>, DeferredRegister> registers = new LinkedHashMap<>();
+        for (RegEntry<?> e : RegEntry.all()) {
+            DeferredRegister dr = registers.computeIfAbsent(e.registry(),
+                    k -> DeferredRegister.create((ResourceKey<? extends Registry<Object>>) k, TardisRooms.MODID));
+            e.bind((java.util.function.Supplier) dr.register(e.id().getPath(), (java.util.function.Supplier) e.factory()));
+        }
+        registers.values().forEach(dr -> dr.register(modBus));
     }
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {

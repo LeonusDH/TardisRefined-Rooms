@@ -23,7 +23,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
 import java.util.EnumSet;
@@ -41,7 +40,7 @@ import java.util.Set;
  */
 public final class AE2Compat {
     /** Установлен ли AE2 (возможность регистрируем только тогда). */
-    public static final boolean LOADED = ModList.get().isLoaded("ae2");
+    public static final boolean LOADED = leonus.tardis_rooms.platform.Platform.isModLoaded("ae2");
 
     /** AE2 есть и совместимость не выключена в конфиге. */
     public static boolean enabled() {

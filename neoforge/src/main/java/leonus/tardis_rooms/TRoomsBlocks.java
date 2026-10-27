@@ -17,48 +17,43 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import leonus.tardis_rooms.registry.RegEntry;
+import net.minecraft.world.level.block.Block;
+
+import java.util.function.Function;
 
 public final class TRoomsBlocks {
-    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(TardisRooms.MODID);
-    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(TardisRooms.MODID);
-    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, TardisRooms.MODID);
-
     /** Интерфейс ТАРДИС: передаёт энергию, предметы, жидкости и химикаты между помещениями (и оболочкой). */
-    public static final DeferredBlock<InterfaceBlock> INTERFACE = BLOCKS.registerBlock("tardis_interface", InterfaceBlock::new,
+    public static final RegEntry<InterfaceBlock> INTERFACE = block("tardis_interface", InterfaceBlock::new,
             BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_CYAN).strength(3.5F, 6.0F).requiresCorrectToolForDrops()
                     .sound(SoundType.METAL).lightLevel(s -> 5));
-    public static final DeferredItem<InterfaceItem> INTERFACE_ITEM = ITEMS.register("tardis_interface", () -> new InterfaceItem(INTERFACE.get(), new Item.Properties()));
+    public static final RegEntry<InterfaceItem> INTERFACE_ITEM = RegEntry.of(Registries.ITEM, "tardis_interface", () -> new InterfaceItem(INTERFACE.get(), new Item.Properties()));
 
-    public static final DeferredRegister<DataComponentType<?>> COMPONENTS = DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, TardisRooms.MODID);
     /** Настройки интерфейса на предмете (переносятся при разрушении и установке). */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<InterfaceData>> INTERFACE_DATA = COMPONENTS.register("interface",
+    public static final RegEntry<DataComponentType<InterfaceData>> INTERFACE_DATA = RegEntry.of(Registries.DATA_COMPONENT_TYPE, "interface",
             () -> DataComponentType.<InterfaceData>builder().persistent(InterfaceData.CODEC).networkSynchronized(InterfaceData.STREAM_CODEC).build());
     /** Режим отвёртки: 0 — обычный (всё как у отвёртки TR), 1 — настройка интерфейсов. Меняется Shift + колёсиком. */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> SCREWDRIVER_MODE = COMPONENTS.register("screwdriver_mode",
+    public static final RegEntry<DataComponentType<Integer>> SCREWDRIVER_MODE = RegEntry.of(Registries.DATA_COMPONENT_TYPE, "screwdriver_mode",
             () -> DataComponentType.<Integer>builder().persistent(com.mojang.serialization.Codec.INT)
                     .networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
     /** Идентификатор интерфейса, запомненный отвёрткой. */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<InterfaceLink>> INTERFACE_LINK = COMPONENTS.register("interface_link",
+    public static final RegEntry<DataComponentType<InterfaceLink>> INTERFACE_LINK = RegEntry.of(Registries.DATA_COMPONENT_TYPE, "interface_link",
             () -> DataComponentType.<InterfaceLink>builder().persistent(InterfaceLink.CODEC).networkSynchronized(InterfaceLink.STREAM_CODEC).build());
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<InterfaceBlockEntity>> INTERFACE_BE =
-            BLOCK_ENTITIES.register("tardis_interface", () -> BlockEntityType.Builder.of(InterfaceBlockEntity::new, INTERFACE.get()).build(null));
+    public static final RegEntry<BlockEntityType<InterfaceBlockEntity>> INTERFACE_BE =
+            RegEntry.of(Registries.BLOCK_ENTITY_TYPE, "tardis_interface", () -> BlockEntityType.Builder.of(InterfaceBlockEntity::new, INTERFACE.get()).build(null));
 
     /** Заглушка прохода: панель, закрывающая тупик. Неразрушима, убирается при пристройке. */
-    public static final DeferredBlock<ProtectedBlock> ROOM_WALL = BLOCKS.registerBlock("room_wall", ProtectedBlock::new,
+    public static final RegEntry<ProtectedBlock> ROOM_WALL = block("room_wall", ProtectedBlock::new,
             BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GRAY).strength(-1.0F, 3600000.0F)
                     .noLootTable().sound(SoundType.METAL));
 
     /** Центр панели: по нему кликают отвёрткой, чтобы выбрать комнату. */
-    public static final DeferredBlock<RoomNodeBlock> ROOM_NODE = BLOCKS.registerBlock("room_node", RoomNodeBlock::new,
+    public static final RegEntry<RoomNodeBlock> ROOM_NODE = block("room_node", RoomNodeBlock::new,
             BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_CYAN).strength(-1.0F, 3600000.0F)
                     .noLootTable().sound(SoundType.METAL).lightLevel(s -> 7));
 
     /** Блок управления помещением в полу (заменить/удалить). */
-    public static final DeferredBlock<RoomCoreBlock> ROOM_CORE = BLOCKS.registerBlock("room_core", RoomCoreBlock::new,
+    public static final RegEntry<RoomCoreBlock> ROOM_CORE = block("room_core", RoomCoreBlock::new,
             BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).strength(-1.0F, 3600000.0F)
                     .noLootTable().sound(SoundType.METAL).lightLevel(s -> 9));
 
@@ -66,15 +61,22 @@ public final class TRoomsBlocks {
      * Фонарь у заглушки: закрывает ниши края прохода, за которыми камень TARDIS (иначе видно «золото дураков»).
      * Свой блок, а не морской фонарь — чтобы при открытии прохода убрать только свои.
      */
-    public static final DeferredBlock<ProtectedBlock> PANEL_LAMP = BLOCKS.registerBlock("panel_lamp", ProtectedBlock::new,
+    public static final RegEntry<ProtectedBlock> PANEL_LAMP = block("panel_lamp", ProtectedBlock::new,
             BlockBehaviour.Properties.of().mapColor(MapColor.QUARTZ).strength(-1.0F, 3600000.0F)
                     .noLootTable().sound(SoundType.GLASS).lightLevel(s -> 15));
 
     /** Невидимая верхняя половина двери/оболочки TARDIS (см. UpperHalfBlock). */
-    public static final DeferredBlock<UpperHalfBlock> UPPER_HALF = BLOCKS.registerBlock("upper_half", UpperHalfBlock::new,
+    public static final RegEntry<UpperHalfBlock> UPPER_HALF = block("upper_half", UpperHalfBlock::new,
             BlockBehaviour.Properties.of().strength(-1.0F, 3600000.0F).noLootTable().noOcclusion().dynamicShape()
                     .pushReaction(PushReaction.BLOCK).isViewBlocking((s, l, p) -> false).isSuffocating((s, l, p) -> false)
                     .isRedstoneConductor((s, l, p) -> false));
+
+    private static <B extends Block> RegEntry<B> block(String name, Function<BlockBehaviour.Properties, B> factory, BlockBehaviour.Properties props) {
+        return RegEntry.of(Registries.BLOCK, name, () -> factory.apply(props));
+    }
+
+    /** Загрузить класс, чтобы все объекты были объявлены до регистрации. */
+    public static void init() {}
 
     private TRoomsBlocks() {}
 }

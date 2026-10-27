@@ -84,11 +84,11 @@ You need JDK 21. Mekanism, AE2 and Jade come from Maven automatically. Tardis Re
 > [!NOTE]
 > Java treats `!` in a path as a separator inside jar paths, so if the project folder has `!` in its path, the game (data generation, test runs) fails to start. `build.bat` works around it by mapping the folder to a temporary drive letter; when running Gradle by hand, use a path without `!`.
 
-English translations are generated from `TRoomsText` with `./gradlew :neoforge:runData`. Other languages are plain files in `neoforge/src/main/resources/assets/tardis_rooms/lang/`.
+English translations are generated from `TRoomsText` with `./gradlew :neoforge:runData`. Other languages are plain files in `common/src/main/resources/assets/tardis_rooms/lang/`.
 
 ## Contributing
 
-Bug reports, ideas and pull requests are welcome. New in-game text goes into the `TRoomsText` enum. If you can, add the Russian translation to `ru_ru.json` as well.
+Bug reports, ideas and pull requests are welcome.
 
 ## AI assistance
 
