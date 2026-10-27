@@ -8,6 +8,7 @@ import leonus.tardis_rooms.registry.RegEntry;
 
 import leonus.tardis_rooms.iface.AE2Compat;
 import leonus.tardis_rooms.iface.MekanismCompat;
+import leonus.tardis_rooms.iface.NeoForgeInterfaceTransport;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
 import leonus.tardis_rooms.network.GrowRoomPayload;
@@ -78,9 +79,9 @@ public final class TardisRoomsNeoForge {
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         var type = TRoomsBlocks.INTERFACE_BE.get();
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, type, (be, side) -> be.energy());
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, type, (be, side) -> be.items());
-        event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, type, (be, side) -> be.fluids());
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, type, (be, side) -> NeoForgeInterfaceTransport.of(be).energy());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, type, (be, side) -> NeoForgeInterfaceTransport.of(be).items());
+        event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, type, (be, side) -> NeoForgeInterfaceTransport.of(be).fluids());
         MekanismCompat.register(event);
         AE2Compat.register(event);
     }

@@ -9,8 +9,8 @@ public enum TransferType {
     /** Установлен ли мод, без которого этот вид передачи не имеет смысла. */
     public boolean available() {
         return switch (this) {
-            case CHEMICALS -> MekanismCompat.enabled();
-            case ME -> AE2Compat.enabled();
+            case CHEMICALS -> InterfacePlatform.chemicalsAvailable();
+            case ME -> InterfacePlatform.meAvailable();
             default -> true;
         };
     }

@@ -95,8 +95,8 @@ public class InterfaceBlock extends BaseEntityBlock {
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (AE2Compat.isMemoryCard(stack) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
-            return AE2Compat.useMemoryCard(stack, be, player);
+        if (InterfacePlatform.isMemoryCard(stack) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
+            return InterfacePlatform.useMemoryCard(stack, be, player);
         }
         if (!(stack.getItem() instanceof ScrewdriverItem)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);

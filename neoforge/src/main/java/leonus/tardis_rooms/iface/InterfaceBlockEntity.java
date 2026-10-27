@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.platform.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -20,13 +21,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
 import whocraft.tardis_refined.common.blockentity.shell.ShellBaseBlockEntity;
 import whocraft.tardis_refined.registry.TRDimensionTypes;
 
@@ -51,10 +45,8 @@ public class InterfaceBlockEntity extends BlockEntity {
     private int peers;
     private InterfaceNetwork.Key joinedKey;
 
-    private final IEnergyStorage energy = new EnergyView(this);
-    private final IItemHandler items = new ItemView(this);
-    private final IFluidHandler fluids = new FluidView(this);
-    private Object chemicals;
+    /** Передача ресурсов — своя у каждого загрузчика. */
+    private final InterfaceTransport transport = InterfacePlatform.createTransport(this);
     /** Узел сети ME (с AE2), иначе null. */
     Object me;
     /** Редстоун: сигнал, принятый от соседей (вход), и сигнал, который интерфейс выдаёт (выход). */
@@ -81,6 +73,8 @@ public class InterfaceBlockEntity extends BlockEntity {
     public ResourceKey<Level> tardis() { return tardis; }
 
     public boolean isConnected() { return status == Status.CONNECTED; }
+
+    public InterfaceTransport transport() { return transport; }
 
     InterfaceNetwork.Key linkKey() { return isConnected() && tardis != null ? new InterfaceNetwork.Key(tardis, data.id()) : null; }
 
@@ -130,7 +124,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     private void changed() {
         setChanged();
         if (level != null && !level.isClientSide()) {
-            level.invalidateCapabilities(worldPosition);
+            transport.invalidate();
             BlockState s = getBlockState();
             level.sendBlockUpdated(worldPosition, s, s, Block.UPDATE_CLIENTS);
         }
@@ -138,9 +132,11 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     // ---------- связь ----------
 
-    @Override
+    /**
+     * Блок загружен в мир. Без {@code @Override}: на NeoForge метод с этим именем есть у BlockEntity (и вызывается им сам),
+     * на других платформах его вызывает событие загрузки блока-сущности.
+     */
     public void onLoad() {
-        super.onLoad();
         if (level != null && !level.isClientSide()) refresh();
     }
 
@@ -148,14 +144,13 @@ public class InterfaceBlockEntity extends BlockEntity {
     public void setRemoved() {
         super.setRemoved();
         leave();
-        AE2Compat.destroy(this);
+        transport.remove();
     }
 
-    @Override
+    /** Чанк выгружен. Без {@code @Override} — по той же причине, что и {@link #onLoad()}. */
     public void onChunkUnloaded() {
-        super.onChunkUnloaded();
         leave();
-        AE2Compat.destroy(this);
+        transport.remove();
     }
 
     private void leave() {
@@ -166,7 +161,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     public static void serverTick(Level level, BlockPos pos, BlockState state, InterfaceBlockEntity be) {
         if ((level.getGameTime() + pos.asLong()) % CHECK_INTERVAL == 0) {
             be.refresh();
-            AE2Compat.update(be);
+            be.transport.tick();
         }
         if (be.data.faces() != 0 && (level.getGameTime() + pos.asLong()) % FACE_INTERVAL == 0) be.tickFaces();
     }
@@ -174,10 +169,10 @@ public class InterfaceBlockEntity extends BlockEntity {
     // ---------- грани «вставлять» / «забирать» ----------
 
     /**
-     * Грани работают раз в {@value #FACE_INTERVAL} тика: за раз — стопка предметов, до {@value #FLUID_PER_OP} мБ
-     * жидкости или химиката, энергии — сколько примут. Чаще незачем: поиск соседей стоит дороже самой передачи.
+     * Грани работают раз в {@value #FACE_INTERVAL} тика: за раз — стопка предметов, порция жидкости или химиката,
+     * энергии — сколько примут. Чаще незачем: поиск соседей стоит дороже самой передачи.
      */
-    private static final int FACE_INTERVAL = 4, FLUID_PER_OP = 16000;
+    private static final int FACE_INTERVAL = 4;
 
     private void tickFaces() {
         if (!isConnected() || InterfaceNetwork.depth > 0) return;
@@ -188,62 +183,8 @@ public class InterfaceBlockEntity extends BlockEntity {
             if (!(pull ? flow().in : flow().out)) continue;
             BlockPos np = worldPosition.relative(d);
             if (!level.isLoaded(np) || level.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-            Direction side = d.getOpposite();
-            if (enabled(TransferType.ENERGY)) {
-                IEnergyStorage h = level.getCapability(Capabilities.EnergyStorage.BLOCK, np, side);
-                if (h != null) moveEnergy(h, pull);
-            }
-            if (enabled(TransferType.ITEMS)) {
-                IItemHandler h = level.getCapability(Capabilities.ItemHandler.BLOCK, np, side);
-                if (h != null) moveItems(h, pull);
-            }
-            if (enabled(TransferType.FLUIDS)) {
-                IFluidHandler h = level.getCapability(Capabilities.FluidHandler.BLOCK, np, side);
-                if (h != null) moveFluids(h, pull);
-            }
-            if (enabled(TransferType.CHEMICALS)) MekanismCompat.moveFace(this, np, side, pull, FLUID_PER_OP);
+            transport.moveFace(np, d.getOpposite(), pull);
         }
-    }
-
-    private void moveEnergy(IEnergyStorage h, boolean pull) {
-        IEnergyStorage from = pull ? h : energy, to = pull ? energy : h;
-        int can = to.receiveEnergy(from.extractEnergy(Integer.MAX_VALUE, true), true);
-        if (can > 0) to.receiveEnergy(from.extractEnergy(can, false), false);
-    }
-
-    /**
-     * Одна стопка за раз. «Вставлять» берёт прямо из хранилищ у связанных входов (а не через слоты интерфейса —
-     * так не пересчитываются все слоты всех хранилищ на каждый слот).
-     */
-    private void moveItems(IItemHandler h, boolean pull) {
-        List<IItemHandler> froms = pull ? List.of(h) : handlers(Capabilities.ItemHandler.BLOCK, TransferType.ITEMS, true);
-        IItemHandler to = pull ? items : h;
-        for (IItemHandler from : froms) {
-            for (int slot = 0; slot < from.getSlots(); slot++) {
-                ItemStack probe = from.extractItem(slot, 64, true);
-                if (probe.isEmpty()) continue;
-                int n = probe.getCount() - insert(to, probe, true).getCount();
-                if (n <= 0) continue;
-                ItemStack left = insert(to, from.extractItem(slot, n, false), false);
-                // Получатель взял меньше обещанного — вернуть остаток туда, откуда взяли, а не потерять.
-                if (!left.isEmpty()) left = ItemHandlerHelper.insertItemStacked(from, left, false);
-                if (!left.isEmpty()) Block.popResource(level, worldPosition, left);
-                return;
-            }
-        }
-    }
-
-    /** В свой вход — сразу в приёмный слот (перебор слотов вида ни к чему), в чужое хранилище — со стопками. */
-    private ItemStack insert(IItemHandler to, ItemStack stack, boolean simulate) {
-        return to == items ? items.insertItem(0, stack, simulate) : ItemHandlerHelper.insertItemStacked(to, stack, simulate);
-    }
-
-    private void moveFluids(IFluidHandler h, boolean pull) {
-        IFluidHandler from = pull ? h : fluids, to = pull ? fluids : h;
-        FluidStack probe = from.drain(FLUID_PER_OP, IFluidHandler.FluidAction.SIMULATE);
-        if (probe.isEmpty()) return;
-        int can = to.fill(probe, IFluidHandler.FluidAction.SIMULATE);
-        if (can > 0) to.fill(from.drain(probe.copyWithAmount(can), IFluidHandler.FluidAction.EXECUTE), IFluidHandler.FluidAction.EXECUTE);
     }
 
     /** Снять интерфейс ключом: блок — сразу в инвентарь, с настройками. */
@@ -252,7 +193,7 @@ public class InterfaceBlockEntity extends BlockEntity {
         stack.applyComponents(collectComponents()); // те же компоненты, что при обычной поломке блока
         Level l = level;
         BlockPos p = worldPosition;
-        l.playSound(null, p, getBlockState().getSoundType(l, p, player).getBreakSound(), SoundSource.BLOCKS, 1f, 1f);
+        l.playSound(null, p, Platform.soundType(getBlockState(), l, p, player).getBreakSound(), SoundSource.BLOCKS, 1f, 1f);
         l.removeBlock(p, false);
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
@@ -356,59 +297,9 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     // ---------- передача ----------
 
-    private long cacheTick = -1;
-    /** Кэш на тик: по два списка (откуда / куда) на каждый вид передачи. */
-    private final List<?>[] cache = new List<?>[TransferType.values().length * 2];
-
-    /**
-     * Обработчики соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать),
-     * иначе — у интерфейсов с выходом (куда отдавать). Соседние интерфейсы пропускаются. Кэш на тик.
-     */
-    @SuppressWarnings("unchecked")
-    <T> List<T> handlers(BlockCapability<T, Direction> cap, TransferType type, boolean fromInputs) {
-        if (level == null || !isConnected()) return List.of();
-        long now = level.getGameTime();
-        if (now != cacheTick) { java.util.Arrays.fill(cache, null); cacheTick = now; }
-        int k = type.ordinal() * 2 + (fromInputs ? 1 : 0);
-        List<?> cached = cache[k];
-        if (cached != null) return (List<T>) cached;
-        List<T> out = new ArrayList<>();
-        for (InterfaceBlockEntity peer : InterfaceNetwork.peers(this)) {
-            if (!peer.enabled(type) || (fromInputs ? !peer.flow().in : !peer.flow().out)) continue;
-            Level pl = peer.getLevel();
-            if (pl == null) continue;
-            for (Direction d : Direction.values()) {
-                // Грань «забирать» сама вынимает из соседа — класть туда же нельзя (гоняли бы по кругу); и наоборот.
-                FaceMode fm = peer.face(d);
-                if (fromInputs ? fm == FaceMode.PUSH : fm == FaceMode.PULL) continue;
-                BlockPos np = peer.getBlockPos().relative(d);
-                if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-                T h = pl.getCapability(cap, np, d.getOpposite());
-                if (h != null) out.add(h);
-            }
-        }
-        // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
-        if (out.size() > 1) java.util.Collections.rotate(out, -(int) (now % out.size()));
-        cache[k] = out;
-        return out;
-    }
-
     boolean canIn(TransferType t) { return isConnected() && enabled(t) && flow().in; }
 
     boolean canOut(TransferType t) { return isConnected() && enabled(t) && flow().out; }
-
-    /** Обработчики для возможностей блока: null — вид передачи выключен (трубы не будут подключаться). */
-    public IEnergyStorage energy() { return enabled(TransferType.ENERGY) ? energy : null; }
-
-    public IItemHandler items() { return enabled(TransferType.ITEMS) ? items : null; }
-
-    public IFluidHandler fluids() { return enabled(TransferType.FLUIDS) ? fluids : null; }
-
-    public Object chemicals() {
-        if (!enabled(TransferType.CHEMICALS)) return null;
-        if (chemicals == null) chemicals = MekanismCompat.newView(this);
-        return chemicals;
-    }
 
     // ---------- сохранение и перенос с предметом ----------
 

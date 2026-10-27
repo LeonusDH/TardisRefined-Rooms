@@ -1,7 +1,12 @@
 package leonus.tardis_rooms.platform.neoforge;
 
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -24,6 +29,10 @@ public final class PlatformImpl {
 
     public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
         PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    public static SoundType soundType(BlockState state, LevelReader level, BlockPos pos, Entity entity) {
+        return state.getSoundType(level, pos, entity);
     }
 
     private PlatformImpl() {}

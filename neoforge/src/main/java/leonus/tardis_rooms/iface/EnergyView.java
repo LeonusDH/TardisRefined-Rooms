@@ -6,8 +6,12 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 /** Энергия через интерфейс: принятое во вход отдаётся соседям выходов, забираемое из выхода — у соседей входов. */
 final class EnergyView implements IEnergyStorage {
     private final InterfaceBlockEntity be;
+    private final NeoForgeInterfaceTransport transport;
 
-    EnergyView(InterfaceBlockEntity be) { this.be = be; }
+    EnergyView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
+        this.be = be;
+        this.transport = transport;
+    }
 
     @Override
     public int receiveEnergy(int max, boolean simulate) {
@@ -15,7 +19,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : be.handlers(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY, false)) {
+            for (IEnergyStorage h : transport.handlers(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY, false)) {
                 if (done >= max) break;
                 if (h.canReceive()) done += h.receiveEnergy(max - done, simulate);
             }
@@ -31,7 +35,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : be.handlers(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY, true)) {
+            for (IEnergyStorage h : transport.handlers(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY, true)) {
                 if (done >= max) break;
                 if (h.canExtract()) done += h.extractEnergy(max - done, simulate);
             }

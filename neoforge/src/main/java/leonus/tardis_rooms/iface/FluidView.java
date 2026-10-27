@@ -9,13 +9,17 @@ import java.util.List;
 /** Жидкости через интерфейс: залитое во вход уходит в баки у выходов, сливаемое из выхода — из баков у входов. */
 final class FluidView implements IFluidHandler {
     private final InterfaceBlockEntity be;
+    private final NeoForgeInterfaceTransport transport;
 
-    FluidView(InterfaceBlockEntity be) { this.be = be; }
+    FluidView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
+        this.be = be;
+        this.transport = transport;
+    }
 
     private int inTanks() { return be.canIn(TransferType.FLUIDS) ? 1 : 0; }
 
     private List<IFluidHandler> sources() {
-        return be.canOut(TransferType.FLUIDS) ? be.handlers(Capabilities.FluidHandler.BLOCK, TransferType.FLUIDS, true) : List.of();
+        return be.canOut(TransferType.FLUIDS) ? transport.handlers(Capabilities.FluidHandler.BLOCK, TransferType.FLUIDS, true) : List.of();
     }
 
     @Override
@@ -58,7 +62,7 @@ final class FluidView implements IFluidHandler {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IFluidHandler h : be.handlers(Capabilities.FluidHandler.BLOCK, TransferType.FLUIDS, false)) {
+            for (IFluidHandler h : transport.handlers(Capabilities.FluidHandler.BLOCK, TransferType.FLUIDS, false)) {
                 if (done >= resource.getAmount()) break;
                 done += h.fill(resource.copyWithAmount(resource.getAmount() - done), action);
             }
