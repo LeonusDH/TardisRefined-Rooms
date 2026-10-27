@@ -21,7 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.Platform;
 import org.jetbrains.annotations.NotNull;
 import whocraft.tardis_refined.TardisRefined;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;
@@ -115,7 +115,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
 
     private void send(int action, int value) {
         RoomManageScreen.click();
-        PacketDistributor.sendToServer(new InterfacePayload(pos, action, value));
+        Platform.sendToServer(new InterfacePayload(pos, action, value));
     }
 
     private static Component hex(int id) {

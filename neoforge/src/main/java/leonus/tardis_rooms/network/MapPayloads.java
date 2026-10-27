@@ -16,8 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import leonus.tardis_rooms.platform.Platform;
 import whocraft.tardis_refined.registry.TRBlockRegistry;
 
 import java.util.ArrayList;
@@ -44,15 +43,14 @@ public final class MapPayloads {
                 BlockPos.STREAM_CODEC, Request::replaceCore, Request::new);
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-        public static void handle(Request r, IPayloadContext ctx) {
-            ctx.enqueueWork(() -> {
-                if (!(ctx.player() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
-                if (!Lattice.isTardisLevel(level) || !RoomGrowth.holdsScrewdriver(player)) return;
-                if (!Lattice.FLOORS.contains(r.floor())) return;
-                BlockPos near = r.replaceCore().equals(BlockPos.ZERO) ? r.nodePos() : r.replaceCore();
-                if (player.distanceToSqr(near.getCenter()) > 64) return;
-                Node.locate(r.nodePos()).ifPresent(node -> PacketDistributor.sendToPlayer(player, build(level, node, r)));
-            });
+        /** Сервер, главный поток. */
+        public static void handle(Request r, ServerPlayer player) {
+            if (!(player.level() instanceof ServerLevel level)) return;
+            if (!Lattice.isTardisLevel(level) || !RoomGrowth.holdsScrewdriver(player)) return;
+            if (!Lattice.FLOORS.contains(r.floor())) return;
+            BlockPos near = r.replaceCore().equals(BlockPos.ZERO) ? r.nodePos() : r.replaceCore();
+            if (player.distanceToSqr(near.getCenter()) > 64) return;
+            Node.locate(r.nodePos()).ifPresent(node -> Platform.sendToPlayer(player, build(level, node, r)));
         }
 
         private static Info build(ServerLevel level, Node node, Request r) {
@@ -120,8 +118,9 @@ public final class MapPayloads {
             return i < 0 ? null : pieceNames.get(i);
         }
 
-        public static void handle(Info i, IPayloadContext ctx) {
-            ctx.enqueueWork(() -> leonus.tardis_rooms.client.RoomMapScreen.accept(i));
+        /** Клиент, главный поток. */
+        public static void handle(Info i) {
+            leonus.tardis_rooms.client.RoomMapScreen.accept(i);
         }
     }
 

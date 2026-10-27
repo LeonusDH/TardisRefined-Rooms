@@ -8,7 +8,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** Клиент → сервер: Shift + колёсико с отвёрткой — сменить её режим ({@code step} — направление колёсика). */
 public record ScrewdriverModePayload(int step) implements CustomPacketPayload {
@@ -19,9 +18,8 @@ public record ScrewdriverModePayload(int step) implements CustomPacketPayload {
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(ScrewdriverModePayload p, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> {
-            if (ctx.player() instanceof ServerPlayer player) InterfaceTools.cycleMode(player, p.step());
-        });
+    /** Сервер, главный поток. */
+    public static void handle(ScrewdriverModePayload p, ServerPlayer player) {
+        InterfaceTools.cycleMode(player, p.step());
     }
 }

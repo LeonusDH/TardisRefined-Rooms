@@ -10,7 +10,7 @@ import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.Platform;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;
 import whocraft.tardis_refined.client.screen.components.SelectionListEntry;
 import whocraft.tardis_refined.registry.TRSoundRegistry;
@@ -45,7 +45,7 @@ public class RoomListScreen extends RoomMonitorScreen {
 
     private void submit() {
         if (!ClientFits.available(current.id())) return;
-        PacketDistributor.sendToServer(new GrowRoomPayload(nodePos, current.id(), replaceCore));
+        Platform.sendToServer(new GrowRoomPayload(nodePos, current.id(), replaceCore));
         Minecraft.getInstance().setScreen(null);
     }
 

@@ -16,7 +16,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.Platform;
 import org.jetbrains.annotations.NotNull;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;
 import whocraft.tardis_refined.client.screen.components.SelectionListEntry;
@@ -62,7 +62,7 @@ public class RoomMapScreen extends RoomMonitorScreen {
 
     private void request() {
         info = null;
-        PacketDistributor.sendToServer(new MapPayloads.Request(nodePos, floor, replaceCore));
+        Platform.sendToServer(new MapPayloads.Request(nodePos, floor, replaceCore));
     }
 
     public static void accept(MapPayloads.Info i) {

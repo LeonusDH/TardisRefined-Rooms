@@ -12,7 +12,7 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.Platform;
 import org.jetbrains.annotations.NotNull;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;
 import whocraft.tardis_refined.client.screen.components.SelectionListEntry;
@@ -32,7 +32,7 @@ public class RoomManageScreen extends RoomMonitorScreen {
     public RoomManageScreen(BlockPos core) {
         super(Component.empty(), core, new Node(0, 0, net.minecraft.core.Direction.SOUTH, 97));
         this.core = core;
-        PacketDistributor.sendToServer(new ManagePayloads.Request(core));
+        Platform.sendToServer(new ManagePayloads.Request(core));
     }
 
     void onInfo(ManagePayloads.Info i) {
@@ -125,7 +125,7 @@ public class RoomManageScreen extends RoomMonitorScreen {
             list.children().add(new SelectionListEntry(TRoomsText.SCREEN_REMOVE_WARNING.text().withStyle(ChatFormatting.GOLD), e -> {}, listLeft(), false));
             SelectionListEntry yes = new SelectionListEntry(TRoomsText.SCREEN_REMOVE_YES.text().withStyle(ChatFormatting.RED), e -> {
                 click();
-                PacketDistributor.sendToServer(new ManagePayloads.Remove(parent.core));
+                Platform.sendToServer(new ManagePayloads.Remove(parent.core));
                 Minecraft.getInstance().setScreen(null);
             }, listLeft());
             tip(yes, TRoomsText.SCREEN_REMOVE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED));

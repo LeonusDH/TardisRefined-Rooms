@@ -4,7 +4,7 @@ import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.network.ScrewdriverModePayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.Platform;
 
 /** События только клиента. Подписывает на них платформа. */
 public final class ClientEvents {
@@ -17,7 +17,7 @@ public final class ClientEvents {
         if (player == null || Minecraft.getInstance().screen != null) return false;
         if (!player.isShiftKeyDown() || !InterfaceTools.isScrewdriver(player.getMainHandItem())) return false;
         if (deltaY == 0) return false;
-        PacketDistributor.sendToServer(new ScrewdriverModePayload(deltaY > 0 ? 1 : -1));
+        Platform.sendToServer(new ScrewdriverModePayload(deltaY > 0 ? 1 : -1));
         return true;
     }
 

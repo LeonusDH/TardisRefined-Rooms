@@ -26,8 +26,8 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.ClientPlatform;
+import leonus.tardis_rooms.platform.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -194,7 +194,7 @@ public class InterfaceSidesScreen extends Screen {
                 // ЛКМ — следующий режим, ПКМ — предыдущий, Shift + клик — по умолчанию.
                 int op = hasShiftDown() ? 2 : button == 1 ? 1 : 0;
                 RoomManageScreen.click();
-                PacketDistributor.sendToServer(new InterfacePayload(pos, InterfacePayload.FACE, op * 6 + f.get3DDataValue()));
+                Platform.sendToServer(new InterfacePayload(pos, InterfacePayload.FACE, op * 6 + f.get3DDataValue()));
             }
             return true;
         }
@@ -262,8 +262,7 @@ public class InterfaceSidesScreen extends Screen {
         ps.mulPose(transform());
         MultiBufferSource.BufferSource buf = g.bufferSource();
         Lighting.setupFor3DItems();
-        var dispatcher = mc.getBlockRenderer();
-        renderState(dispatcher, ps, buf, level.getBlockState(pos));
+        renderState(ps, buf, level.getBlockState(pos));
         if (neighbours) {
             for (Direction d : Direction.values()) {
                 BlockState ns = level.getBlockState(pos.relative(d));
@@ -273,7 +272,7 @@ public class InterfaceSidesScreen extends Screen {
                 ps.translate(0.5 + d.getStepX() * 1.25, 0.5 + d.getStepY() * 1.25, 0.5 + d.getStepZ() * 1.25);
                 ps.scale(0.6f, 0.6f, 0.6f);
                 ps.translate(-0.5, -0.5, -0.5);
-                renderState(dispatcher, ps, buf, ns);
+                renderState(ps, buf, ns);
                 ps.popPose();
             }
         }
@@ -297,10 +296,10 @@ public class InterfaceSidesScreen extends Screen {
         Lighting.setupFor3DItems();
     }
 
-    private static void renderState(net.minecraft.client.renderer.block.BlockRenderDispatcher dispatcher, PoseStack ps,
+    private static void renderState(PoseStack ps,
                                     MultiBufferSource buf, BlockState state) {
         try {
-            dispatcher.renderSingleBlock(state, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, ModelData.EMPTY, null);
+            ClientPlatform.renderBlock(state, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
         } catch (Exception ignored) {
             // Чужой блок, который не умеет рисоваться вне мира, — просто не показываем.
         }

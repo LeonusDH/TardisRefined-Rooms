@@ -9,7 +9,7 @@ import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.Platform;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;
 import whocraft.tardis_refined.client.screen.components.SelectionListEntry;
 import whocraft.tardis_refined.registry.TRSoundRegistry;
@@ -36,7 +36,7 @@ public class RoomCategoryScreen extends RoomMonitorScreen {
         this.options = PieceCatalog.options(node);
         this.previewNow = options.get(0).preview();
         ClientFits.reset();
-        PacketDistributor.sendToServer(new FitRequestPayload(nodePos, replaceCore));
+        Platform.sendToServer(new FitRequestPayload(nodePos, replaceCore));
     }
 
     @Override

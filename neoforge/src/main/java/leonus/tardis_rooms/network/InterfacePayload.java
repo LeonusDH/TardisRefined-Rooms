@@ -14,7 +14,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** Клиент → сервер: действие с интерфейсом (из меню или Shift+ЛКМ отвёрткой). */
 public record InterfacePayload(BlockPos pos, int action, int value) implements CustomPacketPayload {
@@ -30,36 +29,35 @@ public record InterfacePayload(BlockPos pos, int action, int value) implements C
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(InterfacePayload p, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof ServerPlayer player) || !RoomGrowth.holdsScrewdriver(player)) return;
-            if (player.distanceToSqr(p.pos().getCenter()) > 64) return;
-            if (!player.mayBuild() || !player.level().mayInteract(player, p.pos())) return;
-            if (!(player.level().getBlockEntity(p.pos()) instanceof InterfaceBlockEntity be)) return;
-            switch (p.action()) {
-                case FLOW -> be.setFlow(Flow.of(p.value()));
-                case TOGGLE -> {
-                    if (p.value() >= 0 && p.value() < TransferType.values().length) be.toggle(TransferType.values()[p.value()]);
-                }
-                case GENERATE -> {
-                    if (!be.generateId()) player.displayClientMessage(TRoomsText.MSG_INTERFACE_NO_TARDIS.text(), true);
-                }
-                case CLEAR -> be.clearId();
-                case PASTE -> InterfaceTools.paste(player, be);
-                case FACE -> {
-                    // value = операция × 6 + сторона; операция: 0 — следующий режим, 1 — предыдущий, 2 — по умолчанию.
-                    if (p.value() >= 0 && p.value() < 18) {
-                        net.minecraft.core.Direction d = net.minecraft.core.Direction.from3DDataValue(p.value() % 6);
-                        leonus.tardis_rooms.iface.FaceMode cur = be.face(d);
-                        be.setFace(d, switch (p.value() / 6) {
-                            case 0 -> cur.next();
-                            case 1 -> cur.prev();
-                            default -> leonus.tardis_rooms.iface.FaceMode.DEFAULT;
-                        });
-                    }
-                }
-                default -> {}
+    /** Сервер, главный поток. */
+    public static void handle(InterfacePayload p, ServerPlayer player) {
+        if (!RoomGrowth.holdsScrewdriver(player)) return;
+        if (player.distanceToSqr(p.pos().getCenter()) > 64) return;
+        if (!player.mayBuild() || !player.level().mayInteract(player, p.pos())) return;
+        if (!(player.level().getBlockEntity(p.pos()) instanceof InterfaceBlockEntity be)) return;
+        switch (p.action()) {
+            case FLOW -> be.setFlow(Flow.of(p.value()));
+            case TOGGLE -> {
+                if (p.value() >= 0 && p.value() < TransferType.values().length) be.toggle(TransferType.values()[p.value()]);
             }
-        });
+            case GENERATE -> {
+                if (!be.generateId()) player.displayClientMessage(TRoomsText.MSG_INTERFACE_NO_TARDIS.text(), true);
+            }
+            case CLEAR -> be.clearId();
+            case PASTE -> InterfaceTools.paste(player, be);
+            case FACE -> {
+                // value = операция × 6 + сторона; операция: 0 — следующий режим, 1 — предыдущий, 2 — по умолчанию.
+                if (p.value() >= 0 && p.value() < 18) {
+                    net.minecraft.core.Direction d = net.minecraft.core.Direction.from3DDataValue(p.value() % 6);
+                    leonus.tardis_rooms.iface.FaceMode cur = be.face(d);
+                    be.setFace(d, switch (p.value() / 6) {
+                        case 0 -> cur.next();
+                        case 1 -> cur.prev();
+                        default -> leonus.tardis_rooms.iface.FaceMode.DEFAULT;
+                    });
+                }
+            }
+            default -> {}
+        }
     }
 }

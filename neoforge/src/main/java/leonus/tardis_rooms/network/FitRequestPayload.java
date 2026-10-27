@@ -12,8 +12,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import leonus.tardis_rooms.platform.Platform;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,26 +27,25 @@ public record FitRequestPayload(BlockPos pos, BlockPos replaceCore) implements C
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(FitRequestPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player) || !(player.level() instanceof ServerLevel level)) return;
-            if (!Lattice.isTardisLevel(level) || !RoomGrowth.holdsScrewdriver(player)) return;
-            ModuleRegistry.Piece replacing = null;
-            if (!payload.replaceCore().equals(BlockPos.ZERO)) {
-                replacing = ModuleRegistry.get(level).pieceAtCore(payload.replaceCore());
-                if (replacing == null || player.distanceToSqr(payload.replaceCore().getCenter()) > 64) return;
-            } else if (player.distanceToSqr(payload.pos().getCenter()) > 64) return;
-            ModuleRegistry.Piece rep = replacing;
-            Node.locate(payload.pos()).ifPresent(node -> {
-                Map<ResourceLocation, RoomGrowth.Fit> fits = RoomGrowth.checkAll(level, node, rep);
-                List<ResourceLocation> blocked = new ArrayList<>(), offGrid = new ArrayList<>(), cutsOff = new ArrayList<>();
-                fits.forEach((id, fit) -> {
-                    if (fit == RoomGrowth.Fit.BLOCKED) blocked.add(id);
-                    if (fit == RoomGrowth.Fit.OFF_GRID) offGrid.add(id);
-                    if (fit == RoomGrowth.Fit.CUTS_OFF) cutsOff.add(id);
-                });
-                PacketDistributor.sendToPlayer(player, new FitResultPayload(payload.pos(), blocked, offGrid, cutsOff));
+    /** Сервер, главный поток. */
+    public static void handle(FitRequestPayload payload, ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return;
+        if (!Lattice.isTardisLevel(level) || !RoomGrowth.holdsScrewdriver(player)) return;
+        ModuleRegistry.Piece replacing = null;
+        if (!payload.replaceCore().equals(BlockPos.ZERO)) {
+            replacing = ModuleRegistry.get(level).pieceAtCore(payload.replaceCore());
+            if (replacing == null || player.distanceToSqr(payload.replaceCore().getCenter()) > 64) return;
+        } else if (player.distanceToSqr(payload.pos().getCenter()) > 64) return;
+        ModuleRegistry.Piece rep = replacing;
+        Node.locate(payload.pos()).ifPresent(node -> {
+            Map<ResourceLocation, RoomGrowth.Fit> fits = RoomGrowth.checkAll(level, node, rep);
+            List<ResourceLocation> blocked = new ArrayList<>(), offGrid = new ArrayList<>(), cutsOff = new ArrayList<>();
+            fits.forEach((id, fit) -> {
+                if (fit == RoomGrowth.Fit.BLOCKED) blocked.add(id);
+                if (fit == RoomGrowth.Fit.OFF_GRID) offGrid.add(id);
+                if (fit == RoomGrowth.Fit.CUTS_OFF) cutsOff.add(id);
             });
+            Platform.sendToPlayer(player, new FitResultPayload(payload.pos(), blocked, offGrid, cutsOff));
         });
     }
 }

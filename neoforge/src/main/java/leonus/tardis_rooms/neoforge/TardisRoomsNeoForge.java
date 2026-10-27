@@ -16,6 +16,8 @@ import leonus.tardis_rooms.network.ManagePayloads;
 import leonus.tardis_rooms.network.MapPayloads;
 import leonus.tardis_rooms.network.ScrewdriverModePayload;
 import net.minecraft.core.Registry;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -30,12 +32,15 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.handling.IPayloadHandler;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /** Точка входа на NeoForge: регистрация, конфиг, подписки на события. */
 @Mod(TardisRooms.MODID)
@@ -91,15 +96,27 @@ public final class TardisRoomsNeoForge {
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
         event.registrar("7")
-                .playToServer(GrowRoomPayload.TYPE, GrowRoomPayload.STREAM_CODEC, GrowRoomPayload::handle)
-                .playToServer(FitRequestPayload.TYPE, FitRequestPayload.STREAM_CODEC, FitRequestPayload::handle)
-                .playToClient(FitResultPayload.TYPE, FitResultPayload.STREAM_CODEC, FitResultPayload::handle)
-                .playToServer(ManagePayloads.Request.TYPE, ManagePayloads.Request.STREAM_CODEC, ManagePayloads.Request::handle)
-                .playToClient(ManagePayloads.Info.TYPE, ManagePayloads.Info.STREAM_CODEC, ManagePayloads.Info::handle)
-                .playToServer(ManagePayloads.Remove.TYPE, ManagePayloads.Remove.STREAM_CODEC, ManagePayloads.Remove::handle)
-                .playToServer(MapPayloads.Request.TYPE, MapPayloads.Request.STREAM_CODEC, MapPayloads.Request::handle)
-                .playToClient(MapPayloads.Info.TYPE, MapPayloads.Info.STREAM_CODEC, MapPayloads.Info::handle)
-                .playToServer(InterfacePayload.TYPE, InterfacePayload.STREAM_CODEC, InterfacePayload::handle)
-                .playToServer(ScrewdriverModePayload.TYPE, ScrewdriverModePayload.STREAM_CODEC, ScrewdriverModePayload::handle);
+                .playToServer(GrowRoomPayload.TYPE, GrowRoomPayload.STREAM_CODEC, server(GrowRoomPayload::handle))
+                .playToServer(FitRequestPayload.TYPE, FitRequestPayload.STREAM_CODEC, server(FitRequestPayload::handle))
+                .playToClient(FitResultPayload.TYPE, FitResultPayload.STREAM_CODEC, client(FitResultPayload::handle))
+                .playToServer(ManagePayloads.Request.TYPE, ManagePayloads.Request.STREAM_CODEC, server(ManagePayloads.Request::handle))
+                .playToClient(ManagePayloads.Info.TYPE, ManagePayloads.Info.STREAM_CODEC, client(ManagePayloads.Info::handle))
+                .playToServer(ManagePayloads.Remove.TYPE, ManagePayloads.Remove.STREAM_CODEC, server(ManagePayloads.Remove::handle))
+                .playToServer(MapPayloads.Request.TYPE, MapPayloads.Request.STREAM_CODEC, server(MapPayloads.Request::handle))
+                .playToClient(MapPayloads.Info.TYPE, MapPayloads.Info.STREAM_CODEC, client(MapPayloads.Info::handle))
+                .playToServer(InterfacePayload.TYPE, InterfacePayload.STREAM_CODEC, server(InterfacePayload::handle))
+                .playToServer(ScrewdriverModePayload.TYPE, ScrewdriverModePayload.STREAM_CODEC, server(ScrewdriverModePayload::handle));
+    }
+
+    /** Обработчик пакета с клиента: на главном потоке сервера, с игроком, который его прислал. */
+    private static <T extends CustomPacketPayload> IPayloadHandler<T> server(BiConsumer<T, ServerPlayer> handler) {
+        return (payload, ctx) -> ctx.enqueueWork(() -> {
+            if (ctx.player() instanceof ServerPlayer player) handler.accept(payload, player);
+        });
+    }
+
+    /** Обработчик пакета с сервера: на главном потоке клиента. */
+    private static <T extends CustomPacketPayload> IPayloadHandler<T> client(Consumer<T> handler) {
+        return (payload, ctx) -> ctx.enqueueWork(() -> handler.accept(payload));
     }
 }

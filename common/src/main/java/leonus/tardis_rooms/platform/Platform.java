@@ -1,6 +1,8 @@
 package leonus.tardis_rooms.platform;
 
 import dev.architectury.injectables.annotations.ExpectPlatform;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.nio.file.Path;
 
@@ -18,6 +20,18 @@ public final class Platform {
     /** Папка config/ игры или сервера. */
     @ExpectPlatform
     public static Path configDir() {
+        throw new AssertionError();
+    }
+
+    /** Клиент → сервер. Пакет должен быть зарегистрирован платформой. */
+    @ExpectPlatform
+    public static void sendToServer(CustomPacketPayload payload) {
+        throw new AssertionError();
+    }
+
+    /** Сервер → клиент этого игрока. */
+    @ExpectPlatform
+    public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
         throw new AssertionError();
     }
 

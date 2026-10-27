@@ -16,7 +16,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.network.PacketDistributor;
+import leonus.tardis_rooms.platform.Platform;
 
 import java.util.List;
 import whocraft.tardis_refined.common.items.ScrewdriverItem;
@@ -148,7 +148,7 @@ public final class InterfaceTools {
 
     /** Клиент: попросить сервер вписать идентификатор из отвёртки (отмена на клиенте не дошла бы до сервера). */
     public static void requestPaste(BlockPos pos) {
-        PacketDistributor.sendToServer(new InterfacePayload(pos, InterfacePayload.PASTE, 0));
+        Platform.sendToServer(new InterfacePayload(pos, InterfacePayload.PASTE, 0));
     }
 
     /**

@@ -8,7 +8,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /** Клиент → сервер: пристроить {@code pieceId} к узлу {@code pos}; {@code replaceCore} ≠ ZERO — замена помещения. */
 public record GrowRoomPayload(BlockPos pos, ResourceLocation pieceId, BlockPos replaceCore) implements CustomPacketPayload {
@@ -22,9 +21,8 @@ public record GrowRoomPayload(BlockPos pos, ResourceLocation pieceId, BlockPos r
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(GrowRoomPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) RoomGrowth.tryGrow(player, payload.pos(), payload.pieceId(), payload.replaceCore());
-        });
+    /** Сервер, главный поток. */
+    public static void handle(GrowRoomPayload payload, ServerPlayer player) {
+        RoomGrowth.tryGrow(player, payload.pos(), payload.pieceId(), payload.replaceCore());
     }
 }
