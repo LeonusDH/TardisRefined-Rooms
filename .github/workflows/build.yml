@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Tardis Refined isn't published with the changes the addon needs yet: build it from PR #618.
+  # The commit is pinned so builds are reproducible; update it when the PR changes.
+  TR_REPO: https://github.com/Whocraft/TardisRefined.git
+  TR_REF: 93cc7c8742f11addb44f5b07de00eb7b2fbe47c9
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore Tardis Refined jars
+        id: tr-cache
+        uses: actions/cache@v4
+        with:
+          path: libs
+          key: tardis-refined-${{ env.TR_REF }}
+
+      - name: Build Tardis Refined from PR #618
+        if: steps.tr-cache.outputs.cache-hit != 'true'
+        run: |
+          git init -q tr
+          cd tr
+          git fetch -q --depth 1 "$TR_REPO" "$TR_REF"
+          git checkout -q FETCH_HEAD
+          chmod +x gradlew
+          ./gradlew :forge:build :fabric:build --no-daemon
+          pick() { ls "$1"/*.jar | grep -v -e '-sources' -e '-dev' -e '-shadow' | head -n 1; }
+          mkdir -p ../libs
+          cp "$(pick forge/build/libs)" "../libs/$(grep '^tr_neoforge_jar=' ../gradle.properties | cut -d= -f2)"
+          cp "$(pick fabric/build/libs)" "../libs/$(grep '^tr_fabric_jar=' ../gradle.properties | cut -d= -f2)"
+          ls -l ../libs
+
+      - name: Build the addon
+        run: ./gradlew build --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tardis_rooms-${{ github.sha }}
+          path: |
+            neoforge/build/libs/*.jar
+            fabric/build/libs/*.jar
+            !**/*-dev-shadow.jar
+            !**/*-sources.jar
+          if-no-files-found: error
