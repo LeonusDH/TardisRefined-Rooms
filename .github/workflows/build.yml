@@ -14,20 +14,20 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Restore Tardis Refined jars
         id: tr-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: libs
           key: tardis-refined-${{ env.TR_REF }}
@@ -50,7 +50,7 @@ jobs:
       - name: Build the addon
         run: ./gradlew build --no-daemon
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tardis_rooms-${{ github.sha }}
           path: |
