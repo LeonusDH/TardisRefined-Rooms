@@ -57,7 +57,7 @@ public final class MapPayloads {
             ModuleRegistry reg = ModuleRegistry.get(level);
             int cx = node.targetX(), cz = node.targetZ(), floor = r.floor();
             List<Integer> cells = new ArrayList<>(SIDE * SIDE);
-            Map<Integer, ResourceLocation> names = new LinkedHashMap<>();
+            Map<Integer, PieceName> names = new LinkedHashMap<>();
             for (int dz = -RADIUS; dz <= RADIUS; dz++)
                 for (int dx = -RADIUS; dx <= RADIUS; dx++) {
                     int mx = cx + dx, mz = cz + dz;
@@ -65,7 +65,7 @@ public final class MapPayloads {
                     int code;
                     ModuleRegistry.Piece p;
                     if (Lattice.isHub(level, mx, mz, floor)) code = HUB;
-                    else if ((p = reg.ownerOf(m, floor)) != null) { code = p.id; names.put(p.id, p.pieceId); }
+                    else if ((p = reg.ownerOf(m, floor)) != null) { code = p.id; names.put(p.id, new PieceName(p.pieceId, p.customName == null ? "" : p.customName)); }
                     else if (Lattice.isForbidden(level, mx, mz, floor)) code = FORBIDDEN;
                     else code = looksBuilt(level, mx, mz, floor) ? UNKNOWN : FREE;
                     cells.add(code);
@@ -94,16 +94,22 @@ public final class MapPayloads {
         }
     }
 
+    /** Тип помещения и название, данное игроком (пусто — нет). */
+    public record PieceName(ResourceLocation id, String custom) {
+        public static final StreamCodec<RegistryFriendlyByteBuf, PieceName> STREAM_CODEC = StreamCodec.composite(
+                ResourceLocation.STREAM_CODEC, PieceName::id, ByteBufCodecs.STRING_UTF8, PieceName::custom, PieceName::new);
+    }
+
     /** Сервер → клиент: клетки схемы построчно (z, затем x) и названия помещений на ней. */
     public record Info(BlockPos nodePos, int floor, List<Integer> cells, List<Integer> pieceIds,
-                       List<ResourceLocation> pieceNames, int replacingId) implements CustomPacketPayload {
+                       List<PieceName> pieceNames, int replacingId) implements CustomPacketPayload {
         public static final Type<Info> TYPE = new Type<>(rl("map_info"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Info> STREAM_CODEC = StreamCodec.composite(
                 BlockPos.STREAM_CODEC, Info::nodePos,
                 ByteBufCodecs.VAR_INT, Info::floor,
                 ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()), Info::cells,
                 ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()), Info::pieceIds,
-                ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list()), Info::pieceNames,
+                PieceName.STREAM_CODEC.apply(ByteBufCodecs.list()), Info::pieceNames,
                 ByteBufCodecs.VAR_INT, Info::replacingId,
                 Info::new);
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -113,7 +119,7 @@ public final class MapPayloads {
             return cells.get((dz + RADIUS) * SIDE + dx + RADIUS);
         }
 
-        public ResourceLocation nameOf(int id) {
+        public PieceName nameOf(int id) {
             int i = pieceIds.indexOf(id);
             return i < 0 ? null : pieceNames.get(i);
         }

@@ -157,8 +157,9 @@ public final class RoomExporter {
         return new Result(pack, note);
     }
 
-    /** Название — как в меню (ключ перевода аддона или текст из датапака); у неизвестного помещения — путь id. */
+    /** Название: данное игроком, иначе как в меню (ключ перевода аддона или текст из датапака), у неизвестного помещения — путь id. */
     private static JsonElement roomName(ServerLevel level, ModuleRegistry.Piece piece, ResourceLocation id) {
+        if (piece.customName != null) return new com.google.gson.JsonPrimitive(piece.customName);
         Component name = PieceCatalog.options(piece.node, CustomRooms.INSTANCE.infos()).stream()
                 .filter(o -> o.id().equals(piece.pieceId)).findFirst().map(PieceCatalog.Option::label)
                 .orElse(Component.literal(id.getPath().substring(id.getPath().lastIndexOf('/') + 1)));

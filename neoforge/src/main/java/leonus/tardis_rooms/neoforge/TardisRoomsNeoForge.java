@@ -97,13 +97,14 @@ public final class TardisRoomsNeoForge {
     }
 
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        event.registrar("8")
+        event.registrar("9")
                 .playToServer(GrowRoomPayload.TYPE, GrowRoomPayload.STREAM_CODEC, server(GrowRoomPayload::handle))
                 .playToServer(FitRequestPayload.TYPE, FitRequestPayload.STREAM_CODEC, server(FitRequestPayload::handle))
                 .playToClient(FitResultPayload.TYPE, FitResultPayload.STREAM_CODEC, client(FitResultPayload::handle))
                 .playToServer(ManagePayloads.Request.TYPE, ManagePayloads.Request.STREAM_CODEC, server(ManagePayloads.Request::handle))
                 .playToClient(ManagePayloads.Info.TYPE, ManagePayloads.Info.STREAM_CODEC, client(ManagePayloads.Info::handle))
                 .playToServer(ManagePayloads.Remove.TYPE, ManagePayloads.Remove.STREAM_CODEC, server(ManagePayloads.Remove::handle))
+                .playToServer(ManagePayloads.Rename.TYPE, ManagePayloads.Rename.STREAM_CODEC, server(ManagePayloads.Rename::handle))
                 .playToServer(MapPayloads.Request.TYPE, MapPayloads.Request.STREAM_CODEC, server(MapPayloads.Request::handle))
                 .playToClient(MapPayloads.Info.TYPE, MapPayloads.Info.STREAM_CODEC, client(MapPayloads.Info::handle))
                 .playToClient(CustomRoomsPayload.TYPE, CustomRoomsPayload.STREAM_CODEC, client(CustomRoomsPayload::handle))

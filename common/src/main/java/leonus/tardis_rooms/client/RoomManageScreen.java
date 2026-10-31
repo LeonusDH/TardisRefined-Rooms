@@ -27,6 +27,8 @@ public class RoomManageScreen extends RoomMonitorScreen {
      * а название приходит с сервера позже, поэтому заголовок экрана пустой, а название рисуем сами.
      */
     private Component heading = TRoomsText.SCREEN_LOADING.text();
+    /** Тип помещения (как в каталоге) — для заголовка и экрана переименования. */
+    private Component type = Component.empty();
     private static final ResourceLocation ICON_MAP = sprite("manage/map");
 
     public RoomManageScreen(BlockPos core) {
@@ -40,9 +42,12 @@ public class RoomManageScreen extends RoomMonitorScreen {
         this.nodePos = i.nodePos();
         this.node = nodeAt(i.nodePos());
         PieceCatalog.options(node, ClientCustomRooms.list()).stream().filter(o -> o.id().equals(i.pieceId())).findFirst().ifPresentOrElse(o -> {
-            heading = o.label();
-            changePreview(o.preview());
-        }, () -> heading = TRoomsText.ROOM_UNKNOWN.text(i.pieceId().toString())); // помещение из убранного датапака
+            type = o.label();
+            if (!o.preview().equals(previewNow)) changePreview(o.preview());
+        }, () -> type = TRoomsText.ROOM_UNKNOWN.text(i.pieceId().toString())); // помещение из убранного датапака
+        // Своё название — заголовком, тип — в скобках после него.
+        heading = i.customName().isEmpty() ? type
+                : Component.literal(i.customName()).append(Component.literal(" (").append(type).append(")").withStyle(ChatFormatting.GRAY));
         rebuildWidgets();
     }
 
@@ -80,6 +85,12 @@ public class RoomManageScreen extends RoomMonitorScreen {
     public ObjectSelectionList<SelectionListEntry> createSelectionList() {
         GenericMonitorSelectionList<SelectionListEntry> list = newList();
         if (info == null) return list;
+        SelectionListEntry rename = new SelectionListEntry(TRoomsText.SCREEN_RENAME.text(), e -> {
+            click();
+            switchScreenToRight(new RoomRenameScreen(this));
+        }, listLeft());
+        tip(rename, TRoomsText.SCREEN_RENAME_TOOLTIP.text().withStyle(ChatFormatting.BLUE));
+        list.children().add(rename);
         SelectionListEntry replace = new SelectionListEntry(TRoomsText.SCREEN_REPLACE.text(), e -> {
             click();
             switchScreenToRight(new RoomCategoryScreen(info.nodePos(), core, this));
@@ -99,6 +110,62 @@ public class RoomManageScreen extends RoomMonitorScreen {
 
     static void click() {
         Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(TRSoundRegistry.STATIC.get(), (float) Math.random()));
+    }
+
+    /** Переименование: поле ввода вместо списка; Enter или кнопка — сохранить, пустое — убрать название. */
+    static class RoomRenameScreen extends RoomMonitorScreen {
+        final RoomManageScreen parent;
+        private net.minecraft.client.gui.components.EditBox box;
+        private String value;
+
+        RoomRenameScreen(RoomManageScreen parent) {
+            super(TRoomsText.SCREEN_RENAME_TITLE.text(), parent.nodePos, parent.node);
+            this.parent = parent;
+            this.previewNow = parent.previewNow;
+            this.value = parent.info != null ? parent.info.customName() : "";
+        }
+
+        @Override
+        protected void init() {
+            super.init();
+            this.setEvents(this::submit, () -> switchScreenToLeft(parent));
+            int vPos = (height - monitorHeight) / 2;
+            addSubmitButton(width / 2 + 25, height - vPos - 25);
+            addCancelButton(width / 2 + 5, height - vPos - 25);
+            box = new net.minecraft.client.gui.components.EditBox(font, listLeft(), vPos + 40, LIST_WIDTH, 16, TRoomsText.SCREEN_RENAME_TITLE.text());
+            box.setMaxLength(leonus.tardis_rooms.room.ModuleRegistry.MAX_NAME);
+            box.setValue(value);
+            box.setHint(parent.type.copy().withStyle(ChatFormatting.DARK_GRAY));
+            box.setResponder(v -> value = v);
+            addRenderableWidget(box);
+            setInitialFocus(box);
+        }
+
+        private void submit() {
+            click();
+            Platform.sendToServer(new ManagePayloads.Rename(parent.core, value.trim()));
+            switchScreenToLeft(parent);
+        }
+
+        @Override
+        public boolean keyPressed(int key, int scan, int mods) {
+            if (key == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || key == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
+                submit();
+                return true;
+            }
+            // Пока поле в фокусе, буквы (в том числе клавиша инвентаря) — в поле.
+            if (box != null && box.isFocused() && key != org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) return box.keyPressed(key, scan, mods) || box.canConsumeInput();
+            return super.keyPressed(key, scan, mods);
+        }
+
+        @Override
+        public ObjectSelectionList<SelectionListEntry> createSelectionList() {
+            GenericMonitorSelectionList<SelectionListEntry> list = newList();
+            SelectionListEntry label = new SelectionListEntry(TRoomsText.SCREEN_RENAME_LABEL.text(), e -> {}, listLeft(), false);
+            tip(label, TRoomsText.SCREEN_RENAME_HINT.text().withStyle(ChatFormatting.BLUE));
+            list.children().add(label);
+            return list;
+        }
     }
 
     /** Подтверждение удаления. */

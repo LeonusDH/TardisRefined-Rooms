@@ -100,6 +100,7 @@ public final class TardisRoomsFabric implements ModInitializer {
         server(FitRequestPayload.TYPE, FitRequestPayload.STREAM_CODEC, FitRequestPayload::handle);
         server(ManagePayloads.Request.TYPE, ManagePayloads.Request.STREAM_CODEC, ManagePayloads.Request::handle);
         server(ManagePayloads.Remove.TYPE, ManagePayloads.Remove.STREAM_CODEC, ManagePayloads.Remove::handle);
+        server(ManagePayloads.Rename.TYPE, ManagePayloads.Rename.STREAM_CODEC, ManagePayloads.Rename::handle);
         server(MapPayloads.Request.TYPE, MapPayloads.Request.STREAM_CODEC, MapPayloads.Request::handle);
         server(InterfacePayload.TYPE, InterfacePayload.STREAM_CODEC, InterfacePayload::handle);
         server(ScrewdriverModePayload.TYPE, ScrewdriverModePayload.STREAM_CODEC, ScrewdriverModePayload::handle);

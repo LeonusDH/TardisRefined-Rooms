@@ -31,6 +31,8 @@ public final class ModuleRegistry extends SavedData {
         public final Node node;
         public final Map<Integer, Set<Long>> footprint;
         public BlockPos core;
+        /** Название, данное игроком; null — без названия (показывается тип помещения). */
+        public String customName;
 
         Piece(int id, ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core) {
             this.id = id; this.pieceId = pieceId; this.node = node; this.footprint = footprint; this.core = core;
@@ -97,6 +99,15 @@ public final class ModuleRegistry extends SavedData {
         return p;
     }
 
+    /** Самая длинная строка названия помещения. */
+    public static final int MAX_NAME = 32;
+
+    /** Переименовать; пустое — убрать название. */
+    public void rename(Piece p, String name) {
+        p.customName = name == null || name.isBlank() ? null : name;
+        setDirty();
+    }
+
     public void removePiece(Piece p) {
         pieces.remove(p.id);
         p.footprint.forEach((floor, mods) -> {
@@ -130,6 +141,7 @@ public final class ModuleRegistry extends SavedData {
             }
             BlockPos core = NbtUtils.readBlockPos(t, "core").orElse(null);
             Piece p = new Piece(t.getInt("id"), id, node, fp, core);
+            if (t.contains("name", Tag.TAG_STRING)) p.customName = t.getString("name");
             r.pieces.put(p.id, p);
             fp.forEach((floor, mods) -> { for (long m : mods) r.owners.computeIfAbsent(floor, x -> new HashMap<>()).put(m, p.id); });
             r.nextId = Math.max(r.nextId, p.id + 1);
@@ -153,6 +165,7 @@ public final class ModuleRegistry extends SavedData {
             p.footprint.forEach((floor, set) -> ft.putLongArray(String.valueOf(floor), set.stream().mapToLong(Long::longValue).toArray()));
             t.put("footprint", ft);
             if (p.core != null) t.put("core", NbtUtils.writeBlockPos(p.core));
+            if (p.customName != null) t.putString("name", p.customName);
             list.add(t);
         }
         tag.put("pieces", list);

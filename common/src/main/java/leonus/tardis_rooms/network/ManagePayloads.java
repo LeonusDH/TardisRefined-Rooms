@@ -33,16 +33,17 @@ public final class ManagePayloads {
             if (piece == null) return;
             leonus.tardis_rooms.lang.TRoomsText problem = RoomGrowth.removalProblem(level, piece);
             BlockPos nodePos = Lattice.nodePos(piece.node.mx(), piece.node.mz(), piece.node.side(), piece.node.floorY());
-            Platform.sendToPlayer(player, new Info(r.core(), piece.pieceId, nodePos, problem == null, problem == null ? "" : problem.key()));
+            Platform.sendToPlayer(player, new Info(r.core(), piece.pieceId, piece.customName == null ? "" : piece.customName,
+                    nodePos, problem == null, problem == null ? "" : problem.key()));
         }
     }
 
-    /** Сервер → клиент: сведения о помещении. */
-    public record Info(BlockPos core, ResourceLocation pieceId, BlockPos nodePos, boolean canRemove, String problem) implements CustomPacketPayload {
+    /** Сервер → клиент: сведения о помещении; {@code customName} пусто — названия нет. */
+    public record Info(BlockPos core, ResourceLocation pieceId, String customName, BlockPos nodePos, boolean canRemove, String problem) implements CustomPacketPayload {
         public static final Type<Info> TYPE = new Type<>(rl("manage_info"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Info> STREAM_CODEC = StreamCodec.composite(
-                BlockPos.STREAM_CODEC, Info::core, ResourceLocation.STREAM_CODEC, Info::pieceId, BlockPos.STREAM_CODEC, Info::nodePos,
-                ByteBufCodecs.BOOL, Info::canRemove, ByteBufCodecs.STRING_UTF8, Info::problem, Info::new);
+                BlockPos.STREAM_CODEC, Info::core, ResourceLocation.STREAM_CODEC, Info::pieceId, ByteBufCodecs.STRING_UTF8, Info::customName,
+                BlockPos.STREAM_CODEC, Info::nodePos, ByteBufCodecs.BOOL, Info::canRemove, ByteBufCodecs.STRING_UTF8, Info::problem, Info::new);
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
         /** Клиент, главный поток. */
@@ -61,6 +62,30 @@ public final class ManagePayloads {
         /** Сервер, главный поток. */
         public static void handle(Remove r, ServerPlayer player) {
             RoomGrowth.tryRemove(player, r.core());
+        }
+    }
+
+    /** Клиент → сервер: переименовать помещение (пустая строка — убрать название). В ответ — новые сведения. */
+    public record Rename(BlockPos core, String name) implements CustomPacketPayload {
+        public static final Type<Rename> TYPE = new Type<>(rl("manage_rename"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, Rename> STREAM_CODEC = StreamCodec.composite(
+                BlockPos.STREAM_CODEC, Rename::core, ByteBufCodecs.stringUtf8(ModuleRegistry.MAX_NAME * 4), Rename::name, Rename::new);
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        /** Сервер, главный поток. */
+        public static void handle(Rename r, ServerPlayer player) {
+            if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
+            if (!RoomGrowth.holdsScrewdriver(player) || player.distanceToSqr(r.core().getCenter()) > 64) return;
+            if (!player.mayBuild() || !level.mayInteract(player, r.core())) return;
+            ModuleRegistry reg = ModuleRegistry.get(level);
+            ModuleRegistry.Piece piece = reg.pieceAtCore(r.core());
+            if (piece == null) return;
+            // Только печатные символы (без кодов форматирования §), не длиннее предела.
+            String name = net.minecraft.util.StringUtil.filterText(r.name()).trim();
+            if (name.length() > ModuleRegistry.MAX_NAME) name = name.substring(0, ModuleRegistry.MAX_NAME).trim();
+            reg.rename(piece, name);
+            TardisRooms.debug("{} renamed #{} to \"{}\"", player.getGameProfile().getName(), piece.id, name);
+            Request.handle(new Request(r.core()), player);
         }
     }
 
