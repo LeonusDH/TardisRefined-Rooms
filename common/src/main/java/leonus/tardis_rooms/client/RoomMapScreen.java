@@ -245,7 +245,8 @@ public class RoomMapScreen extends RoomMonitorScreen {
         if (code > 0) {
             ResourceLocation id = info.nameOf(code);
             Component name = id == null ? null : labels.get(id);
-            net.minecraft.network.chat.MutableComponent out = (name != null ? name.copy() : TRoomsText.MAP_PIECE.text()).withStyle(ChatFormatting.AQUA)
+            net.minecraft.network.chat.MutableComponent out = (name != null ? name.copy()
+                    : id != null ? TRoomsText.ROOM_UNKNOWN.text(id.toString()) : TRoomsText.MAP_PIECE.text()).withStyle(ChatFormatting.AQUA)
                     .append(Component.literal(" #" + code).withStyle(ChatFormatting.DARK_GRAY));
             if (code == info.replacingId()) note(out, TRoomsText.MAP_REPLACING, TRoomsText.MAP_REPLACING_TOOLTIP, ChatFormatting.GOLD);
             else out.append("\n").append(TRoomsText.MAP_PIECE_TOOLTIP.text().withStyle(ChatFormatting.GRAY));

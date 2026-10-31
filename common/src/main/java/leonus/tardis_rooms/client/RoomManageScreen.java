@@ -39,10 +39,10 @@ public class RoomManageScreen extends RoomMonitorScreen {
         this.info = i;
         this.nodePos = i.nodePos();
         this.node = nodeAt(i.nodePos());
-        PieceCatalog.options(node, ClientCustomRooms.list()).stream().filter(o -> o.id().equals(i.pieceId())).findFirst().ifPresent(o -> {
+        PieceCatalog.options(node, ClientCustomRooms.list()).stream().filter(o -> o.id().equals(i.pieceId())).findFirst().ifPresentOrElse(o -> {
             heading = o.label();
             changePreview(o.preview());
-        });
+        }, () -> heading = TRoomsText.ROOM_UNKNOWN.text(i.pieceId().toString())); // помещение из убранного датапака
         rebuildWidgets();
     }
 

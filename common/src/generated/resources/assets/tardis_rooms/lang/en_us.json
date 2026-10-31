@@ -73,6 +73,7 @@
   "piece.tardis_rooms.room.long.tooltip": "Dead-end room, 1×2 modules, height %s",
   "piece.tardis_rooms.room.small": "Small",
   "piece.tardis_rooms.room.small.tooltip": "Dead-end room, 1 module, height %s",
+  "piece.tardis_rooms.unknown": "Unknown room (%s)",
   "screen.tardis_rooms.blocked": "Doesn't fit: space is taken",
   "screen.tardis_rooms.custom_direction": "Can't be turned to face this node — pick a node facing another way",
   "screen.tardis_rooms.custom_no_height": "Too tall for this level — pick a node on a lower level",
