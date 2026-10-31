@@ -17,7 +17,9 @@ import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.registry.RegEntry;
 import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import leonus.tardis_rooms.command.TRoomsCommands;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -60,6 +62,7 @@ public final class TardisRoomsFabric implements ModInitializer {
         FabricEvents.register();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new FabricReloadListener(CustomRooms.ID, CustomRooms.INSTANCE));
         ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS.register((player, joined) -> CustomRooms.sync(player));
+        CommandRegistrationCallback.EVENT.register((dispatcher, context, environment) -> TRoomsCommands.register(dispatcher));
         TardisRooms.LOGGER.info("TARDIS Refined: Rooms loaded");
     }
 

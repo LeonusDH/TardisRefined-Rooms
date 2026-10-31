@@ -155,7 +155,7 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
         return problems.isEmpty() ? new Loaded(id, def, w, d, List.copyOf(templates)) : null;
     }
 
-    /** Выход: на краю шаблона и с проходом — воздухом на блоках 8..10 стороны модуля, высотой 2..5 от пола. */
+    /** Выход: на краю шаблона и с проходом — воздухом на блоках 8..10 стороны модуля, высотой 2..4 от пола (верхний ряд прохода — арка, там может быть что угодно). */
     private static void checkExit(CustomRoom.Exit e, int w, int d, CustomRoom def, List<StructureTemplate> templates, List<String> problems) {
         String where = "exit (" + e.x() + ", " + e.z() + ", " + e.side().getName() + ", floor " + e.floor() + ")";
         if (!e.side().getAxis().isHorizontal()) { problems.add(where + ": side must be north, south, west or east"); return; }
@@ -172,7 +172,7 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
         Map<BlockPos, BlockState> blocks = blocksOf(templates.get(e.floor()));
         int ox = e.x() * Lattice.MODULE, oz = e.z() * Lattice.MODULE, last = Lattice.MODULE - 1;
         for (int a = Lattice.OPEN_MIN; a <= Lattice.OPEN_MAX; a++)
-            for (int dy = Lattice.OPEN_DY_MIN; dy <= Lattice.OPEN_DY_MAX; dy++) {
+            for (int dy = Lattice.OPEN_DY_MIN; dy <= Lattice.PANEL_DY_MAX; dy++) {
                 BlockPos p = switch (e.side()) {
                     case NORTH -> new BlockPos(ox + a, dy, oz);
                     case SOUTH -> new BlockPos(ox + a, dy, oz + last);
@@ -182,7 +182,7 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
                 BlockState s = blocks.get(p);
                 if (s == null || !s.isAir()) {
                     problems.add(where + ": no passage — the structure must have air at " + p.toShortString()
-                            + " (blocks " + Lattice.OPEN_MIN + ".." + Lattice.OPEN_MAX + " along the wall, " + Lattice.OPEN_DY_MIN + ".." + Lattice.OPEN_DY_MAX + " above the floor)"
+                            + " (blocks " + Lattice.OPEN_MIN + ".." + Lattice.OPEN_MAX + " along the wall, " + Lattice.OPEN_DY_MIN + ".." + Lattice.PANEL_DY_MAX + " above the floor)"
                             + (s == null ? "; that spot is empty in the structure — save it with air included" : ", found " + BuiltInRegistries.BLOCK.getKey(s.getBlock())));
                     return;
                 }

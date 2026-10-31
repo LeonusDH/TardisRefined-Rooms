@@ -9,6 +9,8 @@ import net.minecraft.world.InteractionResult;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import leonus.tardis_rooms.command.TRoomsCommands;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -24,6 +26,7 @@ final class NeoForgeEvents {
         bus.addListener((ItemTooltipEvent e) -> InterfaceTools.appendTooltip(e.getItemStack(), e.getToolTip()));
         bus.addListener((AddReloadListenerEvent e) -> e.addListener(CustomRooms.INSTANCE));
         bus.addListener((OnDatapackSyncEvent e) -> e.getRelevantPlayers().forEach(CustomRooms::sync));
+        bus.addListener((RegisterCommandsEvent e) -> TRoomsCommands.register(e.getDispatcher()));
         bus.addListener((EntityJoinLevelEvent e) -> HubInitializer.onEntityJoin(e.getLevel(), e.getEntity()));
         bus.addListener((ServerTickEvent.Post e) -> HubInitializer.onServerTick(e.getServer()));
         bus.addListener((ServerStoppedEvent e) -> {
