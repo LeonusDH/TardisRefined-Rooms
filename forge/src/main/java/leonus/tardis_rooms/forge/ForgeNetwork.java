@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 /** Пакеты на Forge 1.20.1: один SimpleChannel, сообщения — по списку {@link Payloads}. */
 public final class ForgeNetwork {
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(TardisRooms.MODID, "main"), () -> Payloads.VERSION, Payloads.VERSION::equals, Payloads.VERSION::equals);
+            ResourceLocation.tryBuild(TardisRooms.MODID, "main"), () -> Payloads.VERSION, Payloads.VERSION::equals, Payloads.VERSION::equals);
 
     public static void register() {
         int index = 0;

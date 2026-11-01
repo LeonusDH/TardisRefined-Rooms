@@ -31,6 +31,9 @@ import java.util.Map;
 /** Точка входа на Forge: регистрация, конфиг, подписки на события. */
 @Mod(TardisRooms.MODID)
 public final class TardisRoomsForge {
+    // ModLoadingContext.get() и FMLJavaModLoadingContext.get() в Forge 47.4 помечены «к удалению», но замена (контекст в конструкторе)
+    // есть не во всех сборках Forge 47 — оставляем старый способ, чтобы аддон работал на любой из них.
+    @SuppressWarnings("removal")
     public TardisRoomsForge() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         try {
@@ -64,7 +67,7 @@ public final class TardisRoomsForge {
     }
 
     private static final ResourceKey<CreativeModeTab> TR_TAB =
-            ResourceKey.create(Registries.CREATIVE_MODE_TAB, new ResourceLocation("tardis_refined", "main_tab"));
+            ResourceKey.create(Registries.CREATIVE_MODE_TAB, ResourceLocation.tryBuild("tardis_refined", "main_tab"));
 
     private static void addToCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey().equals(TR_TAB) || event.getTabKey().equals(CreativeModeTabs.FUNCTIONAL_BLOCKS)) {

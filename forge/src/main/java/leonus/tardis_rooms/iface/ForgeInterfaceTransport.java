@@ -61,7 +61,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
 
     // ---------- подключение к блоку ----------
 
-    private static final ResourceLocation CAP_ID = new ResourceLocation(leonus.tardis_rooms.TardisRooms.MODID, "interface");
+    private static final ResourceLocation CAP_ID = ResourceLocation.tryBuild(leonus.tardis_rooms.TardisRooms.MODID, "interface");
 
     /** Подписка на AttachCapabilitiesEvent<BlockEntity>: возможности интерфейса. */
     public static void attach(AttachCapabilitiesEvent<BlockEntity> event) {
