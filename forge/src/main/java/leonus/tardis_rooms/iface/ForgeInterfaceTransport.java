@@ -121,6 +121,13 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
     /** Изменились включённые виды передачи: старые LazyOptional гасим (трубы переподключатся), новые создадим при запросе. */
     @Override
     public void invalidate() {
+        dropOptionals();
+        Level level = be.getLevel();
+        if (level != null && !level.isClientSide()) level.updateNeighborsAt(be.getBlockPos(), be.getBlockState().getBlock());
+    }
+
+    /** Погасить LazyOptional (трубы отпустят обработчики), не трогая соседей. */
+    private void dropOptionals() {
         energyOpt.invalidate();
         itemsOpt.invalidate();
         fluidsOpt.invalidate();
@@ -129,8 +136,6 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         fluidsOpt = LazyOptional.empty();
         optsReady = false;
         MekanismCompat.invalidate(this);
-        Level level = be.getLevel();
-        if (level != null && !level.isClientSide()) level.updateNeighborsAt(be.getBlockPos(), be.getBlockState().getBlock());
     }
 
     @Override
@@ -141,7 +146,9 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
     @Override
     public void remove() {
         AE2Compat.destroy(be);
-        invalidate();
+        // Без обновления соседей: remove() зовут и при выгрузке чанка, когда игра перебирает его блоки-сущности,
+        // и обновление соседей посреди этого перебора роняет сервер (ConcurrentModificationException).
+        dropOptionals();
     }
 
     // ---------- грани «вставлять» / «забирать» ----------
