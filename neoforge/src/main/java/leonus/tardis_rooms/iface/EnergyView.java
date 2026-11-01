@@ -45,13 +45,32 @@ final class EnergyView implements IEnergyStorage {
         }
     }
 
-    /** Своего запаса нет. */
+    /** Своего запаса нет: показываем заряд хранилищ у связанных интерфейсов (его и рисует Jade). */
     @Override
-    public int getEnergyStored() { return 0; }
+    public int getEnergyStored() { return (int) Math.min(Integer.MAX_VALUE, linked()[0]); }
 
-    /** Ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
+    /** Если связанных хранилищ нет — ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
     @Override
-    public int getMaxEnergyStored() { return Integer.MAX_VALUE; }
+    public int getMaxEnergyStored() {
+        long cap = linked()[1];
+        return cap > 0 ? (int) Math.min(Integer.MAX_VALUE, cap) : Integer.MAX_VALUE;
+    }
+
+    /** Заряд и ёмкость хранилищ у связанных интерфейсов. */
+    private long[] linked() {
+        long[] out = new long[2];
+        if (InterfaceNetwork.depth > 0) return out;
+        InterfaceNetwork.depth++;
+        try {
+            for (IEnergyStorage h : transport.linked(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY)) {
+                out[0] += h.getEnergyStored();
+                out[1] += h.getMaxEnergyStored();
+            }
+        } finally {
+            InterfaceNetwork.depth--;
+        }
+        return out;
+    }
 
     @Override
     public boolean canExtract() { return be.canOut(TransferType.ENERGY); }

@@ -93,8 +93,8 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
     // ---------- соседи связанных интерфейсов ----------
 
     private long cacheTick = -1;
-    /** Кэш на тик: по два списка (откуда / куда) на каждый вид передачи. */
-    private final List<?>[] cache = new List<?>[TransferType.values().length * 2];
+    /** Кэш на тик: по три списка (откуда / куда / все связанные) на каждый вид передачи. */
+    private final List<?>[] cache = new List<?>[TransferType.values().length * 3];
 
     /**
      * Хранилища соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать),
@@ -106,7 +106,7 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
         if (level == null || !be.isConnected()) return List.of();
         long now = level.getGameTime();
         if (now != cacheTick) { java.util.Arrays.fill(cache, null); cacheTick = now; }
-        int k = type.ordinal() * 2 + (fromInputs ? 1 : 0);
+        int k = type.ordinal() * 3 + (fromInputs ? 1 : 0);
         List<?> cached = cache[k];
         if (cached != null) return (List<A>) cached;
         List<A> out = new ArrayList<>();
@@ -126,6 +126,35 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
         }
         // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
         if (out.size() > 1) java.util.Collections.rotate(out, -(int) (now % out.size()));
+        cache[k] = out;
+        return out;
+    }
+
+    /**
+     * Хранилища у всех связанных интерфейсов, каждое один раз (у интерфейса «вход и выход» оно попало бы и в список
+     * «откуда», и в список «куда»). Для подсказки: сколько всего лежит в связанных хранилищах. Кэш на тик.
+     */
+    @SuppressWarnings("unchecked")
+    <T> List<T> linked(BlockApiLookup<T, Direction> lookup, TransferType type) {
+        Level level = be.getLevel();
+        if (level == null || !be.isConnected()) return List.of();
+        long now = level.getGameTime();
+        if (now != cacheTick) { java.util.Arrays.fill(cache, null); cacheTick = now; }
+        int k = type.ordinal() * 3 + 2;
+        List<?> cached = cache[k];
+        if (cached != null) return (List<T>) cached;
+        List<T> out = new ArrayList<>();
+        for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
+            if (!peer.enabled(type) || !(peer.flow().in || peer.flow().out)) continue;
+            Level pl = peer.getLevel();
+            if (pl == null) continue;
+            for (Direction d : Direction.values()) {
+                BlockPos np = peer.getBlockPos().relative(d);
+                if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
+                T h = lookup.find(pl, np, d.getOpposite());
+                if (h != null) out.add(h);
+            }
+        }
         cache[k] = out;
         return out;
     }
