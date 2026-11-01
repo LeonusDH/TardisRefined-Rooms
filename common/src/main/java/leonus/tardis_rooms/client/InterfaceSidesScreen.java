@@ -84,7 +84,7 @@ public class InterfaceSidesScreen extends Screen {
         y = icon(x, y, ICON_BACK, CommonComponents.GUI_BACK.copy(), TRoomsText.IFACE_SIDES_BACK_TOOLTIP.text(), this::onClose);
         y = icon(x, y, neighbours ? ICON_NEIGHBOURS_ON : ICON_NEIGHBOURS_OFF,
                 (neighbours ? TRoomsText.IFACE_SIDES_NEIGHBOURS_ON : TRoomsText.IFACE_SIDES_NEIGHBOURS_OFF).text(),
-                TRoomsText.IFACE_SIDES_NEIGHBOURS_TOOLTIP.text(), () -> { neighbours = !neighbours; rebuildWidgets(); });
+                TRoomsText.IFACE_SIDES_NEIGHBOURS_TOOLTIP.text(), () -> { neighbours = !neighbours; Minecraft.getInstance().tell(this::rebuildWidgets); });
         icon(x, y, ICON_RESET, TRoomsText.IFACE_SIDES_RESET.text(), TRoomsText.IFACE_SIDES_RESET_TOOLTIP.text(),
                 () -> { yaw = startYaw; pitch = 25f; });
     }
