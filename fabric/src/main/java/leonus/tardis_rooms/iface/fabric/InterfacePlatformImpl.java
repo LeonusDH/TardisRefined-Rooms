@@ -1,15 +1,16 @@
 package leonus.tardis_rooms.iface.fabric;
 
+import leonus.tardis_rooms.iface.AE2Compat;
 import leonus.tardis_rooms.iface.FabricInterfaceTransport;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceTransport;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
  * Реализация {@link leonus.tardis_rooms.iface.InterfacePlatform} для Fabric.
- * Химикатов нет (Mekanism на Fabric нет); AE2 пока нет (шаг 1.6).
+ * Химикатов нет (Mekanism на Fabric нет); сеть ME и карта памяти — через AE2 ({@link AE2Compat}).
  */
 public final class InterfacePlatformImpl {
     public static InterfaceTransport createTransport(InterfaceBlockEntity be) {
@@ -21,15 +22,15 @@ public final class InterfacePlatformImpl {
     }
 
     public static boolean meAvailable() {
-        return false;
+        return AE2Compat.enabled();
     }
 
     public static boolean isMemoryCard(ItemStack stack) {
-        return false;
+        return AE2Compat.isMemoryCard(stack);
     }
 
-    public static ItemInteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    public static InteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
+        return AE2Compat.useMemoryCard(stack, be, player);
     }
 
     private InterfacePlatformImpl() {}

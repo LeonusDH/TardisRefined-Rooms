@@ -63,10 +63,14 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
     public void invalidate() {}
 
     @Override
-    public void tick() {}
+    public void tick() {
+        AE2Compat.update(be);
+    }
 
     @Override
-    public void remove() {}
+    public void remove() {
+        AE2Compat.destroy(be);
+    }
 
     // ---------- грани «вставлять» / «забирать» ----------
 

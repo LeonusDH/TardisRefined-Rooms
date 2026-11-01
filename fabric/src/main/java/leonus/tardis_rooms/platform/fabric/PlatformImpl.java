@@ -5,7 +5,10 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import leonus.tardis_rooms.network.Payload;
+import leonus.tardis_rooms.network.Payloads;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.LevelReader;
@@ -28,12 +31,16 @@ public final class PlatformImpl {
         return FabricLoader.getInstance().getConfigDir();
     }
 
-    public static void sendToServer(CustomPacketPayload payload) {
-        ClientPlayNetworking.send(payload);
+    public static void sendToServer(Payload payload) {
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        Payloads.encode(payload, buf);
+        ClientPlayNetworking.send(payload.type().id(), buf);
     }
 
-    public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
-        ServerPlayNetworking.send(player, payload);
+    public static void sendToPlayer(ServerPlayer player, Payload payload) {
+        FriendlyByteBuf buf = PacketByteBufs.create();
+        Payloads.encode(payload, buf);
+        ServerPlayNetworking.send(player, payload.type().id(), buf);
     }
 
     /** У Fabric нет звука с учётом мира — обычный звук блока (как у ванили). */

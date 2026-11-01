@@ -95,6 +95,8 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         if (cap == ForgeCapabilities.ENERGY) return energyOpt.cast();
         if (cap == ForgeCapabilities.ITEM_HANDLER) return itemsOpt.cast();
         if (cap == ForgeCapabilities.FLUID_HANDLER) return fluidsOpt.cast();
+        LazyOptional<T> me = AE2Compat.capability(be, cap);
+        if (me.isPresent()) return me;
         return MekanismCompat.capability(be, this, cap);
     }
 
@@ -106,6 +108,9 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
     public IItemHandler items() { return be.enabled(TransferType.ITEMS) ? items : null; }
 
     public IFluidHandler fluids() { return be.enabled(TransferType.FLUIDS) ? fluids : null; }
+
+    /** Виды химикатов, если уже созданы (не создавая их). */
+    Object chemicalsIfCreated() { return chemicals; }
 
     public Object chemicals() {
         if (!be.enabled(TransferType.CHEMICALS)) return null;
