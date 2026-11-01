@@ -27,7 +27,7 @@ configurations {
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
-    // Конфиг на ModConfigSpec. Ставится вместе с TR (вложен в его jar), поэтому сами его не вкладываем.
+    // Конфиг на ForgeConfigSpec. Ставится вместе с TR (вложен в его jar), поэтому сами его не вкладываем.
     modCompileOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${rootProject.forge_config_api_port_version}"
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
@@ -37,7 +37,9 @@ dependencies {
     modCompileOnly("teamreborn:energy:${rootProject.reborn_energy_version}") { transitive = false }
 
     // Tardis Refined для Fabric: только для компиляции, в игре ставится отдельным модом.
-    modCompileOnly files("${rootDir}/libs/${rootProject.tr_fabric_jar}")
+    modCompileOnly("maven.modrinth:tardis-refined:${rootProject.tr_fabric_version}") { transitive = false }
+    // AE2 на Fabric: сеть ME и карта памяти (на 1.21.1 сборки AE2 для Fabric нет, на 1.20.1 — есть).
+    modCompileOnly("appeng:appliedenergistics2-fabric:${rootProject.ae2_version}") { transitive = false }
 }
 
 processResources {

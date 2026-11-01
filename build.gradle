@@ -1,5 +1,5 @@
 // Мультиплатформенный проект на Architectury, по образцу самого Tardis Refined:
-// common — общий код, neoforge (и позже fabric) — то, что зависит от загрузчика.
+// common — общий код, forge и fabric — то, что зависит от загрузчика. Ветка 1.20.1 (бэкпорт).
 // API Architectury не используется: игроку не нужен лишний мод, только TR и загрузчик.
 plugins {
     id 'architectury-plugin' version '3.5-SNAPSHOT'
@@ -32,11 +32,11 @@ allprojects {
     version = "${rootProject.minecraft_version}-${rootProject.mod_version}"
 
     repositories {
-        mavenCentral() // AE2
-        maven { url = 'https://modmaven.dev/' } // Mekanism
-        maven { url = 'https://maven.neoforged.net/releases/' }
+        mavenCentral()
+        maven { url = 'https://modmaven.dev/' } // Mekanism, AE2
+        maven { url = 'https://maven.minecraftforge.net/' }
         maven { url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/' } // Forge Config API Port
-        exclusiveContent { // Jade
+        exclusiveContent { // Jade, Tardis Refined
             forRepository { maven { url = 'https://api.modrinth.com/maven' } }
             filter { includeGroup 'maven.modrinth' }
         }
@@ -44,7 +44,7 @@ allprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
-        options.release = 21
+        options.release = 17
         options.compilerArgs << '-Xlint:deprecation'
     }
 }

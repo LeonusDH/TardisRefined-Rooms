@@ -4,20 +4,20 @@ plugins {
 
 architectury {
     platformSetupLoomIde()
-    neoForge()
+    forge()
 }
 
-base { archivesName = "${rootProject.mod_id}-neoforge" }
+base { archivesName = "${rootProject.mod_id}-forge" }
 
 configurations {
-    // Код из common: в разработке — как есть, в готовый jar — после преобразования под NeoForge.
+    // Код из common: в разработке — как есть, в готовый jar — после преобразования под Forge.
     common {
         canBeResolved = true
         canBeConsumed = false
     }
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
-    developmentNeoForge.extendsFrom common
+    developmentForge.extendsFrom common
     shadowBundle {
         canBeResolved = true
         canBeConsumed = false
@@ -26,7 +26,7 @@ configurations {
 
 loom {
     runs {
-        // gradlew :neoforge:runData — английский перевод из TRoomsText в common/src/generated/resources (файл хранится в репозитории).
+        // gradlew :forge:runData — английский перевод из TRoomsText в common/src/generated/resources (файл хранится в репозитории).
         data {
             data()
             programArgs '--all', '--mod', rootProject.mod_id
@@ -37,24 +37,25 @@ loom {
 }
 
 dependencies {
-    neoForge "net.neoforged:neoforge:${rootProject.neo_version}"
+    forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${rootProject.forge_version}"
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
-    shadowBundle(project(path: ':common', configuration: 'transformProductionNeoForge')) { transitive = false }
+    shadowBundle(project(path: ':common', configuration: 'transformProductionForge')) { transitive = false }
 
     // Tardis Refined: только для компиляции, в игре ставится отдельным модом. Датагену нужен и при запуске.
-    modCompileOnly files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
-    modLocalRuntime files("${rootDir}/libs/${rootProject.tr_neoforge_jar}")
+    modCompileOnly("maven.modrinth:tardis-refined:${rootProject.tr_forge_version}") { transitive = false }
+    modLocalRuntime("maven.modrinth:tardis-refined:${rootProject.tr_forge_version}") { transitive = false }
     // Необязательная совместимость: химикаты Mekanism, сеть ME и карта памяти AE2. Без этих модов аддон работает как обычно.
     modCompileOnly "mekanism:Mekanism:${rootProject.minecraft_version}-${rootProject.mekanism_version}:api"
-    modCompileOnly "org.appliedenergistics:appliedenergistics2:${rootProject.ae2_version}"
+    modCompileOnly("appeng:appliedenergistics2-forge:${rootProject.ae2_version}") { transitive = false }
+    modCompileOnly "maven.modrinth:jade:${rootProject.jade_version}+forge"
 }
 
 processResources {
     def props = [mod_id: rootProject.mod_id, mod_version: rootProject.mod_version,
-                 neo_version: rootProject.neo_version, minecraft_version: rootProject.minecraft_version]
+                 forge_version: rootProject.forge_version, minecraft_version: rootProject.minecraft_version]
     inputs.properties(props)
-    filesMatching('META-INF/neoforge.mods.toml') { expand(props) }
+    filesMatching('META-INF/mods.toml') { expand(props) }
 }
 
 shadowJar {

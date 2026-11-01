@@ -2,15 +2,10 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: ['1.20.1']
   pull_request:
+    branches: ['1.20.1']
   workflow_dispatch:
-
-env:
-  # Tardis Refined isn't published with the changes the addon needs yet: build it from PR #618.
-  # The commit is pinned so builds are reproducible; update it when the PR changes.
-  TR_REPO: https://github.com/Whocraft/TardisRefined.git
-  TR_REF: 93cc7c8742f11addb44f5b07de00eb7b2fbe47c9
 
 jobs:
   build:
@@ -25,36 +20,27 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      - name: Restore Tardis Refined jars
-        id: tr-cache
-        uses: actions/cache@v6
-        with:
-          path: libs
-          key: tardis-refined-${{ env.TR_REF }}
-
-      - name: Build Tardis Refined from PR #618
-        if: steps.tr-cache.outputs.cache-hit != 'true'
-        run: |
-          git init -q tr
-          cd tr
-          git fetch -q --depth 1 "$TR_REPO" "$TR_REF"
-          git checkout -q FETCH_HEAD
-          chmod +x gradlew
-          ./gradlew :forge:build :fabric:build --no-daemon
-          pick() { ls "$1"/*.jar | grep -v -e '-sources' -e '-dev' -e '-shadow' | head -n 1; }
-          mkdir -p ../libs
-          cp "$(pick forge/build/libs)" "../libs/$(grep '^tr_neoforge_jar=' ../gradle.properties | cut -d= -f2)"
-          cp "$(pick fabric/build/libs)" "../libs/$(grep '^tr_fabric_jar=' ../gradle.properties | cut -d= -f2)"
-          ls -l ../libs
-
       - name: Build the addon
-        run: ./gradlew build --no-daemon
+        run: |
+          set -o pipefail
+          ./gradlew build --no-daemon 2>&1 | tee build.log
+
+      # Ошибки компиляции — аннотациями к запуску, чтобы их было видно без скачивания лога.
+      - name: Report errors
+        if: failure()
+        run: |
+          grep -E 'error:|FAILURE|What went wrong|Could not|> ' build.log | grep -v '^> Task' | head -n 200 > errors.txt || true
+          split -l 20 errors.txt part_
+          for f in part_*; do
+            msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' "$f")
+            echo "::error title=$f::$msg"
+          done
 
       - uses: actions/upload-artifact@v7
         with:
-          name: tardis_rooms-${{ github.sha }}
+          name: tardis_rooms-1.20.1-${{ github.sha }}
           path: |
-            neoforge/build/libs/*.jar
+            forge/build/libs/*.jar
             fabric/build/libs/*.jar
             !**/*-dev-shadow.jar
             !**/*-sources.jar
