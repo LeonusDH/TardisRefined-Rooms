@@ -3,7 +3,7 @@ package leonus.tardis_rooms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Общее для всех платформ: ID мода и лог. Точки входа — в модулях платформ (neoforge/TardisRoomsNeoForge). */
+/** Общее для всех платформ: ID мода и лог. Точки входа — в модулях платформ (forge/TardisRoomsForge, fabric/TardisRoomsFabric). */
 public final class TardisRooms {
     public static final String MODID = "tardis_rooms";
     public static final Logger LOGGER = LoggerFactory.getLogger(MODID);

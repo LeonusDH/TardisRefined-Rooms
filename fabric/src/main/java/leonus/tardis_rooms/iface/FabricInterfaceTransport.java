@@ -21,7 +21,7 @@ import java.util.List;
  * соседям связанных интерфейсов.
  */
 public final class FabricInterfaceTransport implements InterfaceTransport {
-    /** За одну операцию грани: до стопки предметов и до 16 вёдер жидкости (как на NeoForge). */
+    /** За одну операцию грани: до стопки предметов и до 16 вёдер жидкости (как на Forge). */
     static final long ITEMS_PER_OP = 64, FLUID_PER_OP = FluidConstants.BUCKET * 16;
 
     final InterfaceBlockEntity be;

@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Shift + колёсико с отвёрткой — сменить её режим (на NeoForge — событие InputEvent.MouseScrollingEvent). */
+/** Shift + колёсико с отвёрткой — сменить её режим (на Forge — событие InputEvent.MouseScrollingEvent). */
 @Mixin(MouseHandler.class)
 abstract class MouseHandlerMixin {
     @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)

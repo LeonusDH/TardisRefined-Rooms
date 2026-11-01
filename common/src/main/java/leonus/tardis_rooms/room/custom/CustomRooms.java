@@ -195,7 +195,7 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
         return out;
     }
 
-    /** Шаблон из ресурсов датапака ({@code data/<ns>/structure/<путь>.nbt}), как его читает сама игра. */
+    /** Шаблон из ресурсов датапака ({@code data/<ns>/structures/<путь>.nbt}), как его читает сама игра. */
     private static StructureTemplate readTemplate(ResourceLocation id, ResourceManager resources, List<String> problems) {
         ResourceLocation file = new ResourceLocation(id.getNamespace(), "structures/" + id.getPath() + ".nbt");
         Optional<Resource> res = resources.getResource(file);

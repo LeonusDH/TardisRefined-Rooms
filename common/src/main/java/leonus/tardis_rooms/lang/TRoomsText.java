@@ -8,12 +8,12 @@ import java.util.Map;
 
 /**
  * Все строки мода: ключ перевода и английский текст рядом (как {@code LocalizationEnum} в Applied Energistics 2).
- * Английский {@code en_us.json} генерирует датаген ({@code gradlew :neoforge:runData}, см. {@link TRoomsLangProvider});
+ * Английский {@code en_us.json} генерирует датаген ({@code gradlew :forge:runData}, см. {@link TRoomsLangProvider});
  * остальные языки — обычные файлы в {@code assets/tardis_rooms/lang/}.
  * Новую строку добавляй сюда и используй в коде через {@link #text()}.
  */
 public enum TRoomsText {
-    // ---------- Mod list (NeoForge берёт описание мода отсюда, текст в mods.toml — запасной) ----------
+    // ---------- Mod list (ключ описания мода в списке модов; где его не читают — текст из mods.toml / fabric.mod.json) ----------
     MOD_DESCRIPTION("fml.menu.mods.info.description.tardis_rooms", "A hand-built TARDIS interior: grow rooms and corridors with the sonic screwdriver on a grid, instead of Tardis Refined's endless procedural ARS corridors. The TARDIS Interface carries items, fluids, energy and redstone between rooms and to the outside, plus Mekanism chemicals and AE2 ME networks."),
     // ---------- Blocks ----------
     BLOCK_PANEL_LAMP("block.tardis_rooms.panel_lamp", "Panel Lamp"),

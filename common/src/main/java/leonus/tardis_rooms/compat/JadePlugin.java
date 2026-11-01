@@ -25,7 +25,7 @@ import snownee.jade.api.config.IPluginConfig;
 
 /**
  * Jade: состояние интерфейса ТАРДИС (подключён / нет ID / нет оболочки / конфликт сети), ID, направление. Грузится только с Jade:
- * на NeoForge он находит плагин по {@link WailaPlugin}, на Fabric — по точке входа {@code jade} в fabric.mod.json.
+ * на Forge он находит плагин по {@link WailaPlugin}, на Fabric — по точке входа {@code jade} в fabric.mod.json.
  */
 @WailaPlugin
 public class JadePlugin implements IWailaPlugin {

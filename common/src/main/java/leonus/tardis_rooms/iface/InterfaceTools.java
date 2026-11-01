@@ -57,7 +57,7 @@ public final class InterfaceTools {
     }
 
     /**
-     * Ключи других модов — метка {@code tardis_rooms:wrenches} (data/tardis_rooms/tags/item/wrenches.json): общие метки ключей,
+     * Ключи других модов — метка {@code tardis_rooms:wrenches} (data/tardis_rooms/tags/items/wrenches.json): общие метки ключей,
      * которыми их помечают Mekanism, AE2, Powah и другие, плюс ключи без такой метки (Tech Reborn). Сборка может дополнить её датапаком.
      */
     private static final TagKey<Item> WRENCHES = TagKey.create(Registries.ITEM, new ResourceLocation(TardisRooms.MODID, "wrenches"));

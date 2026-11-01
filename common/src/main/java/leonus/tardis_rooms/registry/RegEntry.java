@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 
 /**
  * Объект, который регистрирует платформа: в общем коде он объявлен, а настоящий объект появляется,
- * когда платформа его зарегистрирует (NeoForge — через DeferredRegister, Fabric — сразу).
+ * когда платформа его зарегистрирует (Forge — через DeferredRegister, Fabric — сразу).
  */
 public final class RegEntry<T> implements Supplier<T> {
     private static final List<RegEntry<?>> ALL = new ArrayList<>();
