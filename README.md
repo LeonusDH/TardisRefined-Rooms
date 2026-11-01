@@ -2,7 +2,7 @@
 
 **English** · [Русский](README.ru.md)
 
-An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Minecraft 1.21.1 (NeoForge and Fabric) that replaces its endless procedural ARS corridors with an interior you build yourself, room by room, the way the classic 1.7.10 TARDIS mod worked.
+An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Minecraft 1.20.1 (Forge and Fabric) that replaces its endless procedural ARS corridors with an interior you build yourself, room by room, the way the classic 1.7.10 TARDIS mod worked.
 
 ## Features
 
@@ -20,7 +20,7 @@ An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Mine
 A block that moves resources between linked interfaces, either between rooms or between the interior and the outside, next to the TARDIS shell.
 
 - Give interfaces the same ID to link them. The screwdriver can copy an ID from one interface and paste it into another.
-- Each interface has a direction (input or output) and a choice of what it passes: items, fluids, energy, redstone, Mekanism chemicals and AE2 ME networks (the last two on NeoForge only).
+- Each interface has a direction (input or output) and a choice of what it passes: items, fluids, energy, redstone, Mekanism chemicals (Forge only) and AE2 ME networks.
 - The interface stores nothing. It passes everything on at once, so throughput depends on the pipes and machines connected to it.
 - Each side can be set to **Default**, **Insert** or **Extract**, either in a 3D side screen or with a wrench from any mod. Insert and Extract sides work with plain chests, no pipes needed.
 - Shift + right-click with a wrench picks the interface up straight into your inventory, settings included.
@@ -34,24 +34,21 @@ A block that moves resources between linked interfaces, either between rooms or 
 
 ## Requirements
 
-| | NeoForge | Fabric |
+| | Forge | Fabric |
 |---|---|---|
-| Minecraft | 1.21.1 | 1.21.1 |
-| Loader | NeoForge 21.1.235 or newer | Fabric Loader 0.16.9 or newer, Fabric API 0.110 or newer |
-| Tardis Refined | 2.1.6 built from [PR #618](https://github.com/Whocraft/TardisRefined/pull/618) | the same, Fabric build |
-| Forge Config API Port | — | 21.1 or newer (bundled with Tardis Refined) |
-
-> [!IMPORTANT]
-> The addon relies on changes from Tardis Refined PR #618, which isn't in any public release yet. Until it ships, you need a Tardis Refined build from that PR. See [Building](#building).
+| Minecraft | 1.20.1 | 1.20.1 |
+| Loader | Forge 47 or newer | Fabric Loader 0.15 or newer, Fabric API 0.92 or newer |
+| Tardis Refined | 2.1.7 or newer | 2.1.7 or newer, Fabric build |
+| Forge Config API Port | — | 8.0 or newer (bundled with Tardis Refined) |
 
 Optional integrations. Each one turns on only if that mod is installed:
 
-| Mod | NeoForge | Fabric | What it adds |
+| Mod | Forge | Fabric | What it adds |
 |---|---|---|---|
-| Mekanism 10.7+ | ✓ | — | Chemicals through the interface |
-| Applied Energistics 2 19.2+ | ✓ | — | ME networks through the interface; a Memory Card copies and pastes the interface ID |
-| Jade 15.10+ | ✓ | ✓ | Interface status in the tooltip |
-| Team Reborn Energy 4.1+ | — | ✓ | Energy through the interface. Most Fabric tech mods bundle it; on NeoForge energy works out of the box |
+| Mekanism 10.4+ | ✓ | — | Chemicals through the interface |
+| Applied Energistics 2 15+ | ✓ | ✓ | ME networks through the interface; a Memory Card copies and pastes the interface ID |
+| Jade 11+ | ✓ | ✓ | Interface status in the tooltip |
+| Team Reborn Energy 3+ | — | ✓ | Energy through the interface. Most Fabric tech mods bundle it; on Forge energy works out of the box |
 
 Mekanism, AE2 and Jade support can also be turned off in the config.
 
@@ -61,7 +58,7 @@ A datapack can add its own rooms to the catalogue. Each room is one or two struc
 
 ### Files
 
-- `data/<namespace>/structure/<path>.nbt` holds the templates, saved with a structure block or with the export command below.
+- `data/<namespace>/structures/<path>.nbt` holds the templates, saved with a structure block or with the export command below.
 - `data/<namespace>/tardis_rooms/rooms/<name>.json` describes the room.
 
 The `tardis_rooms` namespace is reserved for the built-in rooms, so use your own.
@@ -131,36 +128,20 @@ The client config sets the Factory console's door lever angle.
 
 ## Building
 
-You need JDK 21. Mekanism, AE2, Jade and Team Reborn Energy come from Maven automatically. Tardis Refined from PR #618 has to be built locally:
+You need JDK 21. Tardis Refined, Mekanism, AE2, Jade and Team Reborn Energy come from Maven automatically:
 
-1. Build Tardis Refined from the PR:
-   ```sh
-   git clone https://github.com/Whocraft/TardisRefined.git
-   cd TardisRefined
-   git fetch origin pull/618/head
-   git checkout FETCH_HEAD
-   ./gradlew :forge:downloadAssets   # first time only, together with the next line
-   ./gradlew :forge:runData          # generates models, recipes and translations; close it once it reports the files are written
-   ./gradlew :forge:build
-   ./gradlew :fabric:build
-   ```
-2. Copy both jars into this project's `libs/` folder:
-   - `forge/build/libs/forge-tardis_refined-mc1.21.1-v2.1.6.jar` as `tardis_refined-neoforge-1.21.1-2.1.6-pr618.jar`;
-   - `fabric/build/libs/fabric-tardis_refined-mc1.21.1-v2.1.6.jar` as `tardis_refined-fabric-1.21.1-2.1.6-pr618.jar`.
+```sh
+./gradlew build
+```
 
-   To keep the original names, change `tr_neoforge_jar` and `tr_fabric_jar` in `gradle.properties` instead.
-3. Build the addon:
-   ```sh
-   ./gradlew build
-   ```
-   The jars end up in `neoforge/build/libs/` and `fabric/build/libs/`. On Windows, `build.bat` does the same: it finds a JDK 21 and writes the output to `build.log`.
+The jars end up in `forge/build/libs/` and `fabric/build/libs/`. On Windows, `build.bat` does the same: it finds a JDK 21 and writes the output to `build.log`.
 
-The code shared by both loaders lives in `common/`; `neoforge/` and `fabric/` hold only what differs between them.
+The code shared by both loaders lives in `common/`; `forge/` and `fabric/` hold only what differs between them.
 
 > [!NOTE]
 > Java treats `!` in a path as a separator inside jar paths, so if the project folder has `!` in its path, the game (data generation, test runs) fails to start. `build.bat` works around it by mapping the folder to a temporary drive letter; when running Gradle by hand, use a path without `!`.
 
-English translations are generated from `TRoomsText` with `./gradlew :neoforge:runData`. Other languages are plain files in `common/src/main/resources/assets/tardis_rooms/lang/`.
+English translations are generated from `TRoomsText` with `./gradlew :forge:runData`. Other languages are plain files in `common/src/main/resources/assets/tardis_rooms/lang/`.
 
 ## Contributing
 
