@@ -120,7 +120,7 @@ public class RoomMapScreen extends RoomMonitorScreen {
                 floor = f;
                 request();
                 // Не перестраивать экран посреди обработки клика: игра ещё перебирает его элементы.
-                Minecraft.getInstance().tell(this::rebuildWidgets);
+                Minecraft.getInstance().tell(this::rebuildIfShown);
             }, listLeft());
             entry.setChecked(floor == f);
             list.children().add(entry);
@@ -263,5 +263,10 @@ public class RoomMapScreen extends RoomMonitorScreen {
             default -> new TRoomsText[]{TRoomsText.MAP_FREE, TRoomsText.MAP_FREE_TOOLTIP};
         };
         return t[0].text().withStyle(ChatFormatting.WHITE).append("\n").append(t[1].text().withStyle(ChatFormatting.GRAY));
+    }
+
+    /** Перестроить экран после клика — если его за это время не закрыли и не сменили. */
+    private void rebuildIfShown() {
+        if (minecraft != null && minecraft.screen == this) rebuildWidgets();
     }
 }
