@@ -25,6 +25,10 @@ configurations {
 }
 
 loom {
+    forge {
+        // На Forge 1.20.1 миксины подключаются через манифест jar, а не через mods.toml.
+        mixinConfig 'tardis_rooms.mixins.json'
+    }
     runs {
         // gradlew :forge:runData — английский перевод из TRoomsText в common/src/generated/resources (файл хранится в репозитории).
         data {

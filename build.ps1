@@ -37,7 +37,8 @@ try {
     "USING DRIVE ${drive}: for $PSScriptRoot" | Out-File $log -Append -Encoding utf8
   }
   # stderr склеивается внутри cmd: иначе PowerShell оборачивает каждую строку javac/Gradle в NativeCommandError
-  cmd /c "gradlew.bat build --console=plain --no-daemon 2>&1" | Out-File $log -Append -Encoding utf8
+  # --continue: если одна платформа не собралась, jar другой всё равно соберётся (удобно при переносе на новую версию)
+  cmd /c "gradlew.bat build --continue --console=plain --no-daemon 2>&1" | Out-File $log -Append -Encoding utf8
   $code = $LASTEXITCODE
 } finally {
   if ($drive) { Set-Location $PSScriptRoot; subst "${drive}:" /d | Out-Null }

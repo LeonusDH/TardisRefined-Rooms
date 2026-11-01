@@ -23,7 +23,7 @@ jobs:
       - name: Build the addon
         run: |
           set -o pipefail
-          ./gradlew build --no-daemon 2>&1 | tee build.log
+          ./gradlew build --continue --no-daemon 2>&1 | tee build.log
 
       # Ошибки компиляции — аннотациями к запуску, чтобы их было видно без скачивания лога.
       - name: Report errors

@@ -10,9 +10,6 @@ authors = "LeonusDH"
 # Переводы описания — в языковых файлах, ключ fml.menu.mods.info.description.tardis_rooms
 description = '''A hand-built TARDIS interior: grow rooms and corridors with the sonic screwdriver on a grid, instead of Tardis Refined's endless procedural ARS corridors. The TARDIS Interface carries items, fluids, energy and redstone between rooms and to the outside, plus Mekanism chemicals and AE2 ME networks.'''
 
-[[mixins]]
-config = "tardis_rooms.mixins.json"
-
 [[dependencies.${mod_id}]]
 modId = "forge"
 mandatory = true

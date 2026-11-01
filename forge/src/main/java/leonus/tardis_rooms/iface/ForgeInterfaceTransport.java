@@ -5,22 +5,29 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Передача через интерфейс на NeoForge — capabilities. «Виды» ({@link EnergyView}, {@link ItemView}, {@link FluidView},
+ * Передача через интерфейс на Forge — capabilities (на 1.20.1 — через LazyOptional, подключаются к блоку событием). «Виды» ({@link EnergyView}, {@link ItemView}, {@link FluidView},
  * химикаты Mekanism) — то, что видят трубы; поданное в них сразу уходит соседям связанных интерфейсов.
  */
-public final class NeoForgeInterfaceTransport implements InterfaceTransport {
+public final class ForgeInterfaceTransport implements InterfaceTransport {
     /** До стольких мБ жидкости или химиката за одну операцию грани. */
     static final int FLUID_PER_OP = 16000;
 
@@ -30,15 +37,65 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     private final IFluidHandler fluids;
     private Object chemicals;
 
-    public NeoForgeInterfaceTransport(InterfaceBlockEntity be) {
+    public ForgeInterfaceTransport(InterfaceBlockEntity be) {
         this.be = be;
         this.energy = new EnergyView(be, this);
         this.items = new ItemView(be, this);
         this.fluids = new FluidView(be, this);
     }
 
-    public static NeoForgeInterfaceTransport of(InterfaceBlockEntity be) {
-        return (NeoForgeInterfaceTransport) be.transport();
+    public static ForgeInterfaceTransport of(InterfaceBlockEntity be) {
+        return (ForgeInterfaceTransport) be.transport();
+    }
+
+    /** Копия стопки жидкости с другим количеством (в Forge 1.20.1 своего метода нет). */
+    static FluidStack withAmount(FluidStack s, int amount) {
+        return new FluidStack(s, amount);
+    }
+
+    /** Возможность блока по соседству, или null. */
+    static <T> @Nullable T cap(Level level, BlockPos pos, Capability<T> cap, @Nullable Direction side) {
+        BlockEntity nbe = level.getBlockEntity(pos);
+        return nbe == null ? null : nbe.getCapability(cap, side).resolve().orElse(null);
+    }
+
+    // ---------- подключение к блоку ----------
+
+    private static final ResourceLocation CAP_ID = new ResourceLocation(leonus.tardis_rooms.TardisRooms.MODID, "interface");
+
+    /** Подписка на AttachCapabilitiesEvent<BlockEntity>: возможности интерфейса. */
+    public static void attach(AttachCapabilitiesEvent<BlockEntity> event) {
+        if (event.getObject() instanceof InterfaceBlockEntity be) event.addCapability(CAP_ID, new Provider(be));
+    }
+
+    /**
+     * Отдаёт возможности транспорта блока. Транспорт берём при запросе: событие приходит из конструктора блока-сущности,
+     * когда его поля ещё не заполнены.
+     */
+    private record Provider(InterfaceBlockEntity be) implements ICapabilityProvider {
+        @Override
+        public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+            if (be.transport() == null) return LazyOptional.empty();
+            return of(be).lazy(cap);
+        }
+    }
+
+    private LazyOptional<IEnergyStorage> energyOpt = LazyOptional.empty();
+    private LazyOptional<IItemHandler> itemsOpt = LazyOptional.empty();
+    private LazyOptional<IFluidHandler> fluidsOpt = LazyOptional.empty();
+    private boolean optsReady;
+
+    <T> LazyOptional<T> lazy(Capability<T> cap) {
+        if (!optsReady) {
+            optsReady = true;
+            if (energy() != null) energyOpt = LazyOptional.of(() -> energy);
+            if (items() != null) itemsOpt = LazyOptional.of(() -> items);
+            if (fluids() != null) fluidsOpt = LazyOptional.of(() -> fluids);
+        }
+        if (cap == ForgeCapabilities.ENERGY) return energyOpt.cast();
+        if (cap == ForgeCapabilities.ITEM_HANDLER) return itemsOpt.cast();
+        if (cap == ForgeCapabilities.FLUID_HANDLER) return fluidsOpt.cast();
+        return MekanismCompat.capability(be, this, cap);
     }
 
     // ---------- для возможностей блока ----------
@@ -56,10 +113,19 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
         return chemicals;
     }
 
+    /** Изменились включённые виды передачи: старые LazyOptional гасим (трубы переподключатся), новые создадим при запросе. */
     @Override
     public void invalidate() {
+        energyOpt.invalidate();
+        itemsOpt.invalidate();
+        fluidsOpt.invalidate();
+        energyOpt = LazyOptional.empty();
+        itemsOpt = LazyOptional.empty();
+        fluidsOpt = LazyOptional.empty();
+        optsReady = false;
+        MekanismCompat.invalidate(this);
         Level level = be.getLevel();
-        if (level != null) level.invalidateCapabilities(be.getBlockPos());
+        if (level != null && !level.isClientSide()) level.updateNeighborsAt(be.getBlockPos(), be.getBlockState().getBlock());
     }
 
     @Override
@@ -70,6 +136,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     @Override
     public void remove() {
         AE2Compat.destroy(be);
+        invalidate();
     }
 
     // ---------- грани «вставлять» / «забирать» ----------
@@ -78,15 +145,15 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     public void moveFace(BlockPos np, Direction side, boolean pull) {
         Level level = be.getLevel();
         if (be.enabled(TransferType.ENERGY)) {
-            IEnergyStorage h = level.getCapability(Capabilities.EnergyStorage.BLOCK, np, side);
+            IEnergyStorage h = cap(level, np, ForgeCapabilities.ENERGY, side);
             if (h != null) moveEnergy(h, pull);
         }
         if (be.enabled(TransferType.ITEMS)) {
-            IItemHandler h = level.getCapability(Capabilities.ItemHandler.BLOCK, np, side);
+            IItemHandler h = cap(level, np, ForgeCapabilities.ITEM_HANDLER, side);
             if (h != null) moveItems(h, pull);
         }
         if (be.enabled(TransferType.FLUIDS)) {
-            IFluidHandler h = level.getCapability(Capabilities.FluidHandler.BLOCK, np, side);
+            IFluidHandler h = cap(level, np, ForgeCapabilities.FLUID_HANDLER, side);
             if (h != null) moveFluids(h, pull);
         }
         if (be.enabled(TransferType.CHEMICALS)) MekanismCompat.moveFace(be, this, np, side, pull, FLUID_PER_OP);
@@ -103,7 +170,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
      * так не пересчитываются все слоты всех хранилищ на каждый слот).
      */
     private void moveItems(IItemHandler h, boolean pull) {
-        List<IItemHandler> froms = pull ? List.of(h) : handlers(Capabilities.ItemHandler.BLOCK, TransferType.ITEMS, true);
+        List<IItemHandler> froms = pull ? List.of(h) : handlers(ForgeCapabilities.ITEM_HANDLER, TransferType.ITEMS, true);
         IItemHandler to = pull ? items : h;
         for (IItemHandler from : froms) {
             for (int slot = 0; slot < from.getSlots(); slot++) {
@@ -130,7 +197,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
         FluidStack probe = from.drain(FLUID_PER_OP, IFluidHandler.FluidAction.SIMULATE);
         if (probe.isEmpty()) return;
         int can = to.fill(probe, IFluidHandler.FluidAction.SIMULATE);
-        if (can > 0) to.fill(from.drain(probe.copyWithAmount(can), IFluidHandler.FluidAction.EXECUTE), IFluidHandler.FluidAction.EXECUTE);
+        if (can > 0) to.fill(from.drain(ForgeInterfaceTransport.withAmount(probe, can), IFluidHandler.FluidAction.EXECUTE), IFluidHandler.FluidAction.EXECUTE);
     }
 
     // ---------- соседи связанных интерфейсов ----------
@@ -144,7 +211,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
      * иначе — у интерфейсов с выходом (куда отдавать). Соседние интерфейсы пропускаются. Кэш на тик.
      */
     @SuppressWarnings("unchecked")
-    <T> List<T> handlers(BlockCapability<T, Direction> cap, TransferType type, boolean fromInputs) {
+    <T> List<T> handlers(Capability<T> cap, TransferType type, boolean fromInputs) {
         Level level = be.getLevel();
         if (level == null || !be.isConnected()) return List.of();
         long now = level.getGameTime();
@@ -163,7 +230,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
                 if (fromInputs ? fm == FaceMode.PUSH : fm == FaceMode.PULL) continue;
                 BlockPos np = peer.getBlockPos().relative(d);
                 if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-                T h = pl.getCapability(cap, np, d.getOpposite());
+                T h = cap(pl, np, cap, d.getOpposite());
                 if (h != null) out.add(h);
             }
         }

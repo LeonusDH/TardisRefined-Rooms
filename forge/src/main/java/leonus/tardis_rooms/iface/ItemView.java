@@ -1,9 +1,9 @@
 package leonus.tardis_rooms.iface;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 
 import java.util.List;
 
@@ -13,9 +13,9 @@ import java.util.List;
  */
 final class ItemView implements IItemHandler {
     private final InterfaceBlockEntity be;
-    private final NeoForgeInterfaceTransport transport;
+    private final ForgeInterfaceTransport transport;
 
-    ItemView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
+    ItemView(InterfaceBlockEntity be, ForgeInterfaceTransport transport) {
         this.be = be;
         this.transport = transport;
     }
@@ -23,7 +23,7 @@ final class ItemView implements IItemHandler {
     private int inSlots() { return be.canIn(TransferType.ITEMS) ? 1 : 0; }
 
     private List<IItemHandler> sources() {
-        return be.canOut(TransferType.ITEMS) ? transport.handlers(Capabilities.ItemHandler.BLOCK, TransferType.ITEMS, true) : List.of();
+        return be.canOut(TransferType.ITEMS) ? transport.handlers(ForgeCapabilities.ITEM_HANDLER, TransferType.ITEMS, true) : List.of();
     }
 
     @Override
@@ -56,7 +56,7 @@ final class ItemView implements IItemHandler {
         InterfaceNetwork.depth++;
         try {
             ItemStack rest = stack;
-            for (IItemHandler h : transport.handlers(Capabilities.ItemHandler.BLOCK, TransferType.ITEMS, false)) {
+            for (IItemHandler h : transport.handlers(ForgeCapabilities.ITEM_HANDLER, TransferType.ITEMS, false)) {
                 rest = ItemHandlerHelper.insertItemStacked(h, rest, simulate);
                 if (rest.isEmpty()) break;
             }

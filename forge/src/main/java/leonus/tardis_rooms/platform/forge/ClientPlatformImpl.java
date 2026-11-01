@@ -1,4 +1,4 @@
-package leonus.tardis_rooms.platform.neoforge;
+package leonus.tardis_rooms.platform.forge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -14,10 +14,10 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.RenderTypeHelper;
-import net.neoforged.neoforge.client.model.data.ModelData;
+import net.minecraftforge.client.RenderTypeHelper;
+import net.minecraftforge.client.model.data.ModelData;
 
-/** Реализация {@link leonus.tardis_rooms.platform.ClientPlatform} для NeoForge. */
+/** Реализация {@link leonus.tardis_rooms.platform.ClientPlatform} для Forge. */
 public final class ClientPlatformImpl {
     private static final Direction[] SIDES_AND_NONE = {Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, null};
 
@@ -33,7 +33,9 @@ public final class ClientPlatformImpl {
             return;
         }
         BakedModel model = dispatcher.getBlockModel(state);
-        ModelData data = model.getModelData(level, pos, state, level.getModelData(pos));
+        var manager = level.getModelDataManager();
+        ModelData beData = manager != null ? manager.getAt(pos) : null;
+        ModelData data = model.getModelData(level, pos, state, beData != null ? beData : ModelData.EMPTY);
         RandomSource random = RandomSource.create();
         for (RenderType rt : model.getRenderTypes(state, RandomSource.create(42), data)) {
             VertexConsumer consumer = buffers.getBuffer(RenderTypeHelper.getEntityRenderType(rt, false));

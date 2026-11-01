@@ -2,8 +2,8 @@ package leonus.tardis_rooms.lang;
 
 import leonus.tardis_rooms.TardisRooms;
 import net.minecraft.data.PackOutput;
-import net.neoforged.neoforge.common.data.LanguageProvider;
-import net.neoforged.neoforge.data.event.GatherDataEvent;
+import net.minecraftforge.common.data.LanguageProvider;
+import net.minecraftforge.data.event.GatherDataEvent;
 
 /** Датаген английского: {@code gradlew runData} → {@code src/generated/resources/assets/tardis_rooms/lang/en_us.json}. */
 public final class TRoomsLangProvider extends LanguageProvider {

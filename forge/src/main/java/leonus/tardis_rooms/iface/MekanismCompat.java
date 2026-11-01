@@ -1,161 +1,27 @@
 package leonus.tardis_rooms.iface;
 
-import leonus.tardis_rooms.TRoomsBlocks;
-import mekanism.api.Action;
-import mekanism.api.chemical.ChemicalStack;
-import mekanism.api.chemical.IChemicalHandler;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
-import leonus.tardis_rooms.platform.Platform;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
 
-import java.util.List;
-
-/**
- * Химикаты Mekanism. Классы Mekanism здесь загружаются, только если Mekanism установлен
- * (всё обращение к этому классу — после проверки {@link #LOADED}).
- */
+/** Химикаты Mekanism на Forge 1.20.1 — следующий шаг бэкпорта (у Mekanism 10.4 другой API). Пока выключено. */
 public final class MekanismCompat {
-    /** Установлен ли Mekanism (возможность регистрируем только тогда). */
-    public static final boolean LOADED = Platform.isModLoaded("mekanism");
-
-    /** Mekanism есть и совместимость не выключена в конфиге. */
     public static boolean enabled() {
-        return LOADED && leonus.tardis_rooms.TardisRoomsConfig.compatMekanism();
+        return false;
     }
 
-    /** Та же возможность, что у Mekanism (возможности NeoForge совпадают по имени и типу). */
-    private static BlockCapability<IChemicalHandler, Direction> cap() {
-        return Holder.CAP;
+    static Object newView(InterfaceBlockEntity be, ForgeInterfaceTransport transport) {
+        return null;
     }
 
-    private static final class Holder {
-        static final BlockCapability<IChemicalHandler, Direction> CAP =
-                BlockCapability.createSided(ResourceLocation.fromNamespaceAndPath("mekanism", "chemical_handler"), IChemicalHandler.class);
+    static <T> LazyOptional<T> capability(InterfaceBlockEntity be, ForgeInterfaceTransport transport, Capability<T> cap) {
+        return LazyOptional.empty();
     }
 
-    public static void register(RegisterCapabilitiesEvent event) {
-        if (!LOADED) return;
-        Registration.register(event);
-    }
+    static void invalidate(ForgeInterfaceTransport transport) {}
 
-    /** Отдельный класс, чтобы лямбда с типами Mekanism не грузилась без него. */
-    private static final class Registration {
-        static void register(RegisterCapabilitiesEvent event) {
-            event.registerBlockEntity(cap(), TRoomsBlocks.INTERFACE_BE.get(), (be, side) -> (IChemicalHandler) NeoForgeInterfaceTransport.of(be).chemicals());
-        }
-    }
-
-    /** Грань «вставлять»/«забирать» для химикатов. */
-    static void moveFace(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport, net.minecraft.core.BlockPos np, Direction side, boolean pull, long max) {
-        if (!enabled() || be.getLevel() == null) return;
-        Mover.move(be, transport, np, side, pull, max);
-    }
-
-    private static final class Mover {
-        static void move(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport, net.minecraft.core.BlockPos np, Direction side, boolean pull, long max) {
-            IChemicalHandler h = be.getLevel().getCapability(cap(), np, side);
-            if (!(transport.chemicals() instanceof IChemicalHandler mine) || h == null) return;
-            IChemicalHandler from = pull ? h : mine, to = pull ? mine : h;
-            ChemicalStack probe = from.extractChemical(max, Action.SIMULATE);
-            if (probe.isEmpty()) return;
-            ChemicalStack rest = to.insertChemical(probe, Action.SIMULATE);
-            long can = probe.getAmount() - rest.getAmount();
-            if (can <= 0) return;
-            ChemicalStack moved = from.extractChemical(probe.copyWithAmount(can), Action.EXECUTE);
-            to.insertChemical(moved, Action.EXECUTE);
-        }
-    }
-
-    static Object newView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
-        return enabled() ? new ChemicalView(be, transport) : null;
-    }
-
-    /** Химикаты через интерфейс — так же, как жидкости. */
-    private static final class ChemicalView implements IChemicalHandler {
-        private final InterfaceBlockEntity be;
-        private final NeoForgeInterfaceTransport transport;
-
-        ChemicalView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
-            this.be = be;
-            this.transport = transport;
-        }
-
-        private int inTanks() { return be.canIn(TransferType.CHEMICALS) ? 1 : 0; }
-
-        private List<IChemicalHandler> sources() {
-            return be.canOut(TransferType.CHEMICALS) ? transport.handlers(cap(), TransferType.CHEMICALS, true) : List.of();
-        }
-
-        private Object[] locate(int tank) {
-            int t = tank - inTanks();
-            if (t < 0) return null;
-            for (IChemicalHandler h : sources()) {
-                if (t < h.getChemicalTanks()) return new Object[]{h, t};
-                t -= h.getChemicalTanks();
-            }
-            return null;
-        }
-
-        @Override
-        public int getChemicalTanks() {
-            int n = inTanks();
-            for (IChemicalHandler h : sources()) n += h.getChemicalTanks();
-            return n;
-        }
-
-        @Override
-        public ChemicalStack getChemicalInTank(int tank) {
-            Object[] l = locate(tank);
-            return l == null ? ChemicalStack.EMPTY : ((IChemicalHandler) l[0]).getChemicalInTank((int) l[1]);
-        }
-
-        @Override
-        public void setChemicalInTank(int tank, ChemicalStack stack) {
-            // Своих баков нет.
-        }
-
-        @Override
-        public long getChemicalTankCapacity(int tank) {
-            Object[] l = locate(tank);
-            return l == null ? Long.MAX_VALUE : ((IChemicalHandler) l[0]).getChemicalTankCapacity((int) l[1]);
-        }
-
-        @Override
-        public boolean isValid(int tank, ChemicalStack stack) {
-            return be.canIn(TransferType.CHEMICALS);
-        }
-
-        @Override
-        public ChemicalStack insertChemical(int tank, ChemicalStack stack, Action action) {
-            if (stack.isEmpty() || !be.canIn(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return stack;
-            InterfaceNetwork.depth++;
-            try {
-                ChemicalStack rest = stack;
-                for (IChemicalHandler h : transport.handlers(cap(), TransferType.CHEMICALS, false)) {
-                    rest = h.insertChemical(rest, action);
-                    if (rest.isEmpty()) break;
-                }
-                return rest;
-            } finally {
-                InterfaceNetwork.depth--;
-            }
-        }
-
-        @Override
-        public ChemicalStack extractChemical(int tank, long amount, Action action) {
-            if (amount <= 0 || InterfaceNetwork.depth > 0) return ChemicalStack.EMPTY;
-            Object[] l = locate(tank);
-            if (l == null) return ChemicalStack.EMPTY;
-            InterfaceNetwork.depth++;
-            try {
-                return ((IChemicalHandler) l[0]).extractChemical((int) l[1], amount, action);
-            } finally {
-                InterfaceNetwork.depth--;
-            }
-        }
-    }
+    static void moveFace(InterfaceBlockEntity be, ForgeInterfaceTransport transport, BlockPos np, Direction side, boolean pull, int max) {}
 
     private MekanismCompat() {}
 }

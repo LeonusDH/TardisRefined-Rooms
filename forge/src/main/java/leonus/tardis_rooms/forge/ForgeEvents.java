@@ -1,4 +1,4 @@
-package leonus.tardis_rooms.neoforge;
+package leonus.tardis_rooms.forge;
 
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
@@ -6,29 +6,32 @@ import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.minecraft.world.InteractionResult;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
-import net.neoforged.neoforge.event.OnDatapackSyncEvent;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.OnDatapackSyncEvent;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import leonus.tardis_rooms.command.TRoomsCommands;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
+import net.minecraftforge.event.TickEvent;
 
-/** События NeoForge → общий код. Здесь только перевод: что делать, решает общий код. */
-final class NeoForgeEvents {
+/** События Forge → общий код. Здесь только перевод: что делать, решает общий код. */
+final class ForgeEvents {
     static void register(IEventBus bus) {
-        bus.addListener(NeoForgeEvents::onRightClickBlock);
-        bus.addListener(NeoForgeEvents::onLeftClickBlock);
-        bus.addListener(NeoForgeEvents::onRightClickItem);
+        bus.addListener(ForgeEvents::onRightClickBlock);
+        bus.addListener(ForgeEvents::onLeftClickBlock);
+        bus.addListener(ForgeEvents::onRightClickItem);
         bus.addListener((ItemTooltipEvent e) -> InterfaceTools.appendTooltip(e.getItemStack(), e.getToolTip()));
         bus.addListener((AddReloadListenerEvent e) -> e.addListener(CustomRooms.INSTANCE));
-        bus.addListener((OnDatapackSyncEvent e) -> e.getRelevantPlayers().forEach(CustomRooms::sync));
+        bus.addListener((OnDatapackSyncEvent e) -> {
+            if (e.getPlayer() != null) CustomRooms.sync(e.getPlayer());
+            else e.getPlayerList().getPlayers().forEach(CustomRooms::sync);
+        });
         bus.addListener((RegisterCommandsEvent e) -> TRoomsCommands.register(e.getDispatcher()));
         bus.addListener((EntityJoinLevelEvent e) -> HubInitializer.onEntityJoin(e.getLevel(), e.getEntity()));
-        bus.addListener((ServerTickEvent.Post e) -> HubInitializer.onServerTick(e.getServer()));
+        bus.addListener((TickEvent.ServerTickEvent e) -> { if (e.phase == TickEvent.Phase.END) HubInitializer.onServerTick(e.getServer()); });
         bus.addListener((ServerStoppedEvent e) -> {
             HubInitializer.onServerStopped();
             InterfaceNetwork.clear();
@@ -61,5 +64,5 @@ final class NeoForgeEvents {
         e.setCancellationResult(InteractionResult.SUCCESS);
     }
 
-    private NeoForgeEvents() {}
+    private ForgeEvents() {}
 }
