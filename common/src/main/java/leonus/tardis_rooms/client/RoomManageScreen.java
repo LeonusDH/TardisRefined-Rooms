@@ -2,6 +2,7 @@ package leonus.tardis_rooms.client;
 
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.ManagePayloads;
+import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.room.Node;
 import leonus.tardis_rooms.room.PieceCatalog;
 import net.minecraft.ChatFormatting;
@@ -12,7 +13,6 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import leonus.tardis_rooms.platform.Platform;
 import org.jetbrains.annotations.NotNull;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;
 import whocraft.tardis_refined.client.screen.components.SelectionListEntry;

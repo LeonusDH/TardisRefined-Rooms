@@ -139,7 +139,12 @@ public final class MekanismCompat {
         }
     }
 
-    /** Химикаты одного вида через интерфейс — так же, как жидкости. */
+    /**
+     * Химикаты одного вида через интерфейс — так же, как жидкости. Баки — только непустые баки у связанных интерфейсов:
+     * подсказка Mekanism в Jade рисует каждый бак, даже пустой и с нулевой ёмкостью, поэтому приёмного бака нет вовсе.
+     * Трубы Mekanism вставляют и забирают через {@link #insertChemical(ChemicalStack, Action)} и
+     * {@link #extractChemical(long, Action)} — они переопределены и баков не перебирают.
+     */
     private abstract static class ChemicalView<C extends Chemical<C>, S extends ChemicalStack<C>, H extends IChemicalHandler<C, S>> implements IChemicalHandler<C, S> {
         private final InterfaceBlockEntity be;
         private final ForgeInterfaceTransport transport;
@@ -151,13 +156,11 @@ public final class MekanismCompat {
             this.cap = cap;
         }
 
-        private int inTanks() { return be.canIn(TransferType.CHEMICALS) ? 1 : 0; }
-
         private List<H> sources() {
             return be.canOut(TransferType.CHEMICALS) ? transport.handlers(cap, TransferType.CHEMICALS, true) : List.of();
         }
 
-        /** Непустые баки у связанных интерфейсов — как у жидкостей (см. FluidView). */
+        /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
         private List<Object[]> filled() {
             List<Object[]> out = new java.util.ArrayList<>();
             for (H h : sources())
@@ -166,10 +169,9 @@ public final class MekanismCompat {
         }
 
         private Object[] locate(int tank) {
-            int t = tank - inTanks();
-            if (t < 0) return null;
+            if (tank < 0) return null;
             List<Object[]> f = filled();
-            return t < f.size() ? f.get(t) : null;
+            return tank < f.size() ? f.get(tank) : null;
         }
 
         @SuppressWarnings("unchecked")
@@ -177,7 +179,7 @@ public final class MekanismCompat {
 
         @Override
         public int getTanks() {
-            return inTanks() + filled().size();
+            return filled().size();
         }
 
         @Override
@@ -194,7 +196,6 @@ public final class MekanismCompat {
         @Override
         public long getTankCapacity(int tank) {
             Object[] l = locate(tank);
-            // Приёмный бак: ёмкость 0, как у жидкостей (см. FluidView) — трубы Mekanism вставляют, не глядя на неё.
             return l == null ? 0 : at(l).getTankCapacity((int) l[1]);
         }
 
@@ -205,6 +206,12 @@ public final class MekanismCompat {
 
         @Override
         public S insertChemical(int tank, S stack, Action action) {
+            return insertChemical(stack, action);
+        }
+
+        /** Поданное — сразу в хранилища у связанных выходов. */
+        @Override
+        public S insertChemical(S stack, Action action) {
             if (stack.isEmpty() || !be.canIn(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return stack;
             InterfaceNetwork.depth++;
             try {
@@ -227,6 +234,45 @@ public final class MekanismCompat {
             InterfaceNetwork.depth++;
             try {
                 return at(l).extractChemical((int) l[1], amount, action);
+            } finally {
+                InterfaceNetwork.depth--;
+            }
+        }
+
+        /** Забрать что угодно: из первого хранилища у связанных входов, где что-то есть. */
+        @Override
+        public S extractChemical(long amount, Action action) {
+            if (amount <= 0 || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return getEmptyStack();
+            InterfaceNetwork.depth++;
+            try {
+                for (H h : sources()) {
+                    S got = h.extractChemical(amount, action);
+                    if (!got.isEmpty()) return got;
+                }
+                return getEmptyStack();
+            } finally {
+                InterfaceNetwork.depth--;
+            }
+        }
+
+        /** Забрать именно этот химикат — сколько наберётся по всем хранилищам у связанных входов. */
+        @Override
+        @SuppressWarnings("unchecked")
+        public S extractChemical(S stack, Action action) {
+            if (stack.isEmpty() || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return getEmptyStack();
+            InterfaceNetwork.depth++;
+            try {
+                S out = getEmptyStack();
+                for (H h : sources()) {
+                    long need = stack.getAmount() - out.getAmount();
+                    if (need <= 0) break;
+                    S want = (S) stack.copy();
+                    want.setAmount(need);
+                    S got = h.extractChemical(want, action);
+                    if (got.isEmpty()) continue;
+                    if (out.isEmpty()) out = (S) got.copy(); else out.grow(got.getAmount());
+                }
+                return out;
             } finally {
                 InterfaceNetwork.depth--;
             }

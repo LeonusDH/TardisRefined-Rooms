@@ -6,10 +6,8 @@ import com.mojang.datafixers.util.Function5;
 import com.mojang.datafixers.util.Function6;
 import net.minecraft.network.FriendlyByteBuf;
 
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 /**
  * Кодек для сети. На 1.20.1 его нет в игре: это упрощённая копия {@code StreamCodec} из 1.20.5+ с тем же видом

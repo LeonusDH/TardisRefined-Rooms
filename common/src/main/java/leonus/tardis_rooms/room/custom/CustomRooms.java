@@ -8,7 +8,6 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.mixin.StructureTemplateAccessor;
 import leonus.tardis_rooms.room.Lattice;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;

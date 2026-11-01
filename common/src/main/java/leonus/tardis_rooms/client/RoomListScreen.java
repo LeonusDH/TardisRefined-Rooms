@@ -24,7 +24,7 @@ public class RoomListScreen extends RoomMonitorScreen {
     private PieceCatalog.Option current;
     /** Игрок сам выбрал вариант — не перескакивать на доступный при обновлении списка. */
     private boolean picked;
-    private net.minecraft.client.gui.components.AbstractWidget submitButton;
+    private net.minecraft.client.gui.components.Button submitButton;
 
     private final BlockPos replaceCore;
     private final RoomCategoryScreen parent;
@@ -43,9 +43,7 @@ public class RoomListScreen extends RoomMonitorScreen {
         super.init();
         this.setEvents(this::submit, () -> switchScreenToLeft(parent));
         int vPos = (height - monitorHeight) / 2;
-        addSubmitButton(width / 2 + 25, height - vPos - 25);
-        // Метод TR кнопку не возвращает: она — последний добавленный элемент.
-        if (children().get(children().size() - 1) instanceof net.minecraft.client.gui.components.AbstractWidget w) submitButton = w;
+        submitButton = addSubmitButton(width / 2 + 25, height - vPos - 25); // в TR для 1.20.1 метод возвращает кнопку
         updateSubmit();
         addCancelButton(width / 2 + 5, height - vPos - 25);
     }

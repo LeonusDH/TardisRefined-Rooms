@@ -1,27 +1,31 @@
 package leonus.tardis_rooms.iface;
 
+import leonus.tardis_rooms.TardisRooms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Передача через интерфейс на Forge — capabilities (на 1.20.1 — через LazyOptional, подключаются к блоку событием). «Виды» ({@link EnergyView}, {@link ItemView}, {@link FluidView},
@@ -61,7 +65,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
 
     // ---------- подключение к блоку ----------
 
-    private static final ResourceLocation CAP_ID = ResourceLocation.tryBuild(leonus.tardis_rooms.TardisRooms.MODID, "interface");
+    private static final ResourceLocation CAP_ID = ResourceLocation.tryBuild(TardisRooms.MODID, "interface");
 
     /** Подписка на AttachCapabilitiesEvent<BlockEntity>: возможности интерфейса. */
     public static void attach(AttachCapabilitiesEvent<BlockEntity> event) {
@@ -223,7 +227,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
      * Кэш на тик: по два списка (откуда / куда) на каждую возможность. Ключ — возможность, а не вид передачи:
      * у химикатов Mekanism 10.4 на один вид передачи четыре возможности (газы, инфузии, пигменты, суспензии).
      */
-    private final java.util.Map<Capability<?>, List<?>> cacheIn = new java.util.HashMap<>(), cacheOut = new java.util.HashMap<>();
+    private final Map<Capability<?>, List<?>> cacheIn = new HashMap<>(), cacheOut = new HashMap<>();
 
     /**
      * Обработчики соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать),
@@ -235,7 +239,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         if (level == null || !be.isConnected()) return List.of();
         long now = level.getGameTime();
         if (now != cacheTick) { cacheIn.clear(); cacheOut.clear(); cacheTick = now; }
-        java.util.Map<Capability<?>, List<?>> cache = fromInputs ? cacheIn : cacheOut;
+        Map<Capability<?>, List<?>> cache = fromInputs ? cacheIn : cacheOut;
         List<?> cached = cache.get(cap);
         if (cached != null) return (List<T>) cached;
         List<T> out = new ArrayList<>();
@@ -254,7 +258,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
             }
         }
         // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
-        if (out.size() > 1) java.util.Collections.rotate(out, -(int) (now % out.size()));
+        if (out.size() > 1) Collections.rotate(out, -(int) (now % out.size()));
         cache.put(cap, out);
         return out;
     }

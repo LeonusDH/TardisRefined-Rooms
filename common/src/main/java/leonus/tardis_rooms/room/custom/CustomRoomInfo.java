@@ -1,13 +1,13 @@
 package leonus.tardis_rooms.room.custom;
 
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.network.codec.ByteBufCodecs;
+import leonus.tardis_rooms.network.codec.StreamCodec;
 import leonus.tardis_rooms.room.Lattice;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import leonus.tardis_rooms.network.codec.ByteBufCodecs;
-import leonus.tardis_rooms.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.state.BlockState;

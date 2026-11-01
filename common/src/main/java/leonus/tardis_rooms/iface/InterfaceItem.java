@@ -1,6 +1,5 @@
 package leonus.tardis_rooms.iface;
 
-import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;

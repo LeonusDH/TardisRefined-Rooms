@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import whocraft.tardis_refined.common.blockentity.shell.ShellBaseBlockEntity;
-import whocraft.tardis_refined.registry.TRDimensionTypes;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,7 +1,6 @@
 package leonus.tardis_rooms.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
@@ -10,6 +9,7 @@ import leonus.tardis_rooms.iface.Status;
 import leonus.tardis_rooms.iface.TransferType;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.InterfacePayload;
+import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.room.Node;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -21,7 +21,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
-import leonus.tardis_rooms.platform.Platform;
 import org.jetbrains.annotations.NotNull;
 import whocraft.tardis_refined.TardisRefined;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;

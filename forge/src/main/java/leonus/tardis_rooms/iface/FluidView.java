@@ -22,27 +22,21 @@ final class FluidView implements IFluidHandler {
         return be.canOut(TransferType.FLUIDS) ? transport.handlers(ForgeCapabilities.FLUID_HANDLER, TransferType.FLUIDS, true) : List.of();
     }
 
-    /**
-     * Непустые баки у связанных интерфейсов (обработчик и номер бака). Пустые не показываем: забирать из них нечего,
-     * а Jade рисовал бы их пустыми полосками.
-     */
-    private List<Object[]> filled() {
-        List<Object[]> out = new java.util.ArrayList<>();
-        for (IFluidHandler h : sources())
-            for (int t = 0; t < h.getTanks(); t++) if (!h.getFluidInTank(t).isEmpty()) out.add(new Object[]{h, t});
-        return out;
-    }
-
     @Override
     public int getTanks() {
-        return inTanks() + filled().size();
+        int n = inTanks();
+        for (IFluidHandler h : sources()) n += h.getTanks();
+        return n;
     }
 
     private Object[] locate(int tank) {
         int t = tank - inTanks();
         if (t < 0) return null;
-        List<Object[]> f = filled();
-        return t < f.size() ? f.get(t) : null;
+        for (IFluidHandler h : sources()) {
+            if (t < h.getTanks()) return new Object[]{h, t};
+            t -= h.getTanks();
+        }
+        return null;
     }
 
     @Override
@@ -54,9 +48,13 @@ final class FluidView implements IFluidHandler {
     @Override
     public int getTankCapacity(int tank) {
         Object[] l = locate(tank);
-        // Приёмный бак всегда пуст (всё сразу уходит дальше): ёмкость 0, чтобы Jade не рисовал его пустой полоской.
-        // Трубы заливают через fill(), ёмкость при этом не смотрят.
-        return l == null ? 0 : ((IFluidHandler) l[0]).getTankCapacity((int) l[1]);
+        // Приёмный бак (всегда пуст — всё сразу уходит дальше) и пустые баки соседей — с ёмкостью 0: Jade такие баки
+        // пропускает и не рисует пустыми полосками. Трубы заливают через fill() и сливают через drain(), ёмкость не смотрят;
+        // из пустого бака забирать всё равно нечего.
+        if (l == null) return 0;
+        IFluidHandler h = (IFluidHandler) l[0];
+        int t = (int) l[1];
+        return h.getFluidInTank(t).isEmpty() ? 0 : h.getTankCapacity(t);
     }
 
     @Override

@@ -1,11 +1,10 @@
 package leonus.tardis_rooms.network;
 
 import leonus.tardis_rooms.TardisRooms;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
 import leonus.tardis_rooms.network.codec.ByteBufCodecs;
 import leonus.tardis_rooms.network.codec.StreamCodec;
-import leonus.tardis_rooms.network.Payload;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
