@@ -84,8 +84,11 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
     private LazyOptional<IItemHandler> itemsOpt = LazyOptional.empty();
     private LazyOptional<IFluidHandler> fluidsOpt = LazyOptional.empty();
     private boolean optsReady;
+    /** Блок снят или его чанк выгружается: возможностей больше не отдаём (иначе трубы, получив сигнал «погашено», тут же берут новые). */
+    private boolean dead;
 
     <T> LazyOptional<T> lazy(Capability<T> cap) {
+        if (dead) return LazyOptional.empty();
         if (!optsReady) {
             optsReady = true;
             if (energy() != null) energyOpt = LazyOptional.of(() -> energy);
@@ -145,6 +148,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
 
     @Override
     public void remove() {
+        dead = true;
         AE2Compat.destroy(be);
         // Без обновления соседей: remove() зовут и при выгрузке чанка, когда игра перебирает его блоки-сущности,
         // и обновление соседей посреди этого перебора роняет сервер (ConcurrentModificationException).
@@ -215,8 +219,11 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
     // ---------- соседи связанных интерфейсов ----------
 
     private long cacheTick = -1;
-    /** Кэш на тик: по два списка (откуда / куда) на каждый вид передачи. */
-    private final List<?>[] cache = new List<?>[TransferType.values().length * 2];
+    /**
+     * Кэш на тик: по два списка (откуда / куда) на каждую возможность. Ключ — возможность, а не вид передачи:
+     * у химикатов Mekanism 10.4 на один вид передачи четыре возможности (газы, инфузии, пигменты, суспензии).
+     */
+    private final java.util.Map<Capability<?>, List<?>> cacheIn = new java.util.HashMap<>(), cacheOut = new java.util.HashMap<>();
 
     /**
      * Обработчики соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать),
@@ -227,9 +234,9 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         Level level = be.getLevel();
         if (level == null || !be.isConnected()) return List.of();
         long now = level.getGameTime();
-        if (now != cacheTick) { java.util.Arrays.fill(cache, null); cacheTick = now; }
-        int k = type.ordinal() * 2 + (fromInputs ? 1 : 0);
-        List<?> cached = cache[k];
+        if (now != cacheTick) { cacheIn.clear(); cacheOut.clear(); cacheTick = now; }
+        java.util.Map<Capability<?>, List<?>> cache = fromInputs ? cacheIn : cacheOut;
+        List<?> cached = cache.get(cap);
         if (cached != null) return (List<T>) cached;
         List<T> out = new ArrayList<>();
         for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
@@ -248,7 +255,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         }
         // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
         if (out.size() > 1) java.util.Collections.rotate(out, -(int) (now % out.size()));
-        cache[k] = out;
+        cache.put(cap, out);
         return out;
     }
 }
