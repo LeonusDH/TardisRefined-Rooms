@@ -119,7 +119,8 @@ public class RoomMapScreen extends RoomMonitorScreen {
                 RoomManageScreen.click();
                 floor = f;
                 request();
-                rebuildWidgets();
+                // Не перестраивать экран посреди обработки клика: игра ещё перебирает его элементы.
+                Minecraft.getInstance().tell(this::rebuildWidgets);
             }, listLeft());
             entry.setChecked(floor == f);
             list.children().add(entry);
