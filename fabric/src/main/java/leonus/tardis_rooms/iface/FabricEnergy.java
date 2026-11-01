@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.iface;
 
+import com.google.common.math.LongMath;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.platform.Platform;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
@@ -99,18 +100,13 @@ final class FabricEnergy {
                 InterfaceNetwork.depth++;
                 try {
                     for (EnergyStorage h : transport.linked(EnergyStorage.SIDED, TransferType.ENERGY)) {
-                        out[0] = saturatedAdd(out[0], h.getAmount());
-                        out[1] = saturatedAdd(out[1], h.getCapacity());
+                        out[0] = LongMath.saturatedAdd(out[0], h.getAmount());
+                        out[1] = LongMath.saturatedAdd(out[1], h.getCapacity());
                     }
                 } finally {
                     InterfaceNetwork.depth--;
                 }
                 return out;
-            }
-
-            private static long saturatedAdd(long a, long b) {
-                long r = a + b;
-                return ((a ^ r) & (b ^ r)) < 0 ? Long.MAX_VALUE : r;
             }
         }
     }

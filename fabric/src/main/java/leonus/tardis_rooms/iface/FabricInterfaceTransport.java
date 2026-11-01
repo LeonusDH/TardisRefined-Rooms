@@ -93,68 +93,57 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
     // ---------- соседи связанных интерфейсов ----------
 
     private long cacheTick = -1;
-    /** Кэш на тик: по три списка (откуда / куда / все связанные) на каждый вид передачи. */
-    private final List<?>[] cache = new List<?>[TransferType.values().length * 3];
+    /** Кэш на тик: по списку на каждый вид передачи и каждую выборку ({@link Pick}). */
+    private final List<?>[] cache = new List<?>[TransferType.values().length * Pick.values().length];
+
+    /** Какие соседи связанных интерфейсов нужны. */
+    private enum Pick {
+        /** У интерфейсов с выходом — куда отдавать. Грани «забирать» пропускаются: они сами вынимают из соседа. */
+        TO,
+        /** У интерфейсов со входом — откуда забирать. Грани «вставлять» пропускаются: они сами кладут в соседа. */
+        FROM,
+        /** Все, каждый один раз (у интерфейса «вход и выход» он попал бы и в TO, и в FROM) — для подсказки. */
+        ALL
+    }
 
     /**
      * Хранилища соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать),
      * иначе — у интерфейсов с выходом (куда отдавать). Соседние интерфейсы пропускаются. Кэш на тик.
      */
-    @SuppressWarnings("unchecked")
-    <A> List<A> handlers(BlockApiLookup<A, Direction> lookup, TransferType type, boolean fromInputs) {
-        Level level = be.getLevel();
-        if (level == null || !be.isConnected()) return List.of();
-        long now = level.getGameTime();
-        if (now != cacheTick) { java.util.Arrays.fill(cache, null); cacheTick = now; }
-        int k = type.ordinal() * 3 + (fromInputs ? 1 : 0);
-        List<?> cached = cache[k];
-        if (cached != null) return (List<A>) cached;
-        List<A> out = new ArrayList<>();
-        for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
-            if (!peer.enabled(type) || (fromInputs ? !peer.flow().in : !peer.flow().out)) continue;
-            Level pl = peer.getLevel();
-            if (pl == null) continue;
-            for (Direction d : Direction.values()) {
-                // Грань «забирать» сама вынимает из соседа — класть туда же нельзя (гоняли бы по кругу); и наоборот.
-                FaceMode fm = peer.face(d);
-                if (fromInputs ? fm == FaceMode.PUSH : fm == FaceMode.PULL) continue;
-                BlockPos np = peer.getBlockPos().relative(d);
-                if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-                A h = lookup.find(pl, np, d.getOpposite());
-                if (h != null) out.add(h);
-            }
-        }
-        // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
-        if (out.size() > 1) java.util.Collections.rotate(out, -(int) (now % out.size()));
-        cache[k] = out;
-        return out;
+    <T> List<T> handlers(BlockApiLookup<T, Direction> lookup, TransferType type, boolean fromInputs) {
+        return neighbours(lookup, type, fromInputs ? Pick.FROM : Pick.TO);
     }
 
-    /**
-     * Хранилища у всех связанных интерфейсов, каждое один раз (у интерфейса «вход и выход» оно попало бы и в список
-     * «откуда», и в список «куда»). Для подсказки: сколько всего лежит в связанных хранилищах. Кэш на тик.
-     */
-    @SuppressWarnings("unchecked")
+    /** Хранилища соседей всех связанных интерфейсов, каждое один раз: сколько всего в них лежит (для подсказки). */
     <T> List<T> linked(BlockApiLookup<T, Direction> lookup, TransferType type) {
+        return neighbours(lookup, type, Pick.ALL);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> List<T> neighbours(BlockApiLookup<T, Direction> lookup, TransferType type, Pick pick) {
         Level level = be.getLevel();
         if (level == null || !be.isConnected()) return List.of();
         long now = level.getGameTime();
         if (now != cacheTick) { java.util.Arrays.fill(cache, null); cacheTick = now; }
-        int k = type.ordinal() * 3 + 2;
+        int k = type.ordinal() * Pick.values().length + pick.ordinal();
         List<?> cached = cache[k];
         if (cached != null) return (List<T>) cached;
         List<T> out = new ArrayList<>();
         for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
-            if (!peer.enabled(type) || !(peer.flow().in || peer.flow().out)) continue;
+            if (!peer.enabled(type) || (pick == Pick.TO && !peer.flow().out) || (pick == Pick.FROM && !peer.flow().in)) continue;
             Level pl = peer.getLevel();
             if (pl == null) continue;
             for (Direction d : Direction.values()) {
+                FaceMode fm = peer.face(d);
+                if ((pick == Pick.TO && fm == FaceMode.PULL) || (pick == Pick.FROM && fm == FaceMode.PUSH)) continue;
                 BlockPos np = peer.getBlockPos().relative(d);
                 if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
                 T h = lookup.find(pl, np, d.getOpposite());
                 if (h != null) out.add(h);
             }
         }
+        // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
+        if (pick != Pick.ALL && out.size() > 1) java.util.Collections.rotate(out, -(int) (now % out.size()));
         cache[k] = out;
         return out;
     }
