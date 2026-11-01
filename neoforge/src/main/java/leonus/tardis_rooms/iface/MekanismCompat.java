@@ -10,6 +10,7 @@ import leonus.tardis_rooms.platform.Platform;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -93,7 +94,7 @@ public final class MekanismCompat {
 
         /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
         private List<Object[]> filled() {
-            List<Object[]> out = new java.util.ArrayList<>();
+            List<Object[]> out = new ArrayList<>();
             for (IChemicalHandler h : sources())
                 for (int t = 0; t < h.getChemicalTanks(); t++) if (!h.getChemicalInTank(t).isEmpty()) out.add(new Object[]{h, t});
             return out;
@@ -167,20 +168,21 @@ public final class MekanismCompat {
             }
         }
 
-        /** Забрать что угодно: из первого хранилища у связанных входов, где что-то есть. */
+        /** Забрать что угодно: первый химикат, какой найдётся, — и дальше только его, по всем хранилищам (как у жидкостей). */
         @Override
         public ChemicalStack extractChemical(long amount, Action action) {
             if (amount <= 0 || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return ChemicalStack.EMPTY;
+            ChemicalStack first = ChemicalStack.EMPTY;
             InterfaceNetwork.depth++;
             try {
                 for (IChemicalHandler h : sources()) {
-                    ChemicalStack got = h.extractChemical(amount, action);
-                    if (!got.isEmpty()) return got;
+                    ChemicalStack probe = h.extractChemical(amount, Action.SIMULATE);
+                    if (!probe.isEmpty()) { first = probe; break; }
                 }
-                return ChemicalStack.EMPTY;
             } finally {
                 InterfaceNetwork.depth--;
             }
+            return first.isEmpty() ? ChemicalStack.EMPTY : extractChemical(first.copyWithAmount(amount), action);
         }
 
         /** Забрать именно этот химикат — сколько наберётся по всем хранилищам у связанных входов. */
