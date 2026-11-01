@@ -13,7 +13,6 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,6 +24,8 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     static final int FLUID_PER_OP = 16000;
 
     private final InterfaceBlockEntity be;
+    /** Хранилища у соседей связанных интерфейсов (общая часть, см. {@link LinkedStorages}). */
+    private final LinkedStorages storages;
     private final IEnergyStorage energy;
     private final IItemHandler items;
     private final IFluidHandler fluids;
@@ -32,6 +33,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     public NeoForgeInterfaceTransport(InterfaceBlockEntity be) {
         this.be = be;
+        this.storages = new LinkedStorages(be);
         this.energy = new EnergyView(be, this);
         this.items = new ItemView(be, this);
         this.fluids = new FluidView(be, this);
@@ -135,59 +137,13 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     // ---------- соседи связанных интерфейсов ----------
 
-    private long cacheTick = -1;
-    /** Кэш на тик: по списку на каждый вид передачи и каждую выборку ({@link Pick}). */
-    private final List<?>[] cache = new List<?>[TransferType.values().length * Pick.values().length];
-
-    /** Какие соседи связанных интерфейсов нужны. */
-    private enum Pick {
-        /** У интерфейсов с выходом — куда отдавать. Грани «забирать» пропускаются: они сами вынимают из соседа. */
-        TO,
-        /** У интерфейсов со входом — откуда забирать. Грани «вставлять» пропускаются: они сами кладут в соседа. */
-        FROM,
-        /** Все, каждый один раз (у интерфейса «вход и выход» он попал бы и в TO, и в FROM) — для подсказки. */
-        ALL
-    }
-
-    /**
-     * Обработчики соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать),
-     * иначе — у интерфейсов с выходом (куда отдавать). Соседние интерфейсы пропускаются. Кэш на тик.
-     */
+    /** Обработчики соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать), иначе — с выходом (куда отдавать). */
     <T> List<T> handlers(BlockCapability<T, Direction> cap, TransferType type, boolean fromInputs) {
-        return neighbours(cap, type, fromInputs ? Pick.FROM : Pick.TO);
+        return storages.get(cap, (l, p, s) -> l.getCapability(cap, p, s), type, fromInputs ? LinkedStorages.Pick.FROM : LinkedStorages.Pick.TO);
     }
 
     /** Обработчики соседей всех связанных интерфейсов, каждый один раз: сколько всего в них лежит (для подсказки). */
     <T> List<T> linked(BlockCapability<T, Direction> cap, TransferType type) {
-        return neighbours(cap, type, Pick.ALL);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> List<T> neighbours(BlockCapability<T, Direction> cap, TransferType type, Pick pick) {
-        Level level = be.getLevel();
-        if (level == null || !be.isConnected()) return List.of();
-        long now = level.getGameTime();
-        if (now != cacheTick) { java.util.Arrays.fill(cache, null); cacheTick = now; }
-        int k = type.ordinal() * Pick.values().length + pick.ordinal();
-        List<?> cached = cache[k];
-        if (cached != null) return (List<T>) cached;
-        List<T> out = new ArrayList<>();
-        for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
-            if (!peer.enabled(type) || (pick == Pick.TO && !peer.flow().out) || (pick == Pick.FROM && !peer.flow().in)) continue;
-            Level pl = peer.getLevel();
-            if (pl == null) continue;
-            for (Direction d : Direction.values()) {
-                FaceMode fm = peer.face(d);
-                if ((pick == Pick.TO && fm == FaceMode.PULL) || (pick == Pick.FROM && fm == FaceMode.PUSH)) continue;
-                BlockPos np = peer.getBlockPos().relative(d);
-                if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-                T h = pl.getCapability(cap, np, d.getOpposite());
-                if (h != null) out.add(h);
-            }
-        }
-        // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
-        if (pick != Pick.ALL && out.size() > 1) java.util.Collections.rotate(out, -(int) (now % out.size()));
-        cache[k] = out;
-        return out;
+        return storages.get(cap, (l, p, s) -> l.getCapability(cap, p, s), type, LinkedStorages.Pick.ALL);
     }
 }
