@@ -191,7 +191,8 @@ public final class MekanismCompat {
         @Override
         public long getTankCapacity(int tank) {
             Object[] l = locate(tank);
-            return l == null ? Long.MAX_VALUE : at(l).getTankCapacity((int) l[1]);
+            // Приёмный бак: ёмкость 0, как у жидкостей (см. FluidView) — трубы Mekanism вставляют, не глядя на неё.
+            return l == null ? 0 : at(l).getTankCapacity((int) l[1]);
         }
 
         @Override

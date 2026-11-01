@@ -48,7 +48,9 @@ final class FluidView implements IFluidHandler {
     @Override
     public int getTankCapacity(int tank) {
         Object[] l = locate(tank);
-        return l == null ? Integer.MAX_VALUE : ((IFluidHandler) l[0]).getTankCapacity((int) l[1]);
+        // Приёмный бак всегда пуст (всё сразу уходит дальше): ёмкость 0, чтобы Jade не рисовал его пустой полоской.
+        // Трубы заливают через fill(), ёмкость при этом не смотрят.
+        return l == null ? 0 : ((IFluidHandler) l[0]).getTankCapacity((int) l[1]);
     }
 
     @Override

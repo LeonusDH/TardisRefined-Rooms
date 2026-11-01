@@ -47,28 +47,29 @@ public class JadePlugin implements IWailaPlugin {
         @Override
         public ResourceLocation getUid() { return UID; }
 
+        /** Ключи с префиксом: данные с сервера у всех плагинов Jade лежат в одном теге, а «id» и «status» там могут быть заняты. */
         @Override
         public void appendServerData(CompoundTag tag, BlockAccessor accessor) {
             if (!leonus.tardis_rooms.TardisRoomsConfig.compatJade() || !(accessor.getBlockEntity() instanceof InterfaceBlockEntity be)) return;
-            tag.putByte("status", (byte) be.status().ordinal());
-            tag.putInt("id", be.id());
-            tag.putInt("peers", be.peerCount());
-            tag.putByte("flow", (byte) be.flow().ordinal());
-            tag.putInt("types", be.data().types());
-            tag.putInt("faces", be.data().faces());
+            tag.putByte("tardis_rooms_status", (byte) be.status().ordinal());
+            tag.putInt("tardis_rooms_id", be.id());
+            tag.putInt("tardis_rooms_peers", be.peerCount());
+            tag.putByte("tardis_rooms_flow", (byte) be.flow().ordinal());
+            tag.putInt("tardis_rooms_types", be.data().types());
+            tag.putInt("tardis_rooms_faces", be.data().faces());
         }
 
         @Override
         public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
             if (!leonus.tardis_rooms.TardisRoomsConfig.compatJade()) return;
             CompoundTag d = accessor.getServerData();
-            if (!d.contains("status")) return;
-            Status st = Status.of(d.getByte("status"));
+            if (!d.contains("tardis_rooms_status")) return;
+            Status st = Status.of(d.getByte("tardis_rooms_status"));
             tooltip.add(st.text());
-            int id = d.getInt("id");
+            int id = d.getInt("tardis_rooms_id");
             if (id != 0) tooltip.add(TRoomsText.IFACE_ID.text(Component.literal(InterfaceData.hex(id)).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
             // Режимы сторон — собственная настройка интерфейса: видны и без связи.
-            int faceBits = d.getInt("faces");
+            int faceBits = d.getInt("tardis_rooms_faces");
             MutableComponent faces = Component.empty();
             boolean first = true;
             for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
@@ -82,9 +83,9 @@ public class JadePlugin implements IWailaPlugin {
             }
             if (!first) tooltip.add(TRoomsText.JADE_INTERFACE_FACES.text(faces).withStyle(ChatFormatting.GRAY));
             if (st != Status.CONNECTED) return;
-            tooltip.add(TRoomsText.IFACE_PEERS.text(d.getInt("peers")).withStyle(ChatFormatting.GRAY));
-            tooltip.add(TRoomsText.IFACE_FLOW.text(flow(Flow.of(d.getByte("flow")))).withStyle(ChatFormatting.GRAY));
-            int types = d.getInt("types");
+            tooltip.add(TRoomsText.IFACE_PEERS.text(d.getInt("tardis_rooms_peers")).withStyle(ChatFormatting.GRAY));
+            tooltip.add(TRoomsText.IFACE_FLOW.text(flow(Flow.of(d.getByte("tardis_rooms_flow")))).withStyle(ChatFormatting.GRAY));
+            int types = d.getInt("tardis_rooms_types");
             MutableComponent on = Component.empty();
             first = true;
             for (TransferType t : TransferType.values()) {
