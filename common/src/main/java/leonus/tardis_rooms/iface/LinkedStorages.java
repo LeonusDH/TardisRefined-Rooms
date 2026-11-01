@@ -47,7 +47,6 @@ public final class LinkedStorages {
      * Хранилища у соседей связанных интерфейсов, у которых включён вид передачи {@code type}. Соседние интерфейсы
      * пропускаются. {@code key} — по нему кэш различает виды хранилищ (одна и та же capability или lookup).
      */
-    @SuppressWarnings("unchecked")
     public <T> List<T> get(Object key, Finder<T> finder, TransferType type, Pick pick) {
         Level level = be.getLevel();
         if (level == null || !be.isConnected()) return List.of();
@@ -57,8 +56,9 @@ public final class LinkedStorages {
             cacheTick = now;
         }
         Map<Object, List<?>> byKey = cache.get(pick);
-        List<?> cached = byKey.get(key);
-        if (cached != null) return (List<T>) cached;
+        // Список под ключом всегда того типа, что находит этот ключ (тип задаёт сама capability или lookup).
+        @SuppressWarnings("unchecked") List<T> cached = (List<T>) byKey.get(key);
+        if (cached != null) return cached;
         List<T> out = new ArrayList<>();
         for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
             if (!peer.enabled(type) || (pick == Pick.TO && !peer.flow().out) || (pick == Pick.FROM && !peer.flow().in)) continue;
