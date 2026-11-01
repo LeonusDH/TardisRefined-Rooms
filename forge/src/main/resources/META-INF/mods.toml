@@ -6,6 +6,8 @@ license = "PolyForm-Noncommercial-1.0.0"
 modId = "${mod_id}"
 version = "${mod_version}"
 displayName = "TARDIS Refined: Rooms"
+logoFile = "tardis_rooms_icon.png"
+logoBlur = false
 authors = "LeonusDH"
 # Переводы описания — в языковых файлах, ключ fml.menu.mods.info.description.tardis_rooms
 description = '''A hand-built TARDIS interior: grow rooms and corridors with the sonic screwdriver on a grid, instead of Tardis Refined's endless procedural ARS corridors. The TARDIS Interface carries items, fluids, energy and redstone between rooms and to the outside, plus Mekanism chemicals and AE2 ME networks.'''

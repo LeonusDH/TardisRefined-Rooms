@@ -8,6 +8,7 @@
     "LeonusDH"
   ],
   "license": "PolyForm-Noncommercial-1.0.0",
+  "icon": "tardis_rooms_icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
