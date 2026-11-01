@@ -1,7 +1,6 @@
 package leonus.tardis_rooms.iface;
 
 import dev.architectury.injectables.annotations.ExpectPlatform;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -32,7 +31,7 @@ public final class InterfacePlatform {
     }
 
     @ExpectPlatform
-    public static ItemInteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
+    public static net.minecraft.world.InteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
         throw new AssertionError();
     }
 

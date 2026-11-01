@@ -1,5 +1,6 @@
 package leonus.tardis_rooms;
 
+import leonus.tardis_rooms.network.codec.ByteBufCodecs;
 import leonus.tardis_rooms.iface.InterfaceBlock;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
@@ -9,7 +10,6 @@ import leonus.tardis_rooms.room.ProtectedBlock;
 import leonus.tardis_rooms.room.RoomCoreBlock;
 import leonus.tardis_rooms.room.RoomNodeBlock;
 import leonus.tardis_rooms.upper.UpperHalfBlock;
-import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.SoundType;
@@ -30,16 +30,7 @@ public final class TRoomsBlocks {
                     .sound(SoundType.METAL).lightLevel(s -> 5));
     public static final RegEntry<InterfaceItem> INTERFACE_ITEM = RegEntry.of(Registries.ITEM, "tardis_interface", () -> new InterfaceItem(INTERFACE.get(), new Item.Properties()));
 
-    /** Настройки интерфейса на предмете (переносятся при разрушении и установке). */
-    public static final RegEntry<DataComponentType<InterfaceData>> INTERFACE_DATA = RegEntry.of(Registries.DATA_COMPONENT_TYPE, "interface",
-            () -> DataComponentType.<InterfaceData>builder().persistent(InterfaceData.CODEC).networkSynchronized(InterfaceData.STREAM_CODEC).build());
-    /** Режим отвёртки: 0 — обычный (всё как у отвёртки TR), 1 — настройка интерфейсов. Меняется Shift + колёсиком. */
-    public static final RegEntry<DataComponentType<Integer>> SCREWDRIVER_MODE = RegEntry.of(Registries.DATA_COMPONENT_TYPE, "screwdriver_mode",
-            () -> DataComponentType.<Integer>builder().persistent(com.mojang.serialization.Codec.INT)
-                    .networkSynchronized(net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
-    /** Идентификатор интерфейса, запомненный отвёрткой. */
-    public static final RegEntry<DataComponentType<InterfaceLink>> INTERFACE_LINK = RegEntry.of(Registries.DATA_COMPONENT_TYPE, "interface_link",
-            () -> DataComponentType.<InterfaceLink>builder().persistent(InterfaceLink.CODEC).networkSynchronized(InterfaceLink.STREAM_CODEC).build());
+    // Настройки интерфейса, режим отвёртки и запомненный идентификатор хранятся в NBT предметов (см. ItemData).
     public static final RegEntry<BlockEntityType<InterfaceBlockEntity>> INTERFACE_BE =
             RegEntry.of(Registries.BLOCK_ENTITY_TYPE, "tardis_interface", () -> Platform.blockEntityType(InterfaceBlockEntity::new, INTERFACE.get()));
 

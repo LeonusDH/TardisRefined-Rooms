@@ -2,18 +2,18 @@ package leonus.tardis_rooms.network;
 
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.custom.CustomRoomInfo;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
+import leonus.tardis_rooms.network.codec.StreamCodec;
+import leonus.tardis_rooms.network.Payload;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /** Сервер → клиент: помещения из датапаков (при входе и после /reload). Целиком заменяет прежний список. */
-public record CustomRoomsPayload(List<CustomRoomInfo> rooms) implements CustomPacketPayload {
-    public static final Type<CustomRoomsPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "custom_rooms"));
-    public static final StreamCodec<RegistryFriendlyByteBuf, CustomRoomsPayload> STREAM_CODEC = StreamCodec.of(
+public record CustomRoomsPayload(List<CustomRoomInfo> rooms) implements Payload {
+    public static final Type<CustomRoomsPayload> TYPE = new Type<>(new ResourceLocation(TardisRooms.MODID, "custom_rooms"));
+    public static final StreamCodec<FriendlyByteBuf, CustomRoomsPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {
                 buf.writeVarInt(p.rooms.size());
                 for (CustomRoomInfo i : p.rooms) CustomRoomInfo.STREAM_CODEC.encode(buf, i);
@@ -26,7 +26,7 @@ public record CustomRoomsPayload(List<CustomRoomInfo> rooms) implements CustomPa
             });
 
     @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    public Type<? extends Payload> type() { return TYPE; }
 
     /** Клиент, главный поток. */
     public static void handle(CustomRoomsPayload p) {

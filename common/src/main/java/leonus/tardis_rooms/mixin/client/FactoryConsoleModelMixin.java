@@ -26,9 +26,9 @@ public abstract class FactoryConsoleModelMixin {
     private ModelPart tardisRooms$doorLever;
 
     @Inject(method = "renderConsole",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/geom/ModelPart;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V"))
-    private void tardisRooms$animateDoorLever(GlobalConsoleBlockEntity console, float partialTick, Level level, PoseStack poseStack,
-                                             VertexConsumer consumer, int light, int overlay, int color, CallbackInfo ci) {
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/geom/ModelPart;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;IIFFFF)V", remap = true))
+    private void tardisRooms$animateDoorLever(GlobalConsoleBlockEntity console, Level level, PoseStack poseStack, VertexConsumer consumer,
+                                             int light, int overlay, float red, float green, float blue, float alpha, CallbackInfo ci) {
         if (console == null || level == null) return;
         double angle = TardisRoomsConfig.doorLeverClosedAngle();
         if (angle == 0) return;

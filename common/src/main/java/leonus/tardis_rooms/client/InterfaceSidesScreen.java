@@ -43,7 +43,7 @@ import java.util.List;
 public class InterfaceSidesScreen extends Screen {
     private static final int PANEL_W = 220, PANEL_H = 192, VIEW = 150;
     private static final net.minecraft.resources.ResourceLocation ICON_BACK =
-            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(whocraft.tardis_refined.TardisRefined.MODID, "back");
+            new net.minecraft.resources.ResourceLocation(whocraft.tardis_refined.TardisRefined.MODID, "back");
     private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_ON = RoomMonitorScreen.sprite("iface/neighbours_on");
     private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_OFF = RoomMonitorScreen.sprite("iface/neighbours_off");
     private static final net.minecraft.resources.ResourceLocation ICON_RESET = RoomMonitorScreen.sprite("iface/reset_view");
@@ -91,7 +91,7 @@ public class InterfaceSidesScreen extends Screen {
 
     private int icon(int x, int y, net.minecraft.resources.ResourceLocation sprite, net.minecraft.network.chat.MutableComponent title,
                      net.minecraft.network.chat.MutableComponent hint, Runnable onPress) {
-        var b = net.minecraft.client.gui.components.SpriteIconButton.builder(title, btn -> onPress.run(), true).width(20).sprite(sprite, 20, 20).build();
+        var b = new IconButton(20, sprite, title, btn -> onPress.run());
         b.setPosition(x, y);
         b.setTooltip(net.minecraft.client.gui.components.Tooltip.create(title.copy().withStyle(ChatFormatting.GOLD)
                 .append("\n").append(hint.withStyle(ChatFormatting.GRAY))));
@@ -204,9 +204,8 @@ public class InterfaceSidesScreen extends Screen {
     // ---------- рисование ----------
 
     /** Панель, вид и легенда — под кнопками (Screen.render рисует фон, затем виджеты). */
-    @Override
-    public void renderBackground(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderTransparentBackground(g); // без размытия — блок и кнопки должны быть чёткими
+    private void renderPanel(@NotNull GuiGraphics g, int mouseX, int mouseY) {
+        g.fillGradient(0, 0, width, height, 0xC0101010, 0xD0101010); // затемнение как у экранов в мире, без размытия
         g.fill(left - 1, top - 1, left + PANEL_W + 1, top + PANEL_H + 1, 0xFF747370);
         g.fill(left, top, left + PANEL_W, top + PANEL_H, 0xFF2E333E);
         g.fill(viewX() - 1, viewY() - 1, viewX() + VIEW + 1, viewY() + VIEW + 1, 0xFF454D5B);
@@ -226,6 +225,7 @@ public class InterfaceSidesScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        renderPanel(g, mouseX, mouseY); // на 1.20.1 Screen.render фон сам не рисует — панель рисуем до виджетов
         super.render(g, mouseX, mouseY, partialTick);
         if (hovered == null) return;
         FaceMode m = data().face(hovered);
@@ -259,7 +259,7 @@ public class InterfaceSidesScreen extends Screen {
         if (level == null) return;
         PoseStack ps = g.pose();
         ps.pushPose();
-        ps.mulPose(transform());
+        ps.mulPoseMatrix(transform());
         MultiBufferSource.BufferSource buf = g.bufferSource();
         Lighting.setupFor3DItems();
         renderState(ps, buf, level, pos, level.getBlockState(pos));
@@ -317,6 +317,6 @@ public class InterfaceSidesScreen extends Screen {
             case WEST -> new float[][]{{lo, 0, 0}, {lo, 0, 1}, {lo, 1, 1}, {lo, 1, 0}};
             case EAST -> new float[][]{{hi, 0, 0}, {hi, 1, 0}, {hi, 1, 1}, {hi, 0, 1}};
         };
-        for (float[] p : v) vc.addVertex(m, p[0], p[1], p[2]).setColor(r, g, b, a);
+        for (float[] p : v) vc.vertex(m, p[0], p[1], p[2]).color(r, g, b, a).endVertex();
     }
 }

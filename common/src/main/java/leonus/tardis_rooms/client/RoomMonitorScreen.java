@@ -6,7 +6,6 @@ import leonus.tardis_rooms.room.Node;
 import leonus.tardis_rooms.room.PieceCatalog;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -27,7 +26,7 @@ public abstract class RoomMonitorScreen extends MonitorOS {
     protected PieceCatalog.Preview previewBefore;
 
     protected RoomMonitorScreen(Component title, BlockPos nodePos, Node node) {
-        super(title, ResourceLocation.fromNamespaceAndPath(TardisRefined.MODID, "textures/gui/monitor/backdrop.png"));
+        super(title, new ResourceLocation(TardisRefined.MODID, "textures/gui/monitor/backdrop.png"));
         this.nodePos = nodePos;
         this.node = node;
     }
@@ -60,12 +59,12 @@ public abstract class RoomMonitorScreen extends MonitorOS {
     protected static final int FRAME_W = 256;
 
     /** Кнопки вокруг рамки монитора: принимают клики как обычно, а рисуются в {@link #render} поверх рамки. */
-    private final java.util.List<SpriteIconButton> sideButtons = new java.util.ArrayList<>();
+    private final java.util.List<IconButton> sideButtons = new java.util.ArrayList<>();
     /** Последняя добавленная кнопка (чтобы, например, сделать её неактивной). */
-    protected SpriteIconButton lastButton;
+    protected IconButton lastButton;
 
     protected static ResourceLocation sprite(String path) {
-        return ResourceLocation.fromNamespaceAndPath(leonus.tardis_rooms.TardisRooms.MODID, path);
+        return new ResourceLocation(leonus.tardis_rooms.TardisRooms.MODID, path);
     }
 
     /** Левая колонка кнопок — вплотную слева от рамки. */
@@ -82,7 +81,7 @@ public abstract class RoomMonitorScreen extends MonitorOS {
      * Монитор TR рисует свои виджеты только в пределах экрана монитора, поэтому эти рисуем сами.
      */
     protected int sideButton(int x, int y, ResourceLocation icon, MutableComponent title, MutableComponent hint, Runnable onPress) {
-        SpriteIconButton b = SpriteIconButton.builder(title, btn -> onPress.run(), true).width(20).sprite(icon, 20, 20).build();
+        IconButton b = new IconButton(20, icon, title, btn -> onPress.run());
         b.setPosition(x, y);
         b.setTooltip(Tooltip.create(title.copy().withStyle(ChatFormatting.GOLD).append("\n").append(hint.withStyle(ChatFormatting.GRAY))));
         addWidget(b);
@@ -94,7 +93,7 @@ public abstract class RoomMonitorScreen extends MonitorOS {
     @Override
     public void render(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        for (SpriteIconButton b : sideButtons) b.render(g, mouseX, mouseY, partialTick);
+        for (IconButton b : sideButtons) b.render(g, mouseX, mouseY, partialTick);
         for (java.util.Map.Entry<SelectionListEntry, Component> e : tips.entrySet()) {
             if (overList(mouseX, mouseY) && e.getKey().isMouseOver(mouseX, mouseY)) {
                 g.renderTooltip(font, font.split(e.getValue(), 180), mouseX, mouseY);

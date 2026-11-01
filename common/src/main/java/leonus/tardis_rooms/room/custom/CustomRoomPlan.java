@@ -125,7 +125,7 @@ public final class CustomRoomPlan {
                     pos[k] = Lattice.openingPos(mx, mz, side, floorY, DOORWAY_MIN + k, dy).relative(inward, depth);
                     states[k] = level.getBlockState(pos[k]);
                     BlockEntity be = level.getBlockEntity(pos[k]);
-                    data[k] = be != null ? be.saveWithoutMetadata(level.registryAccess()) : null;
+                    data[k] = be != null ? be.saveWithoutMetadata() : null;
                 }
                 for (int k = 0; k < n; k++) {
                     int from = n - 1 - k;
@@ -135,8 +135,9 @@ public final class CustomRoomPlan {
                         if (level.getBlockEntity(pos[k]) != null) level.removeBlockEntity(pos[k]);
                         level.setBlock(pos[k], to, Block.UPDATE_CLIENTS);
                     }
-                    if (data[from] != null && level.getBlockEntity(pos[k]) instanceof BlockEntity be) {
-                        be.loadWithComponents(data[from], level.registryAccess());
+                    BlockEntity be = data[from] != null ? level.getBlockEntity(pos[k]) : null;
+                    if (be != null) {
+                        be.load(data[from]);
                         be.setChanged();
                     }
                 }

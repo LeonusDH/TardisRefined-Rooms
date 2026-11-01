@@ -1,12 +1,10 @@
 package leonus.tardis_rooms.iface;
 
-import com.mojang.serialization.MapCodec;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -28,25 +26,19 @@ import whocraft.tardis_refined.registry.TRDimensionTypes;
  * (тогда подключается к сети этой ТАРДИС). Настраивается отвёрткой.
  */
 public class InterfaceBlock extends BaseEntityBlock {
-    public static final MapCodec<InterfaceBlock> CODEC = simpleCodec(InterfaceBlock::new);
-
     public InterfaceBlock(Properties properties) {
         super(properties);
     }
 
     @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return CODEC;
-    }
-
-    @Override
-    protected RenderShape getRenderShape(BlockState state) {
+    @SuppressWarnings("deprecation")
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
     }
 
     /** Можно ли поставить здесь: в ТАРДИС — везде, снаружи — только рядом с оболочкой. */
     public static boolean canPlaceAt(Level level, BlockPos pos) {
-        return TRDimensionTypes.isTARDISDimension(level) || !InterfaceBlockEntity.nearbyTardises(level, pos).isEmpty();
+        return leonus.tardis_rooms.TardisRooms.isTardisDimension(level) || !InterfaceBlockEntity.nearbyTardises(level, pos).isEmpty();
     }
 
     @Override
@@ -59,24 +51,28 @@ public class InterfaceBlock extends BaseEntityBlock {
     // ---------- редстоун ----------
 
     @Override
-    protected boolean isSignalSource(BlockState state) {
+    @SuppressWarnings("deprecation")
+    public boolean isSignalSource(BlockState state) {
         return true;
     }
 
     @Override
-    protected int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.core.Direction direction) {
+    @SuppressWarnings("deprecation")
+    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.core.Direction direction) {
         return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.redstoneOut() : 0;
     }
 
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean moving) {
+    @SuppressWarnings("deprecation")
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean moving) {
         super.neighborChanged(state, level, pos, block, fromPos, moving);
         if (!level.isClientSide() && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) be.updateRedstoneInput();
     }
 
     /** Убрали интерфейс — связанные пересчитывают свой сигнал без него. */
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
+    @SuppressWarnings("deprecation")
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
         java.util.List<InterfaceBlockEntity> peers = !level.isClientSide() && !state.is(newState.getBlock())
                 && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.linked() : java.util.List.of();
         super.onRemove(state, level, pos, newState, moving);
@@ -94,17 +90,17 @@ public class InterfaceBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(hand);
         if (InterfacePlatform.isMemoryCard(stack) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
             return InterfacePlatform.useMemoryCard(stack, be, player);
         }
-        if (!(stack.getItem() instanceof ScrewdriverItem)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);
-        return ItemInteractionResult.sidedSuccess(level.isClientSide());
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (stack.getItem() instanceof ScrewdriverItem) {
+            if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);
+            return InteractionResult.sidedSuccess(level.isClientSide());
+        }
+        if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (!level.isClientSide()) player.displayClientMessage(TRoomsText.MSG_INTERFACE_USE_SCREWDRIVER.text(), true);
         return InteractionResult.sidedSuccess(level.isClientSide());
     }

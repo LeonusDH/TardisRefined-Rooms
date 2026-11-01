@@ -69,8 +69,8 @@ public class RoomManageScreen extends RoomMonitorScreen {
     @Override
     public void doRender(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.doRender(g, mouseX, mouseY, partialTick);
-        whocraft.tardis_refined.client.screen.ScreenHelper.renderWidthScaledText(heading.copy().withStyle(ChatFormatting.YELLOW), g, font,
-                width / 2f, 5 + (height - monitorHeight) / 2f, 0xFFFFFF, 300, true);
+        whocraft.tardis_refined.client.screen.ScreenHelper.renderWidthScaledText(heading.getString(), g, font,
+                width / 2f, 5 + (height - monitorHeight) / 2f, 0xFFFF55, 300, true);
     }
 
     /** «Управление помещением» — над рамкой монитора, по центру. */

@@ -6,7 +6,6 @@ import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.mixin.StructureTemplateAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -155,7 +154,7 @@ public final class HubInitializer {
     private static List<HubPiece> loadPieces(ServerLevel level) {
         List<HubPiece> out = new ArrayList<>();
         for (int i = 0; i < PIECE_IDS.length; i++) {
-            var template = level.getStructureManager().get(ResourceLocation.fromNamespaceAndPath(TardisRefined.MODID, PIECE_IDS[i]));
+            var template = level.getStructureManager().get(new ResourceLocation(TardisRefined.MODID, PIECE_IDS[i]));
             if (template.isEmpty()) return List.of();
             var palettes = ((StructureTemplateAccessor) template.get()).tardisRooms$getPalettes();
             if (palettes.isEmpty()) return List.of();
@@ -374,7 +373,7 @@ public final class HubInitializer {
     // ---------- сохранение ----------
 
     private static HubData data(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(HubData::new, HubData::load, null), DATA_NAME);
+        return level.getDataStorage().computeIfAbsent(HubData::load, HubData::new, DATA_NAME);
     }
 
     public static final class HubData extends SavedData {
@@ -383,7 +382,7 @@ public final class HubInitializer {
         /** Какой хаб: {@link #LAYOUT_TR} или {@link #LAYOUT_SMALL}. */
         int layout;
 
-        static HubData load(CompoundTag tag, HolderLookup.Provider provider) {
+        static HubData load(CompoundTag tag) {
             HubData d = new HubData();
             d.prepared = tag.getBoolean("prepared");
             d.layout = tag.getInt("layout");
@@ -391,7 +390,7 @@ public final class HubInitializer {
         }
 
         @Override
-        public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+        public CompoundTag save(CompoundTag tag) {
             tag.putBoolean("prepared", prepared);
             tag.putInt("layout", layout);
             return tag;

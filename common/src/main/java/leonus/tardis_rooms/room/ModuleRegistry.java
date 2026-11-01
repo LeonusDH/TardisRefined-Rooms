@@ -2,7 +2,6 @@ package leonus.tardis_rooms.room;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
@@ -60,7 +59,7 @@ public final class ModuleRegistry extends SavedData {
     private int nextId = 1;
 
     public static ModuleRegistry get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(new SavedData.Factory<>(ModuleRegistry::new, ModuleRegistry::load, null), NAME);
+        return level.getDataStorage().computeIfAbsent(ModuleRegistry::load, ModuleRegistry::new, NAME);
     }
 
     /** Модуль занят каким-то помещением. */
@@ -123,7 +122,7 @@ public final class ModuleRegistry extends SavedData {
         return c;
     }
 
-    private static ModuleRegistry load(CompoundTag tag, HolderLookup.Provider provider) {
+    private static ModuleRegistry load(CompoundTag tag) {
         ModuleRegistry r = new ModuleRegistry();
         r.nextId = Math.max(1, tag.getInt("nextId"));
         ListTag list = tag.getList("pieces", Tag.TAG_COMPOUND);
@@ -139,7 +138,7 @@ public final class ModuleRegistry extends SavedData {
                 for (long v : ft.getLongArray(k)) set.add(v);
                 fp.put(Integer.parseInt(k), set);
             }
-            BlockPos core = NbtUtils.readBlockPos(t, "core").orElse(null);
+            BlockPos core = t.contains("core", Tag.TAG_COMPOUND) ? NbtUtils.readBlockPos(t.getCompound("core")) : null;
             Piece p = new Piece(t.getInt("id"), id, node, fp, core);
             if (t.contains("name", Tag.TAG_STRING)) p.customName = t.getString("name");
             r.pieces.put(p.id, p);
@@ -150,7 +149,7 @@ public final class ModuleRegistry extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+    public CompoundTag save(CompoundTag tag) {
         tag.putInt("nextId", nextId);
         ListTag list = new ListTag();
         for (Piece p : pieces.values()) {

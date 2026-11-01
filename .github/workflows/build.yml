@@ -29,7 +29,8 @@ jobs:
       - name: Report errors
         if: failure()
         run: |
-          grep -E 'error:|FAILURE|What went wrong|Could not|> ' build.log | grep -v '^> Task' | head -n 200 > errors.txt || true
+          grep -A2 -E 'error:' build.log | grep -v -E '^\s*\^\s*$|^--$' | head -n 300 > errors.txt || true
+          grep -E 'FAILURE|What went wrong|Could not' build.log | head -n 20 >> errors.txt || true
           split -l 20 errors.txt part_
           for f in part_*; do
             msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' "$f")

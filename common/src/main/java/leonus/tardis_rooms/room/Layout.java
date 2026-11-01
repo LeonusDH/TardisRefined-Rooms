@@ -377,8 +377,8 @@ public final class Layout {
     // ---------- лифт ----------
 
     /** Гравитационный колодец TR: низ (площадка, шахта) и верх (проём в полу). */
-    static final ResourceLocation WELL_BOTTOM = ResourceLocation.fromNamespaceAndPath(TardisRefined.MODID, "corridors/corridor_connection_bottom");
-    static final ResourceLocation WELL_TOP = ResourceLocation.fromNamespaceAndPath(TardisRefined.MODID, "corridors/corridor_connection_top");
+    static final ResourceLocation WELL_BOTTOM = new ResourceLocation(TardisRefined.MODID, "corridors/corridor_connection_bottom");
+    static final ResourceLocation WELL_TOP = new ResourceLocation(TardisRefined.MODID, "corridors/corridor_connection_top");
     /** Шахта в модуле: кольцо стен 6..12, внутри 7..11 (как развилка коридора), центр 9. */
     private static final int SHAFT_MIN = 6, SHAFT_MAX = 12, PIT_MIN = 7, PIT_MAX = 11;
     /** Блок управления лифтом — в проходе входа, на столько блоков от центра шахты (2 блока от края площадки). */
@@ -464,7 +464,7 @@ public final class Layout {
     }
 
     private static Optional<StructureTemplate> template(ServerLevel level, String name) {
-        return level.getStructureManager().get(ResourceLocation.fromNamespaceAndPath(TardisRefined.MODID, "corridor_template/" + name));
+        return level.getStructureManager().get(new ResourceLocation(TardisRefined.MODID, "corridor_template/" + name));
     }
 
     /**

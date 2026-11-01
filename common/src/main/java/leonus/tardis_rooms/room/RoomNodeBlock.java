@@ -4,7 +4,6 @@ import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -22,19 +21,16 @@ public class RoomNodeBlock extends ProtectedBlock {
         return TRoomsText.MSG_USE_SCREWDRIVER;
     }
 
+    /** Отвёрткой — каталог помещений; без неё — подсказка (только основной рукой, чтобы не дублировать). */
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (!(stack.getItem() instanceof ScrewdriverItem)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (stack.getItem() instanceof ScrewdriverItem) {
+            if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openRoomSelector(pos);
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
-        if (level.isClientSide()) {
-            leonus.tardis_rooms.client.ClientAccess.openRoomSelector(pos);
-        }
-        return ItemInteractionResult.sidedSuccess(level.isClientSide());
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;
         if (!level.isClientSide()) {
             player.displayClientMessage(TRoomsText.MSG_USE_SCREWDRIVER.text(), true);
         }

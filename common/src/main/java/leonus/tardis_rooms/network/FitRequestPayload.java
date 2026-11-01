@@ -1,14 +1,15 @@
 package leonus.tardis_rooms.network;
 
+import leonus.tardis_rooms.network.codec.ByteBufCodecs;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.Lattice;
 import leonus.tardis_rooms.room.ModuleRegistry;
 import leonus.tardis_rooms.room.Node;
 import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
+import leonus.tardis_rooms.network.codec.StreamCodec;
+import leonus.tardis_rooms.network.Payload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -19,13 +20,13 @@ import java.util.List;
 import java.util.Map;
 
 /** Клиент → сервер: «что влезает за этот узел?» ({@code replaceCore} ≠ ZERO — при замене помещения). */
-public record FitRequestPayload(BlockPos pos, BlockPos replaceCore) implements CustomPacketPayload {
-    public static final Type<FitRequestPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "fit_request"));
-    public static final StreamCodec<RegistryFriendlyByteBuf, FitRequestPayload> STREAM_CODEC =
-            StreamCodec.composite(BlockPos.STREAM_CODEC, FitRequestPayload::pos, BlockPos.STREAM_CODEC, FitRequestPayload::replaceCore, FitRequestPayload::new);
+public record FitRequestPayload(BlockPos pos, BlockPos replaceCore) implements Payload {
+    public static final Type<FitRequestPayload> TYPE = new Type<>(new ResourceLocation(TardisRooms.MODID, "fit_request"));
+    public static final StreamCodec<FriendlyByteBuf, FitRequestPayload> STREAM_CODEC =
+            StreamCodec.composite(ByteBufCodecs.BLOCK_POS, FitRequestPayload::pos, ByteBufCodecs.BLOCK_POS, FitRequestPayload::replaceCore, FitRequestPayload::new);
 
     @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    public Type<? extends Payload> type() { return TYPE; }
 
     /** Сервер, главный поток. */
     public static void handle(FitRequestPayload payload, ServerPlayer player) {

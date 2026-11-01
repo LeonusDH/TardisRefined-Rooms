@@ -42,7 +42,7 @@ public class JadePlugin implements IWailaPlugin {
     public enum InterfaceInfo implements IBlockComponentProvider, IServerDataProvider<BlockAccessor> {
         INSTANCE;
 
-        private static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "interface");
+        private static final ResourceLocation UID = new ResourceLocation(TardisRooms.MODID, "interface");
 
         @Override
         public ResourceLocation getUid() { return UID; }

@@ -4,8 +4,6 @@ import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.platform.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.protocol.Packet;
@@ -197,7 +195,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     /** Снять интерфейс ключом: блок — сразу в инвентарь, с настройками. */
     public void dismantle(Player player) {
         ItemStack stack = new ItemStack(TRoomsBlocks.INTERFACE_ITEM.get());
-        stack.applyComponents(collectComponents()); // те же компоненты, что при обычной поломке блока
+        ItemData.setInterfaceData(stack, data); // то же, что копирует таблица добычи при обычной поломке блока
         Level l = level;
         BlockPos p = worldPosition;
         l.playSound(null, p, Platform.soundType(getBlockState(), l, p, player).getBreakSound(), SoundSource.BLOCKS, 1f, 1f);
@@ -209,7 +207,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     void refresh() {
         ResourceKey<Level> t = null;
         Status st;
-        if (TRDimensionTypes.isTARDISDimension(level)) {
+        if (leonus.tardis_rooms.TardisRooms.isTardisDimension(level)) {
             t = level.dimension();
             st = Status.CONNECTED;
         } else {
@@ -311,8 +309,8 @@ public class InterfaceBlockEntity extends BlockEntity {
     // ---------- сохранение и перенос с предметом ----------
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         InterfaceData.CODEC.encodeStart(NbtOps.INSTANCE, data).result().ifPresent(t -> tag.put("interface", t));
         tag.putByte("status", (byte) status.ordinal());
         tag.putInt("peers", peers);
@@ -320,8 +318,8 @@ public class InterfaceBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         if (tag.contains("interface")) data = InterfaceData.CODEC.parse(NbtOps.INSTANCE, tag.get("interface")).result().orElse(InterfaceData.DEFAULT);
         // На сервере это пересчитает refresh(); на клиенте — показываем присланное.
         status = Status.of(tag.getByte("status"));
@@ -331,28 +329,8 @@ public class InterfaceBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void applyImplicitComponents(DataComponentInput input) {
-        super.applyImplicitComponents(input);
-        InterfaceData d = input.get(TRoomsBlocks.INTERFACE_DATA.get());
-        if (d != null) data = d;
-    }
-
-    @Override
-    protected void collectImplicitComponents(DataComponentMap.Builder builder) {
-        super.collectImplicitComponents(builder);
-        if (!data.equals(InterfaceData.DEFAULT)) builder.set(TRoomsBlocks.INTERFACE_DATA.get(), data);
-    }
-
-    // Mojang пометила метод устаревшим, но замены в 1.21.1 нет: без него настройки попадут в предмет дважды (тегом и компонентом).
-    @SuppressWarnings("deprecation")
-    @Override
-    public void removeComponentsFromTag(CompoundTag tag) {
-        tag.remove("interface");
-    }
-
-    @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
     }
 
     @Override

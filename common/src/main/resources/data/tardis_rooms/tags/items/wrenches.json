@@ -1,6 +1,14 @@
 {
   "values": [
     {
+      "id": "#forge:tools/wrench",
+      "required": false
+    },
+    {
+      "id": "#forge:wrenches",
+      "required": false
+    },
+    {
       "id": "#c:tools/wrench",
       "required": false
     },

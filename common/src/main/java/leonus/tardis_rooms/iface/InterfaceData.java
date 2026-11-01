@@ -2,9 +2,6 @@ package leonus.tardis_rooms.iface;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.Optional;
@@ -26,14 +23,6 @@ public record InterfaceData(int id, Optional<ResourceLocation> tardis, int flow,
             Codec.INT.fieldOf("types").forGetter(InterfaceData::types),
             Codec.INT.optionalFieldOf("faces", 0).forGetter(InterfaceData::faces)
     ).apply(i, InterfaceData::new));
-
-    public static final StreamCodec<ByteBuf, InterfaceData> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, InterfaceData::id,
-            ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs::optional), InterfaceData::tardis,
-            ByteBufCodecs.VAR_INT, InterfaceData::flow,
-            ByteBufCodecs.VAR_INT, InterfaceData::types,
-            ByteBufCodecs.VAR_INT, InterfaceData::faces,
-            InterfaceData::new);
 
     public Flow flowMode() { return Flow.of(flow); }
 

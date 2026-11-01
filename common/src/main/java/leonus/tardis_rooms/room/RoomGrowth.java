@@ -13,7 +13,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
-import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -198,7 +197,7 @@ public final class RoomGrowth {
                 // Рамки и картины роняют свой предмет, затем всё живое и предметы выносим в проход — не замуровывать.
                 for (HangingEntity h : level.getEntitiesOfClass(HangingEntity.class, box)) { h.dropItem(null); h.discard(); }
                 for (Entity en : level.getEntitiesOfClass(Entity.class, box, x -> !x.isPassenger() && !(x instanceof HangingEntity))) {
-                    BlockPos to = en instanceof VehicleEntity ? vehicles : safe;
+                    BlockPos to = en instanceof net.minecraft.world.entity.vehicle.AbstractMinecart || en instanceof net.minecraft.world.entity.vehicle.Boat ? vehicles : safe;
                     en.teleportTo(to.getX() + 0.5, to.getY(), to.getZ() + 0.5);
                 }
             }

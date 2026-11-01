@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
@@ -67,7 +66,8 @@ public class UpperHalfBlock extends Block {
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    @SuppressWarnings("deprecation")
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         BlockPos below = pos.below();
         BlockState host = level.getBlockState(below);
         if (!needsUpperHalf(host, level, below)) return Shapes.empty();
@@ -76,49 +76,58 @@ public class UpperHalfBlock extends Block {
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    @SuppressWarnings("deprecation")
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return Shapes.empty();
     }
 
     @Override
-    protected VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    @SuppressWarnings("deprecation")
+    public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return Shapes.empty();
     }
 
     @Override
-    protected RenderShape getRenderShape(BlockState state) {
+    @SuppressWarnings("deprecation")
+    public RenderShape getRenderShape(BlockState state) {
         return RenderShape.INVISIBLE;
     }
 
     @Override
-    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+    @SuppressWarnings("deprecation")
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
         return true;
     }
 
     @Override
-    protected float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
+    @SuppressWarnings("deprecation")
+    public float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
         return 1.0F;
     }
 
     @Override
-    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+    @SuppressWarnings("deprecation")
+    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         return hasHost(level, pos);
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+    @SuppressWarnings("deprecation")
+    public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == Direction.DOWN && !hasHost(level, pos)) return Blocks.AIR.defaultBlockState();
         return state;
     }
 
     @Override
-    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+    @SuppressWarnings("deprecation")
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         level.scheduleTick(pos, this, CHECK_INTERVAL);
     }
 
     /** Подстраховка: TR иногда убирает дверь без обновления соседей — тогда верхушка уберёт себя сама. */
     @Override
-    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+    @SuppressWarnings("deprecation")
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (!hasHost(level, pos)) {
             level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         } else {
@@ -131,23 +140,17 @@ public class UpperHalfBlock extends Block {
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        BlockPos below = pos.below();
-        BlockState host = level.getBlockState(below);
-        if (!needsUpperHalf(host, level, below)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        return host.useItemOn(stack, level, player, hand, toHost(hit, below));
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         BlockPos below = pos.below();
         BlockState host = level.getBlockState(below);
         if (!needsUpperHalf(host, level, below)) return InteractionResult.PASS;
-        return host.useWithoutItem(level, player, toHost(hit, below));
+        return host.use(level, player, hand, toHost(hit, below));
     }
 
     @Override
-    protected void attack(BlockState state, Level level, BlockPos pos, Player player) {
+    @SuppressWarnings("deprecation")
+    public void attack(BlockState state, Level level, BlockPos pos, Player player) {
         BlockPos below = pos.below();
         BlockState host = level.getBlockState(below);
         if (needsUpperHalf(host, level, below)) host.attack(level, below, player);

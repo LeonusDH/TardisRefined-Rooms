@@ -1,7 +1,7 @@
 package leonus.tardis_rooms.platform;
 
 import dev.architectury.injectables.annotations.ExpectPlatform;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import leonus.tardis_rooms.network.Payload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -34,13 +34,13 @@ public final class Platform {
 
     /** Клиент → сервер. Пакет должен быть зарегистрирован платформой. */
     @ExpectPlatform
-    public static void sendToServer(CustomPacketPayload payload) {
+    public static void sendToServer(Payload payload) {
         throw new AssertionError();
     }
 
     /** Сервер → клиент этого игрока. */
     @ExpectPlatform
-    public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
+    public static void sendToPlayer(ServerPlayer player, Payload payload) {
         throw new AssertionError();
     }
 

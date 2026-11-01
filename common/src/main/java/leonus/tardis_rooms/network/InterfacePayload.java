@@ -8,26 +8,26 @@ import leonus.tardis_rooms.iface.TransferType;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
+import leonus.tardis_rooms.network.codec.ByteBufCodecs;
+import leonus.tardis_rooms.network.codec.StreamCodec;
+import leonus.tardis_rooms.network.Payload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Клиент → сервер: действие с интерфейсом (из меню или Shift+ЛКМ отвёрткой). */
-public record InterfacePayload(BlockPos pos, int action, int value) implements CustomPacketPayload {
+public record InterfacePayload(BlockPos pos, int action, int value) implements Payload {
     public static final int FLOW = 0, TOGGLE = 1, GENERATE = 2, CLEAR = 3, PASTE = 4, FACE = 5;
 
-    public static final Type<InterfacePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "interface_action"));
-    public static final StreamCodec<RegistryFriendlyByteBuf, InterfacePayload> STREAM_CODEC = StreamCodec.composite(
-            BlockPos.STREAM_CODEC, InterfacePayload::pos,
+    public static final Type<InterfacePayload> TYPE = new Type<>(new ResourceLocation(TardisRooms.MODID, "interface_action"));
+    public static final StreamCodec<FriendlyByteBuf, InterfacePayload> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.BLOCK_POS, InterfacePayload::pos,
             ByteBufCodecs.VAR_INT, InterfacePayload::action,
             ByteBufCodecs.VAR_INT, InterfacePayload::value,
             InterfacePayload::new);
 
     @Override
-    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+    public Type<? extends Payload> type() { return TYPE; }
 
     /** Сервер, главный поток. */
     public static void handle(InterfacePayload p, ServerPlayer player) {

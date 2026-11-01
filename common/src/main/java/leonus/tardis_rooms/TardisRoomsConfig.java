@@ -1,19 +1,19 @@
 package leonus.tardis_rooms;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec;
 
 public final class TardisRoomsConfig {
-    public static final ModConfigSpec SPEC;
-    public static final ModConfigSpec.BooleanValue DISABLE_PROCEDURAL_ROOMS;
-    public static final ModConfigSpec.BooleanValue DEBUG;
-    public static final ModConfigSpec.BooleanValue SIMPLIFY_HUB;
-    public static final ModConfigSpec.BooleanValue COMPAT_MEKANISM, COMPAT_AE2, COMPAT_JADE;
+    public static final ForgeConfigSpec SPEC;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_PROCEDURAL_ROOMS;
+    public static final ForgeConfigSpec.BooleanValue DEBUG;
+    public static final ForgeConfigSpec.BooleanValue SIMPLIFY_HUB;
+    public static final ForgeConfigSpec.BooleanValue COMPAT_MEKANISM, COMPAT_AE2, COMPAT_JADE;
 
-    public static final ModConfigSpec CLIENT_SPEC;
-    public static final ModConfigSpec.DoubleValue DOOR_LEVER_CLOSED_ANGLE;
+    public static final ForgeConfigSpec CLIENT_SPEC;
+    public static final ForgeConfigSpec.DoubleValue DOOR_LEVER_CLOSED_ANGLE;
 
     static {
-        ModConfigSpec.Builder b = new ModConfigSpec.Builder();
+        ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
         DISABLE_PROCEDURAL_ROOMS = b
                 .comment("Не генерировать процедурные ARS-комнаты и коридоры вокруг интерьера TARDIS.",
                         "Консольная комната, Око Гармонии и центральный хаб коридоров остаются.",
@@ -37,7 +37,7 @@ public final class TardisRoomsConfig {
         b.pop();
         SPEC = b.build();
 
-        ModConfigSpec.Builder c = new ModConfigSpec.Builder();
+        ForgeConfigSpec.Builder c = new ForgeConfigSpec.Builder();
         DOOR_LEVER_CLOSED_ANGLE = c
                 .comment("Консоль Factory: на сколько градусов поворачивается рычаг двери, когда дверь закрыта.",
                         "Если рычаг уходит не в ту сторону, поменяй знак. 0 отключает анимацию.")

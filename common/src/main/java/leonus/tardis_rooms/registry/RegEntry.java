@@ -24,7 +24,7 @@ public final class RegEntry<T> implements Supplier<T> {
 
     private RegEntry(ResourceKey<? extends Registry<? super T>> registry, String name, Supplier<? extends T> factory) {
         this.registry = registry;
-        this.id = ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, name);
+        this.id = new ResourceLocation(TardisRooms.MODID, name);
         this.factory = factory;
     }
 

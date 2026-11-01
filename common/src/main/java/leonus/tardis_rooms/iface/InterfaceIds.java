@@ -1,6 +1,5 @@
 package leonus.tardis_rooms.iface;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -14,7 +13,7 @@ public final class InterfaceIds extends SavedData {
     private final Set<Integer> used = new HashSet<>();
 
     public static InterfaceIds get(ServerLevel tardis) {
-        return tardis.getDataStorage().computeIfAbsent(new SavedData.Factory<>(InterfaceIds::new, InterfaceIds::load, null), NAME);
+        return tardis.getDataStorage().computeIfAbsent(InterfaceIds::load, InterfaceIds::new, NAME);
     }
 
     /** Новый идентификатор 0001..FFFF, или 0, если все заняты. */
@@ -27,14 +26,14 @@ public final class InterfaceIds extends SavedData {
         return id;
     }
 
-    private static InterfaceIds load(CompoundTag tag, HolderLookup.Provider provider) {
+    private static InterfaceIds load(CompoundTag tag) {
         InterfaceIds d = new InterfaceIds();
         for (int v : tag.getIntArray("used")) d.used.add(v);
         return d;
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
+    public CompoundTag save(CompoundTag tag) {
         tag.putIntArray("used", used.stream().mapToInt(Integer::intValue).toArray());
         return tag;
     }

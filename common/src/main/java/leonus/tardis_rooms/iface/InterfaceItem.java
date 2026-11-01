@@ -30,9 +30,9 @@ public class InterfaceItem extends BlockItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, context, tooltip, flag);
-        InterfaceData d = stack.get(TRoomsBlocks.INTERFACE_DATA.get());
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        InterfaceData d = ItemData.interfaceData(stack);
         if (d != null && d.id() != 0) {
             tooltip.add(TRoomsText.IFACE_ID.text(Component.literal(InterfaceData.hex(d.id())).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
             tooltip.add(TRoomsText.IFACE_ITEM_CLEAR_HINT.text().withStyle(ChatFormatting.DARK_GRAY));

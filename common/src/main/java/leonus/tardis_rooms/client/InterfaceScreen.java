@@ -41,7 +41,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
     private static final ResourceLocation ICON_BOTH = sprite("iface/flow_both");
     private static final ResourceLocation ICON_SIDES = sprite("iface/sides");
     /** Значок Tardis Refined: корзина — очистить. */
-    private static final ResourceLocation ICON_CLEAR = ResourceLocation.fromNamespaceAndPath(TardisRefined.MODID, "trash");
+    private static final ResourceLocation ICON_CLEAR = new ResourceLocation(TardisRefined.MODID, "trash");
     private static final ResourceLocation ICON_PASTE = sprite("iface/paste");
     private static final ResourceLocation ICON_PASTE_OFF = sprite("iface/paste_off");
 
@@ -145,8 +145,8 @@ public class InterfaceScreen extends RoomMonitorScreen {
     private static InterfaceLink heldLink() {
         var p = Minecraft.getInstance().player;
         if (p == null) return null;
-        InterfaceLink l = p.getMainHandItem().get(TRoomsBlocks.INTERFACE_LINK.get());
-        if (l == null) l = p.getOffhandItem().get(TRoomsBlocks.INTERFACE_LINK.get());
+        InterfaceLink l = leonus.tardis_rooms.iface.ItemData.link(p.getMainHandItem());
+        if (l == null) l = leonus.tardis_rooms.iface.ItemData.link(p.getOffhandItem());
         return l != null && l.id() != 0 ? l : null;
     }
 

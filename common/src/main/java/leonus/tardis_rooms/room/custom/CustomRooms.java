@@ -12,7 +12,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
@@ -41,7 +40,7 @@ import java.util.Optional;
 public final class CustomRooms extends SimpleJsonResourceReloadListener {
     // GSON — раньше INSTANCE: статические поля создаются по порядку, а конструктору он уже нужен.
     private static final Gson GSON = new GsonBuilder().create();
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "rooms");
+    public static final ResourceLocation ID = new ResourceLocation(TardisRooms.MODID, "rooms");
     public static final CustomRooms INSTANCE = new CustomRooms();
     /** Группы меню, в которые можно положить помещение. */
     public static final List<String> GROUPS = List.of("corridor", "room", "special", CustomRoom.DEFAULT_GROUP);
@@ -199,14 +198,14 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
 
     /** Шаблон из ресурсов датапака ({@code data/<ns>/structure/<путь>.nbt}), как его читает сама игра. */
     private static StructureTemplate readTemplate(ResourceLocation id, ResourceManager resources, List<String> problems) {
-        ResourceLocation file = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "structure/" + id.getPath() + ".nbt");
+        ResourceLocation file = new ResourceLocation(id.getNamespace(), "structures/" + id.getPath() + ".nbt");
         Optional<Resource> res = resources.getResource(file);
         if (res.isEmpty()) {
-            problems.add("structure " + id + " not found (expected data/" + id.getNamespace() + "/structure/" + id.getPath() + ".nbt)");
+            problems.add("structure " + id + " not found (expected data/" + id.getNamespace() + "/structures/" + id.getPath() + ".nbt)");
             return null;
         }
         try (InputStream in = res.get().open()) {
-            CompoundTag tag = NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap());
+            CompoundTag tag = NbtIo.readCompressed(in);
             tag = DataFixTypes.STRUCTURE.updateToCurrentVersion(DataFixers.getDataFixer(), tag, NbtUtils.getDataVersion(tag, 500));
             StructureTemplate t = new StructureTemplate();
             t.load(BuiltInRegistries.BLOCK.asLookup(), tag);

@@ -25,7 +25,7 @@ public final class BlockPreview {
         float r = 1f, g = 1f, b = 1f;
         for (BakedQuad quad : quads) {
             if (!quad.isTinted()) {
-                consumer.putBulkData(pose, quad, 1f, 1f, 1f, 1f, light, overlay);
+                consumer.putBulkData(pose, quad, 1f, 1f, 1f, light, overlay);
                 continue;
             }
             if (quad.getTintIndex() != tint) {
@@ -35,7 +35,7 @@ public final class BlockPreview {
                 g = (c >> 8 & 0xFF) / 255f;
                 b = (c & 0xFF) / 255f;
             }
-            consumer.putBulkData(pose, quad, r, g, b, 1f, light, overlay);
+            consumer.putBulkData(pose, quad, r, g, b, light, overlay);
         }
     }
 

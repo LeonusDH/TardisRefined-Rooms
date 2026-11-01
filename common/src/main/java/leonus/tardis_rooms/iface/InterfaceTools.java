@@ -37,7 +37,7 @@ public final class InterfaceTools {
     }
 
     public static int mode(ItemStack s) {
-        return s.getOrDefault(TRoomsBlocks.SCREWDRIVER_MODE.get(), MODE_NORMAL);
+        return ItemData.screwdriverMode(s);
     }
 
     private static boolean configMode(ItemStack s) {
@@ -49,8 +49,7 @@ public final class InterfaceTools {
         ItemStack stack = player.getMainHandItem();
         if (!isScrewdriver(stack)) return;
         int m = Math.floorMod(mode(stack) + (step >= 0 ? 1 : -1), MODES);
-        if (m == MODE_NORMAL) stack.remove(TRoomsBlocks.SCREWDRIVER_MODE.get());
-        else stack.set(TRoomsBlocks.SCREWDRIVER_MODE.get(), m);
+        ItemData.setScrewdriverMode(stack, m);
         player.displayClientMessage(TRoomsText.MSG_SCREWDRIVER_MODE.text(modeName(m).text().withStyle(ChatFormatting.AQUA)), true);
     }
 
@@ -62,7 +61,7 @@ public final class InterfaceTools {
      * Ключи других модов — метка {@code tardis_rooms:wrenches} (data/tardis_rooms/tags/item/wrenches.json): общие метки ключей,
      * которыми их помечают Mekanism, AE2, Powah и другие, плюс ключи без такой метки (Tech Reborn). Сборка может дополнить её датапаком.
      */
-    private static final TagKey<Item> WRENCHES = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "wrenches"));
+    private static final TagKey<Item> WRENCHES = TagKey.create(Registries.ITEM, new ResourceLocation(TardisRooms.MODID, "wrenches"));
 
     public static boolean isWrench(ItemStack s) {
         return s.is(WRENCHES);
@@ -126,7 +125,11 @@ public final class InterfaceTools {
             // Блок вызываем сами и без предмета: некоторые блоки TR (астральный манипулятор) сами реагируют на отвёртку в руке.
             // С Shift игра и так не трогает блок, если в руке предмет.
             if (player.isSecondaryUseActive()) return UseResult.handled(InteractionResult.PASS);
-            return UseResult.handled(level.getBlockState(pos).useWithoutItem(level, player, hit));
+            // На 1.20.1 у блоков нет действия «без предмета»: зовём его как будто второй рукой, если она пуста.
+            if (!player.getOffhandItem().isEmpty()) return UseResult.handled(InteractionResult.PASS);
+            @SuppressWarnings("deprecation")
+            InteractionResult r = level.getBlockState(pos).use(level, player, net.minecraft.world.InteractionHand.OFF_HAND, hit);
+            return UseResult.handled(r);
         }
         if (!player.isShiftKeyDown()) return UseResult.PASS; // ПКМ — меню интерфейса
         if (level.isClientSide()) return UseResult.CONSUMED;
@@ -134,7 +137,7 @@ public final class InterfaceTools {
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_NO_ID.text(), true);
             return UseResult.CONSUMED;
         }
-        stack.set(TRoomsBlocks.INTERFACE_LINK.get(), be.link());
+        ItemData.setLink(stack, be.link());
         player.displayClientMessage(TRoomsText.MSG_INTERFACE_COPIED.text(hex(be.id())), true);
         return UseResult.CONSUMED;
     }
@@ -160,7 +163,7 @@ public final class InterfaceTools {
     public static boolean onUseItem(Player player, Level level, ItemStack stack) {
         if (!configMode(stack)) return false;
         if (level.isClientSide() || !player.isShiftKeyDown()) return true;
-        if (stack.remove(TRoomsBlocks.INTERFACE_LINK.get()) != null) {
+        if (ItemData.removeLink(stack)) {
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_FORGOTTEN.text(), true);
         }
         return true;
@@ -170,7 +173,7 @@ public final class InterfaceTools {
     public static void paste(Player player, InterfaceBlockEntity be) {
         ItemStack stack = player.getMainHandItem();
         if (!isScrewdriver(stack)) stack = player.getOffhandItem();
-        InterfaceLink link = stack.get(TRoomsBlocks.INTERFACE_LINK.get());
+        InterfaceLink link = ItemData.link(stack);
         if (link == null || link.id() == 0) {
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_SCREWDRIVER_EMPTY.text(), true);
             return;
@@ -183,7 +186,7 @@ public final class InterfaceTools {
     public static void appendTooltip(ItemStack stack, List<Component> tooltip) {
         if (!isScrewdriver(stack)) return;
         tooltip.add(TRoomsText.SCREWDRIVER_MODE.text(modeName(mode(stack)).text().withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
-        InterfaceLink link = stack.get(TRoomsBlocks.INTERFACE_LINK.get());
+        InterfaceLink link = ItemData.link(stack);
         if (link != null && link.id() != 0) {
             tooltip.add(TRoomsText.IFACE_SCREWDRIVER_ID.text(hex(link.id())).withStyle(ChatFormatting.GRAY));
         }

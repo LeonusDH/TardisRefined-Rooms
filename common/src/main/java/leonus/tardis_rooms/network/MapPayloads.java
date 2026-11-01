@@ -7,10 +7,10 @@ import leonus.tardis_rooms.room.Node;
 import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
+import leonus.tardis_rooms.network.codec.ByteBufCodecs;
+import leonus.tardis_rooms.network.codec.StreamCodec;
+import leonus.tardis_rooms.network.Payload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,15 +33,15 @@ public final class MapPayloads {
     /** Коды клеток (положительное число — номер помещения). */
     public static final int FREE = 0, HUB = -1, FORBIDDEN = -2, UNKNOWN = -4;
 
-    private static ResourceLocation rl(String p) { return ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, p); }
+    private static ResourceLocation rl(String p) { return new ResourceLocation(TardisRooms.MODID, p); }
 
     /** Клиент → сервер: схема этажа {@code floor} вокруг узла; {@code replaceCore} ≠ ZERO — отметить заменяемое. */
-    public record Request(BlockPos nodePos, int floor, BlockPos replaceCore) implements CustomPacketPayload {
+    public record Request(BlockPos nodePos, int floor, BlockPos replaceCore) implements Payload {
         public static final Type<Request> TYPE = new Type<>(rl("map_request"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Request> STREAM_CODEC = StreamCodec.composite(
-                BlockPos.STREAM_CODEC, Request::nodePos, ByteBufCodecs.VAR_INT, Request::floor,
-                BlockPos.STREAM_CODEC, Request::replaceCore, Request::new);
-        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+        public static final StreamCodec<FriendlyByteBuf, Request> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.BLOCK_POS, Request::nodePos, ByteBufCodecs.VAR_INT, Request::floor,
+                ByteBufCodecs.BLOCK_POS, Request::replaceCore, Request::new);
+        @Override public Type<? extends Payload> type() { return TYPE; }
 
         /** Сервер, главный поток. */
         public static void handle(Request r, ServerPlayer player) {
@@ -96,23 +96,23 @@ public final class MapPayloads {
 
     /** Тип помещения и название, данное игроком (пусто — нет). */
     public record PieceName(ResourceLocation id, String custom) {
-        public static final StreamCodec<RegistryFriendlyByteBuf, PieceName> STREAM_CODEC = StreamCodec.composite(
-                ResourceLocation.STREAM_CODEC, PieceName::id, ByteBufCodecs.STRING_UTF8, PieceName::custom, PieceName::new);
+        public static final StreamCodec<FriendlyByteBuf, PieceName> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.RESOURCE_LOCATION, PieceName::id, ByteBufCodecs.STRING_UTF8, PieceName::custom, PieceName::new);
     }
 
     /** Сервер → клиент: клетки схемы построчно (z, затем x) и названия помещений на ней. */
     public record Info(BlockPos nodePos, int floor, List<Integer> cells, List<Integer> pieceIds,
-                       List<PieceName> pieceNames, int replacingId) implements CustomPacketPayload {
+                       List<PieceName> pieceNames, int replacingId) implements Payload {
         public static final Type<Info> TYPE = new Type<>(rl("map_info"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Info> STREAM_CODEC = StreamCodec.composite(
-                BlockPos.STREAM_CODEC, Info::nodePos,
+        public static final StreamCodec<FriendlyByteBuf, Info> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.BLOCK_POS, Info::nodePos,
                 ByteBufCodecs.VAR_INT, Info::floor,
                 ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()), Info::cells,
                 ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()), Info::pieceIds,
                 PieceName.STREAM_CODEC.apply(ByteBufCodecs.list()), Info::pieceNames,
                 ByteBufCodecs.VAR_INT, Info::replacingId,
                 Info::new);
-        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+        @Override public Type<? extends Payload> type() { return TYPE; }
 
         public int cell(int dx, int dz) {
             if (Math.abs(dx) > RADIUS || Math.abs(dz) > RADIUS || cells.size() != SIDE * SIDE) return FREE;

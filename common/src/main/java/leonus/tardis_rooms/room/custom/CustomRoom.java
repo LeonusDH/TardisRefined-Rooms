@@ -6,7 +6,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
@@ -49,8 +48,8 @@ public record CustomRoom(Component name, Optional<Component> description, String
             .xmap(e -> e.map(List::of, l -> l), l -> l.size() == 1 ? Either.left(l.get(0)) : Either.right(l));
 
     public static final Codec<CustomRoom> CODEC = RecordCodecBuilder.create(i -> i.group(
-            ComponentSerialization.CODEC.fieldOf("name").forGetter(CustomRoom::name),
-            ComponentSerialization.CODEC.optionalFieldOf("description").forGetter(CustomRoom::description),
+            net.minecraft.util.ExtraCodecs.COMPONENT.fieldOf("name").forGetter(CustomRoom::name),
+            net.minecraft.util.ExtraCodecs.COMPONENT.optionalFieldOf("description").forGetter(CustomRoom::description),
             Codec.STRING.optionalFieldOf("group", DEFAULT_GROUP).forGetter(CustomRoom::group),
             STRUCTURES.fieldOf("structure").forGetter(CustomRoom::structures),
             Exit.CODEC.fieldOf("entrance").forGetter(CustomRoom::entrance),

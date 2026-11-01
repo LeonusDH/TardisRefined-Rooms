@@ -4,11 +4,10 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.Lattice;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import leonus.tardis_rooms.network.codec.ByteBufCodecs;
+import leonus.tardis_rooms.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,7 +29,7 @@ public record CustomRoomInfo(ResourceLocation id, Component name, Optional<Compo
 
     /** Где клиент держит картинку превью (динамическая текстура, см. {@code ClientCustomRooms}). */
     public ResourceLocation previewTexture() {
-        return ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "dynamic/preview/" + id.getNamespace() + "/" + id.getPath());
+        return new ResourceLocation(TardisRooms.MODID, "dynamic/preview/" + id.getNamespace() + "/" + id.getPath());
     }
 
     /** Можно ли строить от узла {@code nodeSide}: неповорачиваемое — только если вход шаблона уже смотрит на узел. */
@@ -89,18 +88,18 @@ public record CustomRoomInfo(ResourceLocation id, Component name, Optional<Compo
 
     // ---------- сеть ----------
 
-    private static final StreamCodec<RegistryFriendlyByteBuf, CustomRoom.Exit> EXIT = StreamCodec.composite(
+    private static final StreamCodec<FriendlyByteBuf, CustomRoom.Exit> EXIT = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, CustomRoom.Exit::x,
             ByteBufCodecs.VAR_INT, CustomRoom.Exit::z,
-            Direction.STREAM_CODEC, CustomRoom.Exit::side,
+            ByteBufCodecs.DIRECTION, CustomRoom.Exit::side,
             ByteBufCodecs.VAR_INT, CustomRoom.Exit::floor,
             CustomRoom.Exit::new);
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, CustomRoomInfo> STREAM_CODEC = StreamCodec.of(
+    public static final StreamCodec<FriendlyByteBuf, CustomRoomInfo> STREAM_CODEC = StreamCodec.of(
             (buf, i) -> {
-                ResourceLocation.STREAM_CODEC.encode(buf, i.id);
-                ComponentSerialization.STREAM_CODEC.encode(buf, i.name);
-                ComponentSerialization.OPTIONAL_STREAM_CODEC.encode(buf, i.description);
+                ByteBufCodecs.RESOURCE_LOCATION.encode(buf, i.id);
+                ByteBufCodecs.COMPONENT.encode(buf, i.name);
+                ByteBufCodecs.OPTIONAL_COMPONENT.encode(buf, i.description);
                 buf.writeUtf(i.group);
                 buf.writeVarInt(i.width);
                 buf.writeVarInt(i.depth);
@@ -112,9 +111,9 @@ public record CustomRoomInfo(ResourceLocation id, Component name, Optional<Compo
                 buf.writeByteArray(i.preview);
             },
             buf -> {
-                ResourceLocation id = ResourceLocation.STREAM_CODEC.decode(buf);
-                Component name = ComponentSerialization.STREAM_CODEC.decode(buf);
-                Optional<Component> desc = ComponentSerialization.OPTIONAL_STREAM_CODEC.decode(buf);
+                ResourceLocation id = ByteBufCodecs.RESOURCE_LOCATION.decode(buf);
+                Component name = ByteBufCodecs.COMPONENT.decode(buf);
+                Optional<Component> desc = ByteBufCodecs.OPTIONAL_COMPONENT.decode(buf);
                 String group = buf.readUtf();
                 int w = buf.readVarInt(), d = buf.readVarInt(), floors = buf.readVarInt();
                 CustomRoom.Exit entrance = EXIT.decode(buf);

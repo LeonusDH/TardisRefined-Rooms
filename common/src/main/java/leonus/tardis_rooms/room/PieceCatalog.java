@@ -521,7 +521,7 @@ public final class PieceCatalog {
     }
 
     private static ResourceLocation rl(String path) {
-        return ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, path);
+        return new ResourceLocation(TardisRooms.MODID, path);
     }
 
     private PieceCatalog() {}

@@ -21,7 +21,6 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -121,9 +120,9 @@ public final class RoomExporter {
             CompoundTag tag = clean(t.save(new CompoundTag()), core);
             ResourceLocation sid = floors.size() == 1 ? id : id.withSuffix("_" + (fi + 1));
             structures.add(sid);
-            Path file = pack.resolve("data").resolve(sid.getNamespace()).resolve("structure").resolve(sid.getPath() + ".nbt");
+            Path file = pack.resolve("data").resolve(sid.getNamespace()).resolve("structures").resolve(sid.getPath() + ".nbt");
             Files.createDirectories(file.getParent());
-            NbtIo.writeCompressed(tag, file);
+            NbtIo.writeCompressed(tag, file.toFile());
         }
 
         JsonObject json = new JsonObject();
@@ -152,7 +151,7 @@ public final class RoomExporter {
 
         Path meta = pack.resolve("pack.mcmeta");
         if (!Files.exists(meta))
-            Files.writeString(meta, "{\n  \"pack\": {\n    \"pack_format\": 48,\n    \"description\": \"Rooms exported by TARDIS Refined: Rooms\"\n  }\n}\n", StandardCharsets.UTF_8);
+            Files.writeString(meta, "{\n  \"pack\": {\n    \"pack_format\": 15,\n    \"description\": \"Rooms exported by TARDIS Refined: Rooms\"\n  }\n}\n", StandardCharsets.UTF_8);
         TardisRooms.LOGGER.info("Exported room #{} ({}) as {} to {}", piece.id, piece.pieceId, id, pack);
         return new Result(pack, note);
     }
@@ -163,7 +162,7 @@ public final class RoomExporter {
         Component name = PieceCatalog.options(piece.node, CustomRooms.INSTANCE.infos()).stream()
                 .filter(o -> o.id().equals(piece.pieceId)).findFirst().map(PieceCatalog.Option::label)
                 .orElse(Component.literal(id.getPath().substring(id.getPath().lastIndexOf('/') + 1)));
-        return ComponentSerialization.CODEC.encodeStart(level.registryAccess().createSerializationContext(JsonOps.INSTANCE), name)
+        return net.minecraft.util.ExtraCodecs.COMPONENT.encodeStart(JsonOps.INSTANCE, name)
                 .result().orElseGet(() -> new com.google.gson.JsonPrimitive(name.getString()));
     }
 
