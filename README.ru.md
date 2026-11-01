@@ -2,7 +2,7 @@
 
 [English](README.md) · **Русский**
 
-Аддон для [Tardis Refined](https://github.com/Whocraft/TardisRefined) на Minecraft 1.21.1 (NeoForge и Fabric). Вместо бесконечных процедурных ARS-коридоров интерьер ТАРДИС строите вы сами, помещение за помещением, как в классическом моде TARDIS для 1.7.10.
+Аддон для [Tardis Refined](https://github.com/Whocraft/TardisRefined) на Minecraft 1.21.1 (NeoForge и Fabric). Вместо бесконечных процедурных ARS-коридоров интерьер ТАРДИС строите вы сами, помещение за помещением.
 
 ## Возможности
 

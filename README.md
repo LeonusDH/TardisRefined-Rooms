@@ -2,7 +2,7 @@
 
 **English** · [Русский](README.ru.md)
 
-An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Minecraft 1.21.1 (NeoForge and Fabric) that replaces its endless procedural ARS corridors with an interior you build yourself, room by room, the way the classic 1.7.10 TARDIS mod worked.
+An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Minecraft 1.21.1 (NeoForge and Fabric) that replaces its endless procedural ARS corridors with an interior you build yourself, room by room.
 
 ## Features
 
