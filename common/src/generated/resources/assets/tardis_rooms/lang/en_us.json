@@ -5,6 +5,7 @@
   "block.tardis_rooms.room_wall": "Passage Seal",
   "block.tardis_rooms.tardis_interface": "TARDIS Interface",
   "block.tardis_rooms.upper_half": "TARDIS Door Top",
+  "command.tardis_rooms.export.bad_id": "The id must not contain \".\" or \"..\" path parts, e.g. mypack:rooms/library",
   "command.tardis_rooms.export.done": "Room exported as %s to the datapack %s — move it into the world's datapacks folder",
   "command.tardis_rooms.export.entrance_moved": "The room was grown from its upper level; the entrance is set to the first passage on the bottom level",
   "command.tardis_rooms.export.error": "Export failed: %s",

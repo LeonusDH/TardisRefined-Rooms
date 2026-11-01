@@ -59,6 +59,7 @@ public enum TRoomsText {
     CMD_EXPORT_NO_ENTRANCE("command.tardis_rooms.export.no_entrance", "The room has no passage on its bottom level to use as the entrance"),
     CMD_EXPORT_ENTRANCE_MOVED("command.tardis_rooms.export.entrance_moved", "The room was grown from its upper level; the entrance is set to the first passage on the bottom level"),
     CMD_EXPORT_NAMESPACE("command.tardis_rooms.export.namespace", "Use your own namespace, e.g. mypack:rooms/library"),
+    CMD_EXPORT_BAD_ID("command.tardis_rooms.export.bad_id", "The id must not contain \".\" or \"..\" path parts, e.g. mypack:rooms/library"),
     CMD_EXPORT_DONE("command.tardis_rooms.export.done", "Room exported as %s to the datapack %s — move it into the world's datapacks folder"),
     CMD_EXPORT_OPEN("command.tardis_rooms.export.open", "Click to copy the path"),
     CMD_EXPORT_ERROR("command.tardis_rooms.export.error", "Export failed: %s"),
