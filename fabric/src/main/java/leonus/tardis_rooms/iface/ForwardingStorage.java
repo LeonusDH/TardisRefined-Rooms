@@ -73,7 +73,8 @@ final class ForwardingStorage<T> implements Storage<T> {
             List<StorageView<T>> views = new ArrayList<>();
             for (Storage<T> h : transport.handlers(lookup, type, true)) {
                 if (!h.supportsExtraction()) continue;
-                for (StorageView<T> v : h) views.add(v);
+                // Пустые места нечего забирать — и Jade не рисует их пустыми полосками.
+                for (StorageView<T> v : h) if (!v.isResourceBlank() && v.getAmount() > 0) views.add(v);
             }
             return views.iterator();
         } finally {

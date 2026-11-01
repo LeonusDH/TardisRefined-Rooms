@@ -22,21 +22,27 @@ final class FluidView implements IFluidHandler {
         return be.canOut(TransferType.FLUIDS) ? transport.handlers(ForgeCapabilities.FLUID_HANDLER, TransferType.FLUIDS, true) : List.of();
     }
 
+    /**
+     * Непустые баки у связанных интерфейсов (обработчик и номер бака). Пустые не показываем: забирать из них нечего,
+     * а Jade рисовал бы их пустыми полосками.
+     */
+    private List<Object[]> filled() {
+        List<Object[]> out = new java.util.ArrayList<>();
+        for (IFluidHandler h : sources())
+            for (int t = 0; t < h.getTanks(); t++) if (!h.getFluidInTank(t).isEmpty()) out.add(new Object[]{h, t});
+        return out;
+    }
+
     @Override
     public int getTanks() {
-        int n = inTanks();
-        for (IFluidHandler h : sources()) n += h.getTanks();
-        return n;
+        return inTanks() + filled().size();
     }
 
     private Object[] locate(int tank) {
         int t = tank - inTanks();
         if (t < 0) return null;
-        for (IFluidHandler h : sources()) {
-            if (t < h.getTanks()) return new Object[]{h, t};
-            t -= h.getTanks();
-        }
-        return null;
+        List<Object[]> f = filled();
+        return t < f.size() ? f.get(t) : null;
     }
 
     @Override

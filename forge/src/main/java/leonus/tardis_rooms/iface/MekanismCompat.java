@@ -157,14 +157,19 @@ public final class MekanismCompat {
             return be.canOut(TransferType.CHEMICALS) ? transport.handlers(cap, TransferType.CHEMICALS, true) : List.of();
         }
 
+        /** Непустые баки у связанных интерфейсов — как у жидкостей (см. FluidView). */
+        private List<Object[]> filled() {
+            List<Object[]> out = new java.util.ArrayList<>();
+            for (H h : sources())
+                for (int t = 0; t < h.getTanks(); t++) if (!h.getChemicalInTank(t).isEmpty()) out.add(new Object[]{h, t});
+            return out;
+        }
+
         private Object[] locate(int tank) {
             int t = tank - inTanks();
             if (t < 0) return null;
-            for (H h : sources()) {
-                if (t < h.getTanks()) return new Object[]{h, t};
-                t -= h.getTanks();
-            }
-            return null;
+            List<Object[]> f = filled();
+            return t < f.size() ? f.get(t) : null;
         }
 
         @SuppressWarnings("unchecked")
@@ -172,9 +177,7 @@ public final class MekanismCompat {
 
         @Override
         public int getTanks() {
-            int n = inTanks();
-            for (H h : sources()) n += h.getTanks();
-            return n;
+            return inTanks() + filled().size();
         }
 
         @Override

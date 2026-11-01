@@ -81,12 +81,34 @@ final class FabricEnergy {
                 }
             }
 
+            /** Заряд и ёмкость — сумма хранилищ у связанных интерфейсов (их и показывает Jade). */
             @Override
-            public long getAmount() { return 0; }
+            public long getAmount() { return linked()[0]; }
 
-            /** Ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
+            /** Если связанных хранилищ нет — ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
             @Override
-            public long getCapacity() { return Integer.MAX_VALUE; }
+            public long getCapacity() {
+                long cap = linked()[1];
+                return cap > 0 ? cap : Integer.MAX_VALUE;
+            }
+
+            private long[] linked() {
+                long[] out = new long[2];
+                if (InterfaceNetwork.depth > 0) return out;
+                InterfaceNetwork.depth++;
+                try {
+                    java.util.Set<EnergyStorage> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+                    for (boolean fromInputs : new boolean[]{true, false})
+                        for (EnergyStorage h : transport.handlers(EnergyStorage.SIDED, TransferType.ENERGY, fromInputs)) {
+                            if (!seen.add(h)) continue;
+                            out[0] += h.getAmount();
+                            out[1] += h.getCapacity();
+                        }
+                } finally {
+                    InterfaceNetwork.depth--;
+                }
+                return out;
+            }
         }
     }
 
