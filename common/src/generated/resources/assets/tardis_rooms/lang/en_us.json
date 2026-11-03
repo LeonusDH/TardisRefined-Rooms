@@ -204,6 +204,7 @@
   "tardis_rooms.face.up": "Top",
   "tardis_rooms.face.west": "West",
   "tardis_rooms.face_mode.default": "Default",
+  "tardis_rooms.face_mode.disabled": "Disabled",
   "tardis_rooms.face_mode.pull": "Extract",
   "tardis_rooms.face_mode.push": "Insert",
   "tardis_rooms.jade.interface.faces": "Sides: %s"

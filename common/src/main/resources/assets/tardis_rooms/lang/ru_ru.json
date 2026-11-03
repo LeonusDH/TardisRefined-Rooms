@@ -204,6 +204,7 @@
   "tardis_rooms.face.up": "Верх",
   "tardis_rooms.face.west": "Запад",
   "tardis_rooms.face_mode.default": "По умолчанию",
+  "tardis_rooms.face_mode.disabled": "Выключено",
   "tardis_rooms.face_mode.pull": "Забирать",
   "tardis_rooms.face_mode.push": "Вставлять",
   "tardis_rooms.jade.interface.faces": "Стороны: %s"

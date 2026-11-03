@@ -75,6 +75,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     public void invalidate() {
         Level level = be.getLevel();
         if (level != null) level.invalidateCapabilities(be.getBlockPos());
+        AE2Compat.update(be); // стороны, открытые для кабелей ME, — сразу, а не на ближайшем секундном такте
     }
 
     @Override

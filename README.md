@@ -22,7 +22,7 @@ A block that moves resources between linked interfaces, either between rooms or 
 - Give interfaces the same ID to link them. The screwdriver can copy an ID from one interface and paste it into another.
 - Each interface has a direction (input or output) and a choice of what it passes: items, fluids, energy, redstone, Mekanism chemicals and AE2 ME networks (the last two on NeoForge only).
 - The interface stores nothing. It passes everything on at once, so throughput depends on the pipes and machines connected to it.
-- Each side can be set to **Default**, **Insert** or **Extract**, either in a 3D side screen or with a wrench from any mod. Insert and Extract sides work with plain chests, no pipes needed.
+- Each side can be set to **Default**, **Insert**, **Extract** or **Disabled**, either in a 3D side screen or with a wrench from any mod. Insert and Extract sides work with plain chests, no pipes needed. A disabled side neither takes nor gives anything: pipes, ME cables and redstone ignore it, and the block next to it is not used by linked interfaces.
 - Shift + right-click with a wrench picks the interface up straight into your inventory, settings included.
 - Wrenches are recognised by the `tardis_rooms:wrenches` item tag: the common wrench tags plus the Tech Reborn wrench. A modpack can add its own with a datapack.
 

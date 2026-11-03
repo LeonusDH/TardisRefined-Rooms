@@ -65,7 +65,8 @@ public class InterfaceBlock extends BaseEntityBlock {
 
     @Override
     protected int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.core.Direction direction) {
-        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.redstoneOut() : 0;
+        // direction — от соседа к интерфейсу; своя сторона к соседу — противоположная.
+        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be && be.open(direction.getOpposite()) ? be.redstoneOut() : 0;
     }
 
     @Override

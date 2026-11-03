@@ -45,7 +45,7 @@ public final class MekanismCompat {
     /** Отдельный класс, чтобы лямбда с типами Mekanism не грузилась без него. */
     private static final class Registration {
         static void register(RegisterCapabilitiesEvent event) {
-            event.registerBlockEntity(cap(), TRoomsBlocks.INTERFACE_BE.get(), (be, side) -> (IChemicalHandler) NeoForgeInterfaceTransport.of(be).chemicals());
+            event.registerBlockEntity(cap(), TRoomsBlocks.INTERFACE_BE.get(), (be, side) -> be.open(side) ? (IChemicalHandler) NeoForgeInterfaceTransport.of(be).chemicals() : null);
         }
     }
 

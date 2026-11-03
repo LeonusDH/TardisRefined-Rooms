@@ -78,7 +78,7 @@ public final class LinkedStorages<T> {
             if (pl == null || sides == null) continue;
             for (Direction d : Direction.values()) {
                 FaceMode fm = peer.face(d);
-                if ((pick == Pick.TO && fm == FaceMode.PULL) || (pick == Pick.FROM && fm == FaceMode.PUSH)) continue;
+                if (fm == FaceMode.DISABLED || (pick == Pick.TO && fm == FaceMode.PULL) || (pick == Pick.FROM && fm == FaceMode.PUSH)) continue;
                 BlockPos np = peer.getBlockPos().relative(d);
                 // Соседний интерфейс пропускаем: передача из интерфейса в интерфейс шла бы по кругу.
                 if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;

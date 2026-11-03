@@ -230,6 +230,7 @@ public enum TRoomsText {
     FACE_MODE_DEFAULT("tardis_rooms.face_mode.default", "Default"),
     FACE_MODE_PUSH("tardis_rooms.face_mode.push", "Insert"),
     FACE_MODE_PULL("tardis_rooms.face_mode.pull", "Extract"),
+    FACE_MODE_DISABLED("tardis_rooms.face_mode.disabled", "Disabled"),
     MSG_INTERFACE_FACE("message.tardis_rooms.interface_face", "%s side: %s"),
     JADE_INTERFACE_FACES("tardis_rooms.jade.interface.faces", "Sides: %s");
 

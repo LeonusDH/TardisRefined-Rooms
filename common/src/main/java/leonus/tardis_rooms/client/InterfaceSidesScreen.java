@@ -10,6 +10,8 @@ import leonus.tardis_rooms.iface.InterfaceData;
 import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.InterfacePayload;
+import leonus.tardis_rooms.platform.ClientPlatform;
+import leonus.tardis_rooms.platform.Platform;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,8 +28,6 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
-import leonus.tardis_rooms.platform.ClientPlatform;
-import leonus.tardis_rooms.platform.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -47,7 +47,7 @@ public class InterfaceSidesScreen extends Screen {
     private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_ON = RoomMonitorScreen.sprite("iface/neighbours_on");
     private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_OFF = RoomMonitorScreen.sprite("iface/neighbours_off");
     private static final net.minecraft.resources.ResourceLocation ICON_RESET = RoomMonitorScreen.sprite("iface/reset_view");
-    private static final int GOLD = 0xFFB28610, AQUA = 0xFF3FA7B8;
+    private static final int GOLD = 0xFFB28610, AQUA = 0xFF3FA7B8, RED = 0xFFB0413E;
 
     private final Screen parent;
     private final BlockPos pos;
@@ -221,7 +221,8 @@ public class InterfaceSidesScreen extends Screen {
 
         int ly = viewY() + VIEW + 5, lx = left + 10;
         lx = legend(g, lx, ly, GOLD, InterfaceTools.faceModeName(FaceMode.PUSH).text());
-        legend(g, lx + 8, ly, AQUA, InterfaceTools.faceModeName(FaceMode.PULL).text());
+        lx = legend(g, lx + 8, ly, AQUA, InterfaceTools.faceModeName(FaceMode.PULL).text());
+        legend(g, lx + 8, ly, RED, InterfaceTools.faceModeName(FaceMode.DISABLED).text());
     }
 
     @Override
@@ -250,7 +251,12 @@ public class InterfaceSidesScreen extends Screen {
     }
 
     private static ChatFormatting color(FaceMode m) {
-        return switch (m) { case DEFAULT -> ChatFormatting.GRAY; case PUSH -> ChatFormatting.GOLD; case PULL -> ChatFormatting.AQUA; };
+        return switch (m) {
+            case DEFAULT -> ChatFormatting.GRAY;
+            case PUSH -> ChatFormatting.GOLD;
+            case PULL -> ChatFormatting.AQUA;
+            case DISABLED -> ChatFormatting.RED;
+        };
     }
 
     private void renderBlocks(GuiGraphics g, InterfaceData data) {
@@ -284,7 +290,7 @@ public class InterfaceSidesScreen extends Screen {
         Matrix4f m = ps.last().pose();
         for (Direction d : Direction.values()) {
             FaceMode fm = data.face(d);
-            int c = fm == FaceMode.PUSH ? GOLD : fm == FaceMode.PULL ? AQUA : 0;
+            int c = switch (fm) { case PUSH -> GOLD; case PULL -> AQUA; case DISABLED -> RED; case DEFAULT -> 0; };
             int alpha = c == 0 ? 0 : 0x90;
             if (d == hovered) {
                 if (c == 0) { c = 0xFFFFFF; alpha = 0x50; } else alpha = 0xC0;

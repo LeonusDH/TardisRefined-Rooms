@@ -28,7 +28,7 @@ final class FabricEnergy {
     private static final class Impl {
         static void register() {
             EnergyStorage.SIDED.registerForBlockEntity(
-                    (be, side) -> (EnergyStorage) FabricInterfaceTransport.of(be).energy(), TRoomsBlocks.INTERFACE_BE.get());
+                    (be, side) -> be.open(side) ? (EnergyStorage) FabricInterfaceTransport.of(be).energy() : null, TRoomsBlocks.INTERFACE_BE.get());
         }
 
         static void moveFace(FabricInterfaceTransport transport, Direction face, boolean pull) {

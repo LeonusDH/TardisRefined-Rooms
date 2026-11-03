@@ -3,9 +3,6 @@ package leonus.tardis_rooms.neoforge;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
-import leonus.tardis_rooms.platform.Platform;
-import leonus.tardis_rooms.registry.RegEntry;
-
 import leonus.tardis_rooms.iface.AE2Compat;
 import leonus.tardis_rooms.iface.MekanismCompat;
 import leonus.tardis_rooms.iface.NeoForgeInterfaceTransport;
@@ -17,12 +14,14 @@ import leonus.tardis_rooms.network.InterfacePayload;
 import leonus.tardis_rooms.network.ManagePayloads;
 import leonus.tardis_rooms.network.MapPayloads;
 import leonus.tardis_rooms.network.ScrewdriverModePayload;
+import leonus.tardis_rooms.platform.Platform;
+import leonus.tardis_rooms.registry.RegEntry;
 import net.minecraft.core.Registry;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
@@ -80,9 +79,10 @@ public final class TardisRoomsNeoForge {
 
     private static void registerCapabilities(RegisterCapabilitiesEvent event) {
         var type = TRoomsBlocks.INTERFACE_BE.get();
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, type, (be, side) -> NeoForgeInterfaceTransport.of(be).energy());
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, type, (be, side) -> NeoForgeInterfaceTransport.of(be).items());
-        event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, type, (be, side) -> NeoForgeInterfaceTransport.of(be).fluids());
+        // С выключенной стороны трубы интерфейса не видят.
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, type, (be, side) -> be.open(side) ? NeoForgeInterfaceTransport.of(be).energy() : null);
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, type, (be, side) -> be.open(side) ? NeoForgeInterfaceTransport.of(be).items() : null);
+        event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, type, (be, side) -> be.open(side) ? NeoForgeInterfaceTransport.of(be).fluids() : null);
         MekanismCompat.register(event);
         AE2Compat.register(event);
     }
