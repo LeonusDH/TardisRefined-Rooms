@@ -6,6 +6,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.BlockCapabilityCache;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -14,7 +16,6 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * Передача через интерфейс на NeoForge — capabilities. «Виды» ({@link EnergyView}, {@link ItemView}, {@link FluidView},
@@ -26,9 +27,13 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     private final InterfaceBlockEntity be;
     /** Свои соседи по видам — их берут связанные интерфейсы (см. {@link LinkedStorages}). */
-    private final CapSides<IEnergyStorage> energySides;
-    private final CapSides<IItemHandler> itemSides;
-    private final CapSides<IFluidHandler> fluidSides;
+    private final LinkedStorages.Sides<IEnergyStorage> energySides;
+    private final LinkedStorages.Sides<IItemHandler> itemSides;
+    private final LinkedStorages.Sides<IFluidHandler> fluidSides;
+    /** Хранилища у соседей связанных интерфейсов — по виду. */
+    final LinkedStorages<IEnergyStorage> linkedEnergy;
+    final LinkedStorages<IItemHandler> linkedItems;
+    final LinkedStorages<IFluidHandler> linkedFluids;
     private final IEnergyStorage energy;
     private final IItemHandler items;
     private final IFluidHandler fluids;
@@ -36,9 +41,12 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     public NeoForgeInterfaceTransport(InterfaceBlockEntity be) {
         this.be = be;
-        this.energySides = new CapSides<>(be, Capabilities.EnergyStorage.BLOCK);
-        this.itemSides = new CapSides<>(be, Capabilities.ItemHandler.BLOCK);
-        this.fluidSides = new CapSides<>(be, Capabilities.FluidHandler.BLOCK);
+        this.energySides = sides(be, Capabilities.EnergyStorage.BLOCK);
+        this.itemSides = sides(be, Capabilities.ItemHandler.BLOCK);
+        this.fluidSides = sides(be, Capabilities.FluidHandler.BLOCK);
+        this.linkedEnergy = new LinkedStorages<>(be, TransferType.ENERGY, peer -> of(peer).energySides);
+        this.linkedItems = new LinkedStorages<>(be, TransferType.ITEMS, peer -> of(peer).itemSides);
+        this.linkedFluids = new LinkedStorages<>(be, TransferType.FLUIDS, peer -> of(peer).fluidSides);
         this.energy = new EnergyView(be, this);
         this.items = new ItemView(be, this);
         this.fluids = new FluidView(be, this);
@@ -110,7 +118,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
      * так не пересчитываются все слоты всех хранилищ на каждый слот).
      */
     private void moveItems(IItemHandler h, boolean pull) {
-        List<IItemHandler> froms = pull ? List.of(h) : linkedItems(Pick.FROM);
+        List<IItemHandler> froms = pull ? List.of(h) : linkedItems.get(Pick.FROM);
         IItemHandler to = pull ? items : h;
         for (IItemHandler from : froms) {
             for (int slot = 0; slot < from.getSlots(); slot++) {
@@ -142,14 +150,10 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     // ---------- соседи связанных интерфейсов ----------
 
-    /** Хранилища вида {@code type} у соседей связанных интерфейсов; {@code sidesOf} — где у транспорта его соседи этого вида. */
-    <T> List<T> linked(TransferType type, Pick pick, Function<NeoForgeInterfaceTransport, LinkedStorages.Sides<T>> sidesOf) {
-        return LinkedStorages.collect(be, type, pick, peer -> sidesOf.apply(of(peer)));
+    /** Соседи блока по возможности {@code cap}: по BlockCapabilityCache на сторону; кэш живёт, пока блок не убран. */
+    static <T> LinkedStorages.Sides<T> sides(InterfaceBlockEntity be, BlockCapability<T, Direction> cap) {
+        return new SideCaches<T, BlockCapabilityCache<T, Direction>>(be,
+                (level, pos, side) -> BlockCapabilityCache.create(cap, level, pos, side.getOpposite(), () -> !be.isRemoved(), () -> {}),
+                (cache, side) -> cache.getCapability());
     }
-
-    List<IEnergyStorage> linkedEnergy(Pick pick) { return linked(TransferType.ENERGY, pick, t -> t.energySides); }
-
-    List<IItemHandler> linkedItems(Pick pick) { return linked(TransferType.ITEMS, pick, t -> t.itemSides); }
-
-    List<IFluidHandler> linkedFluids(Pick pick) { return linked(TransferType.FLUIDS, pick, t -> t.fluidSides); }
 }

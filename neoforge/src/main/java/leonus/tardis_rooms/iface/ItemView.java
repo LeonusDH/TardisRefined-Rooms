@@ -23,7 +23,7 @@ final class ItemView implements IItemHandler {
     private int inSlots() { return be.canIn(TransferType.ITEMS) ? 1 : 0; }
 
     private List<IItemHandler> sources() {
-        return be.canOut(TransferType.ITEMS) ? transport.linkedItems(Pick.FROM) : List.of();
+        return be.canOut(TransferType.ITEMS) ? transport.linkedItems.get(Pick.FROM) : List.of();
     }
 
     @Override
@@ -56,7 +56,7 @@ final class ItemView implements IItemHandler {
         InterfaceNetwork.depth++;
         try {
             ItemStack rest = stack;
-            for (IItemHandler h : transport.linkedItems(Pick.TO)) {
+            for (IItemHandler h : transport.linkedItems.get(Pick.TO)) {
                 rest = ItemHandlerHelper.insertItemStacked(h, rest, simulate);
                 if (rest.isEmpty()) break;
             }

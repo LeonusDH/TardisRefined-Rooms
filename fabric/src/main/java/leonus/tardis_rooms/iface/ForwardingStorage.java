@@ -20,22 +20,17 @@ import java.util.function.Function;
 final class ForwardingStorage<T> implements Storage<T> {
     private final FabricInterfaceTransport transport;
     private final TransferType type;
-    /** Как найти такое же хранилище у транспорта связанного интерфейса. */
-    private final Function<FabricInterfaceTransport, ForwardingStorage<T>> sameKindOf;
     /** Свои соседи этого вида — их берут связанные интерфейсы. */
-    final ApiSides<Storage<T>> sides;
+    final LinkedStorages.Sides<Storage<T>> sides;
+    /** Хранилища этого вида у соседей связанных интерфейсов. */
+    private final LinkedStorages<Storage<T>> linked;
 
     ForwardingStorage(FabricInterfaceTransport transport, TransferType type, BlockApiLookup<Storage<T>, Direction> lookup,
                       Function<FabricInterfaceTransport, ForwardingStorage<T>> sameKindOf) {
         this.transport = transport;
         this.type = type;
-        this.sameKindOf = sameKindOf;
-        this.sides = new ApiSides<>(transport.be, lookup);
-    }
-
-    /** Хранилища у соседей связанных интерфейсов. */
-    private List<Storage<T>> linked(Pick pick) {
-        return transport.linked(type, pick, t -> sameKindOf.apply(t).sides);
+        this.sides = FabricInterfaceTransport.sides(transport.be, lookup);
+        this.linked = new LinkedStorages<>(transport.be, type, peer -> sameKindOf.apply(FabricInterfaceTransport.of(peer)).sides);
     }
 
     @Override
@@ -50,7 +45,7 @@ final class ForwardingStorage<T> implements Storage<T> {
         InterfaceNetwork.depth++;
         try {
             long done = 0;
-            for (Storage<T> h : linked(Pick.TO)) {
+            for (Storage<T> h : linked.get(Pick.TO)) {
                 if (done >= maxAmount) break;
                 if (h.supportsInsertion()) done += h.insert(resource, maxAmount - done, transaction);
             }
@@ -66,7 +61,7 @@ final class ForwardingStorage<T> implements Storage<T> {
         InterfaceNetwork.depth++;
         try {
             long done = 0;
-            for (Storage<T> h : linked(Pick.FROM)) {
+            for (Storage<T> h : linked.get(Pick.FROM)) {
                 if (done >= maxAmount) break;
                 if (h.supportsExtraction()) done += h.extract(resource, maxAmount - done, transaction);
             }
@@ -83,7 +78,7 @@ final class ForwardingStorage<T> implements Storage<T> {
         InterfaceNetwork.depth++;
         try {
             List<StorageView<T>> views = new ArrayList<>();
-            for (Storage<T> h : linked(Pick.FROM)) {
+            for (Storage<T> h : linked.get(Pick.FROM)) {
                 if (!h.supportsExtraction()) continue;
                 // Пустые места нечего забирать — и Jade не рисует их пустыми полосками.
                 for (StorageView<T> v : h) if (!v.isResourceBlank() && v.getAmount() > 0) views.add(v);

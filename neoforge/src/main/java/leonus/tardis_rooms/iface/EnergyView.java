@@ -19,7 +19,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : transport.linkedEnergy(Pick.TO)) {
+            for (IEnergyStorage h : transport.linkedEnergy.get(Pick.TO)) {
                 if (done >= max) break;
                 if (h.canReceive()) done += h.receiveEnergy(max - done, simulate);
             }
@@ -35,7 +35,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : transport.linkedEnergy(Pick.FROM)) {
+            for (IEnergyStorage h : transport.linkedEnergy.get(Pick.FROM)) {
                 if (done >= max) break;
                 if (h.canExtract()) done += h.extractEnergy(max - done, simulate);
             }
@@ -58,18 +58,7 @@ final class EnergyView implements IEnergyStorage {
 
     /** Заряд и ёмкость хранилищ у связанных интерфейсов. */
     private long[] totals() {
-        long[] out = new long[2];
-        if (InterfaceNetwork.depth > 0) return out;
-        InterfaceNetwork.depth++;
-        try {
-            for (IEnergyStorage h : transport.linkedEnergy(Pick.ALL)) {
-                out[0] += h.getEnergyStored();
-                out[1] += h.getMaxEnergyStored();
-            }
-        } finally {
-            InterfaceNetwork.depth--;
-        }
-        return out;
+        return transport.linkedEnergy.totals(IEnergyStorage::getEnergyStored, IEnergyStorage::getMaxEnergyStored);
     }
 
     @Override

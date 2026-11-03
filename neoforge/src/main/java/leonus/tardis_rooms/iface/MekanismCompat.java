@@ -85,21 +85,20 @@ public final class MekanismCompat {
         private final InterfaceBlockEntity be;
         private final NeoForgeInterfaceTransport transport;
         /** Свои соседи по химикатам — их берут связанные интерфейсы. */
-        final CapSides<IChemicalHandler> sides;
+        final LinkedStorages.Sides<IChemicalHandler> sides;
+        /** Хранилища химикатов у соседей связанных интерфейсов (у кого химикаты выключены, вида нет — пропускаются). */
+        private final LinkedStorages<IChemicalHandler> linked;
 
         ChemicalView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
             this.be = be;
             this.transport = transport;
-            this.sides = new CapSides<>(be, cap());
-        }
-
-        /** Соседи по химикатам у транспорта связанного интерфейса (null — химикаты у него выключены). */
-        static LinkedStorages.Sides<IChemicalHandler> sidesOf(NeoForgeInterfaceTransport t) {
-            return t.chemicals() instanceof ChemicalView v ? v.sides : null;
+            this.sides = NeoForgeInterfaceTransport.sides(be, cap());
+            this.linked = new LinkedStorages<>(be, TransferType.CHEMICALS,
+                    peer -> NeoForgeInterfaceTransport.of(peer).chemicals() instanceof ChemicalView v ? v.sides : null);
         }
 
         private List<IChemicalHandler> sources() {
-            return be.canOut(TransferType.CHEMICALS) ? transport.linked(TransferType.CHEMICALS, Pick.FROM, ChemicalView::sidesOf) : List.of();
+            return be.canOut(TransferType.CHEMICALS) ? linked.get(Pick.FROM) : List.of();
         }
 
         /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
@@ -155,7 +154,7 @@ public final class MekanismCompat {
             InterfaceNetwork.depth++;
             try {
                 ChemicalStack rest = stack;
-                for (IChemicalHandler h : transport.linked(TransferType.CHEMICALS, Pick.TO, ChemicalView::sidesOf)) {
+                for (IChemicalHandler h : linked.get(Pick.TO)) {
                     rest = h.insertChemical(rest, action);
                     if (rest.isEmpty()) break;
                 }

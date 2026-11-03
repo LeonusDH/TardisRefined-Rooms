@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.iface;
 
-import leonus.tardis_rooms.iface.LinkedStorages.Pick;
+import net.fabricmc.fabric.api.lookup.v1.block.BlockApiCache;
+import net.fabricmc.fabric.api.lookup.v1.block.BlockApiLookup;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
@@ -11,8 +12,6 @@ import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 
-import java.util.List;
-import java.util.function.Function;
 
 /**
  * Передача через интерфейс на Fabric — Transfer API (предметы, жидкости) и Team Reborn Energy (энергия, если установлен).
@@ -91,8 +90,10 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
 
     // ---------- соседи связанных интерфейсов ----------
 
-    /** Хранилища вида {@code type} у соседей связанных интерфейсов; {@code sidesOf} — где у транспорта его соседи этого вида. */
-    <T> List<T> linked(TransferType type, Pick pick, Function<FabricInterfaceTransport, LinkedStorages.Sides<T>> sidesOf) {
-        return LinkedStorages.collect(be, type, pick, peer -> sidesOf.apply(of(peer)));
+    /** Соседи блока по {@code lookup}: по BlockApiCache на сторону. */
+    static <T> LinkedStorages.Sides<T> sides(InterfaceBlockEntity be, BlockApiLookup<T, Direction> lookup) {
+        return new SideCaches<T, BlockApiCache<T, Direction>>(be,
+                (level, pos, side) -> BlockApiCache.create(lookup, level, pos),
+                (cache, side) -> cache.find(side.getOpposite()));
     }
 }
