@@ -1,12 +1,13 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.iface.LinkedStorages.Pick;
+import leonus.tardis_rooms.platform.Platform;
 import mekanism.api.Action;
 import mekanism.api.chemical.ChemicalStack;
 import mekanism.api.chemical.IChemicalHandler;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import leonus.tardis_rooms.platform.Platform;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
@@ -48,16 +49,17 @@ public final class MekanismCompat {
         }
     }
 
-    /** Грань «вставлять»/«забирать» для химикатов. */
-    static void moveFace(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport, net.minecraft.core.BlockPos np, Direction side, boolean pull, long max) {
-        if (!enabled() || be.getLevel() == null) return;
-        Mover.move(be, transport, np, side, pull, max);
+    /** Грань «вставлять»/«забирать» для химикатов: сосед со своей стороны {@code face}. */
+    static void moveFace(NeoForgeInterfaceTransport transport, Direction face, boolean pull, long max) {
+        if (!enabled()) return;
+        Mover.move(transport, face, pull, max);
     }
 
     private static final class Mover {
-        static void move(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport, net.minecraft.core.BlockPos np, Direction side, boolean pull, long max) {
-            IChemicalHandler h = be.getLevel().getCapability(cap(), np, side);
-            if (!(transport.chemicals() instanceof IChemicalHandler mine) || h == null) return;
+        static void move(NeoForgeInterfaceTransport transport, Direction face, boolean pull, long max) {
+            if (!(transport.chemicals() instanceof ChemicalView mine)) return;
+            IChemicalHandler h = mine.sides.at(face);
+            if (h == null) return;
             IChemicalHandler from = pull ? h : mine, to = pull ? mine : h;
             ChemicalStack probe = from.extractChemical(max, Action.SIMULATE);
             if (probe.isEmpty()) return;
@@ -82,14 +84,22 @@ public final class MekanismCompat {
     private static final class ChemicalView implements IChemicalHandler {
         private final InterfaceBlockEntity be;
         private final NeoForgeInterfaceTransport transport;
+        /** Свои соседи по химикатам — их берут связанные интерфейсы. */
+        final CapSides<IChemicalHandler> sides;
 
         ChemicalView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
             this.be = be;
             this.transport = transport;
+            this.sides = new CapSides<>(be, cap());
+        }
+
+        /** Соседи по химикатам у транспорта связанного интерфейса (null — химикаты у него выключены). */
+        static LinkedStorages.Sides<IChemicalHandler> sidesOf(NeoForgeInterfaceTransport t) {
+            return t.chemicals() instanceof ChemicalView v ? v.sides : null;
         }
 
         private List<IChemicalHandler> sources() {
-            return be.canOut(TransferType.CHEMICALS) ? transport.handlers(cap(), TransferType.CHEMICALS, true) : List.of();
+            return be.canOut(TransferType.CHEMICALS) ? transport.linked(TransferType.CHEMICALS, Pick.FROM, ChemicalView::sidesOf) : List.of();
         }
 
         /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
@@ -145,7 +155,7 @@ public final class MekanismCompat {
             InterfaceNetwork.depth++;
             try {
                 ChemicalStack rest = stack;
-                for (IChemicalHandler h : transport.handlers(cap(), TransferType.CHEMICALS, false)) {
+                for (IChemicalHandler h : transport.linked(TransferType.CHEMICALS, Pick.TO, ChemicalView::sidesOf)) {
                     rest = h.insertChemical(rest, action);
                     if (rest.isEmpty()) break;
                 }

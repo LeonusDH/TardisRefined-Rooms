@@ -7,14 +7,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Хранилища у соседей связанных интерфейсов — общее для всех платформ. Платформа даёт только способ найти хранилище
- * у блока ({@link Finder}: на NeoForge — capability, на Fabric — BlockApiLookup). Кэш на тик: трубы спрашивают помногу раз.
+ * Хранилища у соседей связанных интерфейсов — общее для всех платформ. Каждый интерфейс сам помнит своих соседей
+ * ({@link Sides}: на NeoForge — BlockCapabilityCache, на Fabric — BlockApiCache, их обновляет сама игра), а здесь
+ * только обходятся связанные интерфейсы и отбираются нужные стороны.
  */
 public final class LinkedStorages {
     /** Какие соседи нужны. */
@@ -27,55 +26,39 @@ public final class LinkedStorages {
         ALL
     }
 
-    /** Хранилище нужного вида у блока {@code pos} со стороны {@code side}, или null. */
+    /** Соседи интерфейса одного вида (энергия, предметы…): хранилище соседа с данной стороны, или null. */
     @FunctionalInterface
-    public interface Finder<T> {
-        @Nullable T find(Level level, BlockPos pos, Direction side);
-    }
-
-    private final InterfaceBlockEntity be;
-    private long cacheTick = -1;
-    /** По выборке: вид хранилища ({@code key} — capability или lookup) → список на этот тик. */
-    private final Map<Pick, Map<Object, List<?>>> cache = new EnumMap<>(Pick.class);
-
-    public LinkedStorages(InterfaceBlockEntity be) {
-        this.be = be;
-        for (Pick p : Pick.values()) cache.put(p, new HashMap<>());
+    public interface Sides<T> {
+        @Nullable T at(Direction side);
     }
 
     /**
-     * Хранилища у соседей связанных интерфейсов, у которых включён вид передачи {@code type}. Соседние интерфейсы
-     * пропускаются. {@code key} — по нему кэш различает виды хранилищ (одна и та же capability или lookup).
+     * Хранилища у соседей связанных с {@code self} интерфейсов, у которых включён вид передачи {@code type}.
+     * {@code sidesOf} — соседи этого вида у связанного интерфейса (null — вид у него недоступен). Соседние интерфейсы
+     * пропускаются: передача из интерфейса в интерфейс шла бы по кругу.
      */
-    public <T> List<T> get(Object key, Finder<T> finder, TransferType type, Pick pick) {
-        Level level = be.getLevel();
-        if (level == null || !be.isConnected()) return List.of();
-        long now = level.getGameTime();
-        if (now != cacheTick) {
-            cache.values().forEach(Map::clear);
-            cacheTick = now;
-        }
-        Map<Object, List<?>> byKey = cache.get(pick);
-        // Список под ключом всегда того типа, что находит этот ключ (тип задаёт сама capability или lookup).
-        @SuppressWarnings("unchecked") List<T> cached = (List<T>) byKey.get(key);
-        if (cached != null) return cached;
+    public static <T> List<T> collect(InterfaceBlockEntity self, TransferType type, Pick pick, Function<InterfaceBlockEntity, Sides<T>> sidesOf) {
+        Level level = self.getLevel();
+        if (level == null || !self.isConnected()) return List.of();
         List<T> out = new ArrayList<>();
-        for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
+        for (InterfaceBlockEntity peer : InterfaceNetwork.peers(self)) {
             if (!peer.enabled(type) || (pick == Pick.TO && !peer.flow().out) || (pick == Pick.FROM && !peer.flow().in)) continue;
             Level pl = peer.getLevel();
-            if (pl == null) continue;
+            Sides<T> sides = sidesOf.apply(peer);
+            if (pl == null || sides == null) continue;
             for (Direction d : Direction.values()) {
                 FaceMode fm = peer.face(d);
                 if ((pick == Pick.TO && fm == FaceMode.PULL) || (pick == Pick.FROM && fm == FaceMode.PUSH)) continue;
                 BlockPos np = peer.getBlockPos().relative(d);
                 if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-                T h = finder.find(pl, np, d.getOpposite());
+                T h = sides.at(d);
                 if (h != null) out.add(h);
             }
         }
         // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
-        if (pick != Pick.ALL && out.size() > 1) Collections.rotate(out, -(int) (now % out.size()));
-        byKey.put(key, out);
+        if (pick != Pick.ALL && out.size() > 1) Collections.rotate(out, -(int) (level.getGameTime() % out.size()));
         return out;
     }
+
+    private LinkedStorages() {}
 }

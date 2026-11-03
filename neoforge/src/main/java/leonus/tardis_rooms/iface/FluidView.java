@@ -1,6 +1,6 @@
 package leonus.tardis_rooms.iface;
 
-import net.neoforged.neoforge.capabilities.Capabilities;
+import leonus.tardis_rooms.iface.LinkedStorages.Pick;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
@@ -19,7 +19,7 @@ final class FluidView implements IFluidHandler {
     private int inTanks() { return be.canIn(TransferType.FLUIDS) ? 1 : 0; }
 
     private List<IFluidHandler> sources() {
-        return be.canOut(TransferType.FLUIDS) ? transport.handlers(Capabilities.FluidHandler.BLOCK, TransferType.FLUIDS, true) : List.of();
+        return be.canOut(TransferType.FLUIDS) ? transport.linkedFluids(Pick.FROM) : List.of();
     }
 
     @Override
@@ -68,7 +68,7 @@ final class FluidView implements IFluidHandler {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IFluidHandler h : transport.handlers(Capabilities.FluidHandler.BLOCK, TransferType.FLUIDS, false)) {
+            for (IFluidHandler h : transport.linkedFluids(Pick.TO)) {
                 if (done >= resource.getAmount()) break;
                 done += h.fill(resource.copyWithAmount(resource.getAmount() - done), action);
             }

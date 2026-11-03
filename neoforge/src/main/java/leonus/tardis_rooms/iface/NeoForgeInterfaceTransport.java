@@ -1,11 +1,11 @@
 package leonus.tardis_rooms.iface;
 
+import leonus.tardis_rooms.iface.LinkedStorages.Pick;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -14,6 +14,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Передача через интерфейс на NeoForge — capabilities. «Виды» ({@link EnergyView}, {@link ItemView}, {@link FluidView},
@@ -24,8 +25,10 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     static final int FLUID_PER_OP = 16000;
 
     private final InterfaceBlockEntity be;
-    /** Хранилища у соседей связанных интерфейсов (общая часть, см. {@link LinkedStorages}). */
-    private final LinkedStorages storages;
+    /** Свои соседи по видам — их берут связанные интерфейсы (см. {@link LinkedStorages}). */
+    private final CapSides<IEnergyStorage> energySides;
+    private final CapSides<IItemHandler> itemSides;
+    private final CapSides<IFluidHandler> fluidSides;
     private final IEnergyStorage energy;
     private final IItemHandler items;
     private final IFluidHandler fluids;
@@ -33,7 +36,9 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     public NeoForgeInterfaceTransport(InterfaceBlockEntity be) {
         this.be = be;
-        this.storages = new LinkedStorages(be);
+        this.energySides = new CapSides<>(be, Capabilities.EnergyStorage.BLOCK);
+        this.itemSides = new CapSides<>(be, Capabilities.ItemHandler.BLOCK);
+        this.fluidSides = new CapSides<>(be, Capabilities.FluidHandler.BLOCK);
         this.energy = new EnergyView(be, this);
         this.items = new ItemView(be, this);
         this.fluids = new FluidView(be, this);
@@ -78,20 +83,20 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     @Override
     public void moveFace(BlockPos np, Direction side, boolean pull) {
-        Level level = be.getLevel();
+        Direction face = side.getOpposite(); // своя сторона, к которой примыкает сосед
         if (be.enabled(TransferType.ENERGY)) {
-            IEnergyStorage h = level.getCapability(Capabilities.EnergyStorage.BLOCK, np, side);
+            IEnergyStorage h = energySides.at(face);
             if (h != null) moveEnergy(h, pull);
         }
         if (be.enabled(TransferType.ITEMS)) {
-            IItemHandler h = level.getCapability(Capabilities.ItemHandler.BLOCK, np, side);
+            IItemHandler h = itemSides.at(face);
             if (h != null) moveItems(h, pull);
         }
         if (be.enabled(TransferType.FLUIDS)) {
-            IFluidHandler h = level.getCapability(Capabilities.FluidHandler.BLOCK, np, side);
+            IFluidHandler h = fluidSides.at(face);
             if (h != null) moveFluids(h, pull);
         }
-        if (be.enabled(TransferType.CHEMICALS)) MekanismCompat.moveFace(be, this, np, side, pull, FLUID_PER_OP);
+        if (be.enabled(TransferType.CHEMICALS)) MekanismCompat.moveFace(this, face, pull, FLUID_PER_OP);
     }
 
     private void moveEnergy(IEnergyStorage h, boolean pull) {
@@ -105,7 +110,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
      * так не пересчитываются все слоты всех хранилищ на каждый слот).
      */
     private void moveItems(IItemHandler h, boolean pull) {
-        List<IItemHandler> froms = pull ? List.of(h) : handlers(Capabilities.ItemHandler.BLOCK, TransferType.ITEMS, true);
+        List<IItemHandler> froms = pull ? List.of(h) : linkedItems(Pick.FROM);
         IItemHandler to = pull ? items : h;
         for (IItemHandler from : froms) {
             for (int slot = 0; slot < from.getSlots(); slot++) {
@@ -137,13 +142,14 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
 
     // ---------- соседи связанных интерфейсов ----------
 
-    /** Обработчики соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать), иначе — с выходом (куда отдавать). */
-    <T> List<T> handlers(BlockCapability<T, Direction> cap, TransferType type, boolean fromInputs) {
-        return storages.get(cap, (l, p, s) -> l.getCapability(cap, p, s), type, fromInputs ? LinkedStorages.Pick.FROM : LinkedStorages.Pick.TO);
+    /** Хранилища вида {@code type} у соседей связанных интерфейсов; {@code sidesOf} — где у транспорта его соседи этого вида. */
+    <T> List<T> linked(TransferType type, Pick pick, Function<NeoForgeInterfaceTransport, LinkedStorages.Sides<T>> sidesOf) {
+        return LinkedStorages.collect(be, type, pick, peer -> sidesOf.apply(of(peer)));
     }
 
-    /** Обработчики соседей всех связанных интерфейсов, каждый один раз: сколько всего в них лежит (для подсказки). */
-    <T> List<T> linked(BlockCapability<T, Direction> cap, TransferType type) {
-        return storages.get(cap, (l, p, s) -> l.getCapability(cap, p, s), type, LinkedStorages.Pick.ALL);
-    }
+    List<IEnergyStorage> linkedEnergy(Pick pick) { return linked(TransferType.ENERGY, pick, t -> t.energySides); }
+
+    List<IItemHandler> linkedItems(Pick pick) { return linked(TransferType.ITEMS, pick, t -> t.itemSides); }
+
+    List<IFluidHandler> linkedFluids(Pick pick) { return linked(TransferType.FLUIDS, pick, t -> t.fluidSides); }
 }

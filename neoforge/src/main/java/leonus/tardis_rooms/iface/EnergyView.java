@@ -1,6 +1,6 @@
 package leonus.tardis_rooms.iface;
 
-import net.neoforged.neoforge.capabilities.Capabilities;
+import leonus.tardis_rooms.iface.LinkedStorages.Pick;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
 /** Энергия через интерфейс: принятое во вход отдаётся соседям выходов, забираемое из выхода — у соседей входов. */
@@ -19,7 +19,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : transport.handlers(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY, false)) {
+            for (IEnergyStorage h : transport.linkedEnergy(Pick.TO)) {
                 if (done >= max) break;
                 if (h.canReceive()) done += h.receiveEnergy(max - done, simulate);
             }
@@ -35,7 +35,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : transport.handlers(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY, true)) {
+            for (IEnergyStorage h : transport.linkedEnergy(Pick.FROM)) {
                 if (done >= max) break;
                 if (h.canExtract()) done += h.extractEnergy(max - done, simulate);
             }
@@ -47,22 +47,22 @@ final class EnergyView implements IEnergyStorage {
 
     /** Своего запаса нет: показываем заряд хранилищ у связанных интерфейсов (его и рисует Jade). */
     @Override
-    public int getEnergyStored() { return (int) Math.min(Integer.MAX_VALUE, linked()[0]); }
+    public int getEnergyStored() { return (int) Math.min(Integer.MAX_VALUE, totals()[0]); }
 
     /** Если связанных хранилищ нет — ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
     @Override
     public int getMaxEnergyStored() {
-        long cap = linked()[1];
+        long cap = totals()[1];
         return cap > 0 ? (int) Math.min(Integer.MAX_VALUE, cap) : Integer.MAX_VALUE;
     }
 
     /** Заряд и ёмкость хранилищ у связанных интерфейсов. */
-    private long[] linked() {
+    private long[] totals() {
         long[] out = new long[2];
         if (InterfaceNetwork.depth > 0) return out;
         InterfaceNetwork.depth++;
         try {
-            for (IEnergyStorage h : transport.linked(Capabilities.EnergyStorage.BLOCK, TransferType.ENERGY)) {
+            for (IEnergyStorage h : transport.linkedEnergy(Pick.ALL)) {
                 out[0] += h.getEnergyStored();
                 out[1] += h.getMaxEnergyStored();
             }
