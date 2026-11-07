@@ -10,6 +10,9 @@ import leonus.tardis_rooms.iface.TransferType;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -22,6 +25,9 @@ import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
 import snownee.jade.api.config.IPluginConfig;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Jade: состояние интерфейса ТАРДИС (подключён / нет ID / нет оболочки / конфликт сети), ID, направление. Грузится только с Jade:
@@ -55,7 +61,10 @@ public class JadePlugin implements IWailaPlugin {
             tag.putInt("tardis_rooms_id", be.id());
             tag.putInt("tardis_rooms_peers", be.peerCount());
             tag.putByte("tardis_rooms_flow", (byte) be.flow().ordinal());
-            tag.putInt("tardis_rooms_types", be.data().types());
+            // Виды — по id: номера видов у сервера и клиента могут не совпасть.
+            ListTag kinds = new ListTag();
+            for (ResourceLocation k : be.data().kinds()) kinds.add(StringTag.valueOf(k.toString()));
+            tag.put("tardis_rooms_kinds", kinds);
             tag.putInt("tardis_rooms_faces", be.data().faces());
         }
 
@@ -89,11 +98,12 @@ public class JadePlugin implements IWailaPlugin {
             if (st != Status.CONNECTED) return;
             tooltip.add(TRoomsText.IFACE_PEERS.text(d.getInt("tardis_rooms_peers")).withStyle(ChatFormatting.GRAY));
             tooltip.add(TRoomsText.IFACE_FLOW.text(flow(Flow.of(d.getByte("tardis_rooms_flow")))).withStyle(ChatFormatting.GRAY));
-            int types = d.getInt("tardis_rooms_types");
+            Set<String> kinds = new HashSet<>();
+            for (Tag k : d.getList("tardis_rooms_kinds", Tag.TAG_STRING)) kinds.add(k.getAsString());
             MutableComponent on = Component.empty();
             first = true;
             for (TransferType t : TransferType.values()) {
-                if (!t.available() || (types & t.bit()) == 0) continue;
+                if (!t.available() || !kinds.contains(t.id().toString())) continue;
                 if (!first) on.append(", ");
                 on.append(name(t));
                 first = false;

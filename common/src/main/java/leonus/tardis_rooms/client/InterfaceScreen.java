@@ -159,7 +159,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
             boolean on = data.enabled(t);
             Component label = typeName(t).text().append(": ").append((on ? TRoomsText.IFACE_ON : TRoomsText.IFACE_OFF).text()
                     .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
-            SelectionListEntry e = new SelectionListEntry(label, x -> send(InterfacePayload.TOGGLE, t.ordinal()), listLeft());
+            SelectionListEntry e = new SelectionListEntry(label, x -> Platform.sendToServer(InterfacePayload.toggle(pos, t)), listLeft());
             TRoomsText tip = switch (t) {
                 case ME -> TRoomsText.IFACE_ME_TOOLTIP;
                 case REDSTONE -> TRoomsText.IFACE_REDSTONE_TOOLTIP;

@@ -15,8 +15,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Клиент → сервер: действие с интерфейсом (из меню или Shift+ЛКМ отвёрткой). */
-public record InterfacePayload(BlockPos pos, int action, int value) implements CustomPacketPayload {
+import java.util.Optional;
+
+/** Клиент → сервер: действие с интерфейсом (из меню или Shift+ЛКМ отвёрткой). {@code kind} — вид передачи для TOGGLE. */
+public record InterfacePayload(BlockPos pos, int action, int value, Optional<ResourceLocation> kind) implements CustomPacketPayload {
     public static final int FLOW = 0, TOGGLE = 1, GENERATE = 2, CLEAR = 3, PASTE = 4, FACE = 5;
 
     public static final Type<InterfacePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "interface_action"));
@@ -24,7 +26,13 @@ public record InterfacePayload(BlockPos pos, int action, int value) implements C
             BlockPos.STREAM_CODEC, InterfacePayload::pos,
             ByteBufCodecs.VAR_INT, InterfacePayload::action,
             ByteBufCodecs.VAR_INT, InterfacePayload::value,
+            ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs::optional), InterfacePayload::kind,
             InterfacePayload::new);
+
+    public InterfacePayload(BlockPos pos, int action, int value) { this(pos, action, value, Optional.empty()); }
+
+    /** Включить или выключить вид передачи. */
+    public static InterfacePayload toggle(BlockPos pos, TransferType t) { return new InterfacePayload(pos, TOGGLE, 0, Optional.of(t.id())); }
 
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -38,7 +46,8 @@ public record InterfacePayload(BlockPos pos, int action, int value) implements C
         switch (p.action()) {
             case FLOW -> be.setFlow(Flow.of(p.value()));
             case TOGGLE -> {
-                if (p.value() >= 0 && p.value() < TransferType.values().length) be.toggle(TransferType.values()[p.value()]);
+                TransferType t = p.kind().map(TransferType::byId).orElse(null);
+                if (t != null) be.toggle(t);
             }
             case GENERATE -> {
                 if (!be.generateId()) player.displayClientMessage(TRoomsText.MSG_INTERFACE_NO_TARDIS.text(), true);
