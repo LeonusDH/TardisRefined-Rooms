@@ -35,7 +35,7 @@ jobs:
     name: Game tests (NeoForge)
     if: inputs.suite == 'all' || inputs.suite == 'gametest-neoforge'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -50,7 +50,7 @@ jobs:
     name: Game tests (Fabric)
     if: inputs.suite == 'all' || inputs.suite == 'gametest-fabric'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6

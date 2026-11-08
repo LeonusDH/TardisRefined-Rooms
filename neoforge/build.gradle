@@ -54,6 +54,11 @@ loom {
     }
 }
 
+// Запускам нужен common, преобразованный под NeoForge (см. loom.mods): собрать его до запуска.
+tasks.matching { it.name.startsWith('run') }.configureEach {
+    dependsOn configurations.shadowBundle
+}
+
 tasks.matching { it.name == 'runGameTestServer' }.configureEach {
     doFirst {
         def dir = file('build/gametest')
