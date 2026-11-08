@@ -16,7 +16,8 @@ configurations {
         canBeConsumed = false
     }
     compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
+    // При запуске (тесты, датаген) common приходит только через developmentNeoForge — уже преобразованным.
+    // Сырой common рядом с ним NeoForge принимает за второй мод с теми же пакетами и не запускается.
     developmentNeoForge.extendsFrom common
     shadowBundle {
         canBeResolved = true

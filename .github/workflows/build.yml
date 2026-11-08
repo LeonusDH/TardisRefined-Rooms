@@ -61,4 +61,5 @@ jobs:
           if-no-files-found: error
 
       - name: Game tests (NeoForge)
+        timeout-minutes: 10
         run: ./gradlew :neoforge:runGameTestServer --no-daemon
