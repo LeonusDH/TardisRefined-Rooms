@@ -16,7 +16,8 @@ configurations {
         canBeConsumed = false
     }
     // При запуске (тесты, датаген) common не кладётся отдельным jar: у common и neoforge общие пакеты, и NeoForge
-    // не запустит два модуля с одним пакетом. Вместо этого классы common входят в тот же мод (loom.mods ниже).
+    // не запустит два модуля с одним пакетом. Вместо этого common, уже преобразованный под NeoForge (как в готовом
+    // моде), входит в тот же мод (loom.mods ниже).
     compileClasspath.extendsFrom common
     shadowBundle {
         canBeResolved = true
@@ -28,7 +29,7 @@ loom {
     mods {
         tardis_rooms {
             sourceSet sourceSets.main
-            sourceSet 'main', ':common'
+            modFiles.from(configurations.shadowBundle)
         }
     }
     runs {
