@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.iface;
 
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -28,4 +29,9 @@ public record InterfaceHost(LinkScope scope, Predicate<ItemStack> configurator) 
 
     /** Инструмент настройки интерфейса (открывает меню, хранит ID). */
     public static boolean isConfigurator(ItemStack stack) { return current.configurator.test(stack); }
+
+    /** Инструмент настройки в любой руке. */
+    public static boolean holdsConfigurator(Player player) {
+        return isConfigurator(player.getMainHandItem()) || isConfigurator(player.getOffhandItem());
+    }
 }

@@ -192,13 +192,19 @@ public final class InterfaceGameTests {
 
     // ---------- редстоун ----------
 
-    /** Сигнал у A (вход) зажигает лампу у B (выход) и гаснет вместе с ним. */
-    public static void redstone(GameTestHelper h) {
+    /** Лампа у B; редстоун включён у обоих, A — вход (по умолчанию «вход и выход»), B — выход. */
+    private static Pair redstonePair(GameTestHelper h) {
         h.setBlock(DST, Blocks.REDSTONE_LAMP);
         Pair p = pair(h);
         p.a.toggle(BuiltinKinds.redstone());
         p.b.toggle(BuiltinKinds.redstone());
         p.b.setFlow(Flow.OUT);
+        return p;
+    }
+
+    /** Сигнал у A (вход) зажигает лампу у B (выход) и гаснет вместе с ним. */
+    public static void redstone(GameTestHelper h) {
+        Pair p = redstonePair(h);
         h.startSequence()
                 .thenExecute(() -> h.setBlock(SRC, Blocks.REDSTONE_BLOCK))
                 .thenWaitUntil(() -> h.assertBlockProperty(DST, RedstoneLampBlock.LIT, true))
@@ -209,11 +215,7 @@ public final class InterfaceGameTests {
 
     /** Интерфейс со входом убрали — лампа у выхода гаснет. */
     public static void redstoneInputRemoved(GameTestHelper h) {
-        h.setBlock(DST, Blocks.REDSTONE_LAMP);
-        Pair p = pair(h);
-        p.a.toggle(BuiltinKinds.redstone());
-        p.b.toggle(BuiltinKinds.redstone());
-        p.b.setFlow(Flow.OUT);
+        Pair p = redstonePair(h);
         h.startSequence()
                 .thenExecute(() -> h.setBlock(SRC, Blocks.REDSTONE_BLOCK))
                 .thenWaitUntil(() -> h.assertBlockProperty(DST, RedstoneLampBlock.LIT, true))
@@ -224,11 +226,7 @@ public final class InterfaceGameTests {
 
     /** У входа сменили ID — связь с выходом рвётся, лампа гаснет. */
     public static void redstoneRelinked(GameTestHelper h) {
-        h.setBlock(DST, Blocks.REDSTONE_LAMP);
-        Pair p = pair(h);
-        p.a.toggle(BuiltinKinds.redstone());
-        p.b.toggle(BuiltinKinds.redstone());
-        p.b.setFlow(Flow.OUT);
+        Pair p = redstonePair(h);
         h.startSequence()
                 .thenExecute(() -> h.setBlock(SRC, Blocks.REDSTONE_BLOCK))
                 .thenWaitUntil(() -> h.assertBlockProperty(DST, RedstoneLampBlock.LIT, true))
@@ -239,11 +237,7 @@ public final class InterfaceGameTests {
 
     /** Выключенная сторона не выдаёт сигнал. */
     public static void redstoneDisabledSide(GameTestHelper h) {
-        h.setBlock(DST, Blocks.REDSTONE_LAMP);
-        Pair p = pair(h);
-        p.a.toggle(BuiltinKinds.redstone());
-        p.b.toggle(BuiltinKinds.redstone());
-        p.b.setFlow(Flow.OUT);
+        Pair p = redstonePair(h);
         p.b.setFace(Direction.EAST, FaceMode.DISABLED);
         h.setBlock(SRC, Blocks.REDSTONE_BLOCK);
         h.runAfterDelay(20, () -> {

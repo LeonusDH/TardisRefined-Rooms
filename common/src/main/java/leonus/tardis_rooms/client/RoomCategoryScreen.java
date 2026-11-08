@@ -42,12 +42,10 @@ public class RoomCategoryScreen extends RoomMonitorScreen {
     @Override
     protected void init() {
         super.init();
-        this.setEvents(null, () -> {
+        monitorButtons(null, () -> {
             if (parent != null) switchScreenToLeft(parent);
             else onClose();
         });
-        int vPos = (height - monitorHeight) / 2;
-        addCancelButton(width / 2 + 5, height - vPos - 25);
         sideButton(leftColumn(), columnTop(), sprite("manage/map"), TRoomsText.MAP.text(), TRoomsText.MAP_TOOLTIP.text(), () -> {
             RoomManageScreen.click();
             switchScreenToRight(new RoomMapScreen(nodePos, node, replaceCore, null, this));

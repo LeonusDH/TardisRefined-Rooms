@@ -1,6 +1,5 @@
 package leonus.tardis_rooms.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
@@ -83,9 +82,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
     @Override
     protected void init() {
         super.init();
-        this.setEvents(null, this::onClose);
-        int vPos = (height - monitorHeight) / 2;
-        addCancelButton(width / 2 + 5, height - vPos - 25);
+        monitorButtons(null, this::onClose);
 
         // Кнопки справа от рамки монитора — столбиком.
         int rx = rightColumn(), y = columnTop();
@@ -153,12 +150,8 @@ public class InterfaceScreen extends RoomMonitorScreen {
     /** Слева на мониторе — состояние, ID и сколько интерфейсов связано. */
     @Override
     public void inMonitorRender(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        int hPos = (width - monitorWidth) / 2, vPos = (height - monitorHeight) / 2, trim = 15;
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        g.blit(backdrop, 5 + width / 2, -50 + height / 2, 110, monitorHeight, 110, 95);
-        int x0 = hPos + trim - 5, y0 = vPos + trim + 5;
-        g.blit(backdrop, x0 - 5, y0 - 5, 0, monitorHeight, 110, 110);
-        int x = x0, y = y0, w = 96;
+        drawPanels(g);
+        int x = panelX(), y = panelY(), w = 96;
         y = lines(g, status.text(), x, y, w);
         y += 6;
         Component idLine = data.id() != 0 ? InterfaceTools.idText(data.id()) : TRoomsText.IFACE_ID_NONE.text().withStyle(ChatFormatting.DARK_GRAY);

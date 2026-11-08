@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.iface.tardis;
 
+import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceLink;
@@ -17,7 +18,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
-import whocraft.tardis_refined.common.items.ScrewdriverItem;
 
 import java.util.List;
 
@@ -31,22 +31,18 @@ import java.util.List;
 public final class ScrewdriverTools {
     public static final int MODE_NORMAL = 0, MODE_CONFIG = 1, MODES = 2;
 
-    public static boolean isScrewdriver(ItemStack s) {
-        return s.getItem() instanceof ScrewdriverItem;
-    }
-
     public static int mode(ItemStack s) {
         return s.getOrDefault(TRoomsBlocks.SCREWDRIVER_MODE.get(), MODE_NORMAL);
     }
 
     private static boolean configMode(ItemStack s) {
-        return isScrewdriver(s) && mode(s) == MODE_CONFIG;
+        return Screwdriver.is(s) && mode(s) == MODE_CONFIG;
     }
 
     /** Следующий режим отвёртки в руке (сервер; {@code step} — ±1 от колёсика). */
     public static void cycleMode(Player player, int step) {
         ItemStack stack = player.getMainHandItem();
-        if (!isScrewdriver(stack)) return;
+        if (!Screwdriver.is(stack)) return;
         int m = Math.floorMod(mode(stack) + (step >= 0 ? 1 : -1), MODES);
         if (m == MODE_NORMAL) stack.remove(TRoomsBlocks.SCREWDRIVER_MODE.get());
         else stack.set(TRoomsBlocks.SCREWDRIVER_MODE.get(), m);
@@ -111,7 +107,7 @@ public final class ScrewdriverTools {
     /** Вписать в интерфейс идентификатор из отвёртки в руке (сервер). */
     public static void paste(Player player, InterfaceBlockEntity be) {
         ItemStack stack = player.getMainHandItem();
-        if (!isScrewdriver(stack)) stack = player.getOffhandItem();
+        if (!Screwdriver.is(stack)) stack = player.getOffhandItem();
         InterfaceLink link = stack.get(TRoomsBlocks.INTERFACE_LINK.get());
         if (link == null || link.id() == 0) {
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_SCREWDRIVER_EMPTY.text(), true);
@@ -123,7 +119,7 @@ public final class ScrewdriverTools {
 
     /** Подсказка отвёртки: режим и запомненный идентификатор. */
     public static void appendTooltip(ItemStack stack, List<Component> tooltip) {
-        if (!isScrewdriver(stack)) return;
+        if (!Screwdriver.is(stack)) return;
         tooltip.add(TRoomsText.SCREWDRIVER_MODE.text(modeName(mode(stack)).text().withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
         InterfaceLink link = stack.get(TRoomsBlocks.INTERFACE_LINK.get());
         if (link != null && link.id() != 0) {

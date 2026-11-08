@@ -1,12 +1,11 @@
 package leonus.tardis_rooms.network;
 
+import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.Lattice;
 import leonus.tardis_rooms.room.ModuleRegistry;
 import leonus.tardis_rooms.room.Node;
-import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -14,10 +13,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.chunk.LevelChunk;
 import leonus.tardis_rooms.platform.Platform;
-import whocraft.tardis_refined.registry.TRBlockRegistry;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -46,7 +42,7 @@ public final class MapPayloads {
         /** Сервер, главный поток. */
         public static void handle(Request r, ServerPlayer player) {
             if (!(player.level() instanceof ServerLevel level)) return;
-            if (!Lattice.isTardisLevel(level) || !RoomGrowth.holdsScrewdriver(player)) return;
+            if (!Lattice.isTardisLevel(level) || !Screwdriver.held(player)) return;
             if (!Lattice.FLOORS.contains(r.floor())) return;
             BlockPos near = r.replaceCore().equals(BlockPos.ZERO) ? r.nodePos() : r.replaceCore();
             if (player.distanceToSqr(near.getCenter()) > 64) return;
@@ -67,7 +63,9 @@ public final class MapPayloads {
                     if (Lattice.isHub(level, mx, mz, floor)) code = HUB;
                     else if ((p = reg.ownerOf(m, floor)) != null) { code = p.id; names.put(p.id, new PieceName(p.pieceId, p.customName == null ? "" : p.customName)); }
                     else if (Lattice.isForbidden(level, mx, mz, floor)) code = FORBIDDEN;
-                    else code = looksBuilt(level, mx, mz, floor) ? UNKNOWN : FREE;
+                    // Модуль без записи, но не камень: чужая постройка (например, сгенерированная TR до аддона).
+                    // Смотрим только загруженные чанки — схема не должна генерировать мир.
+                    else code = Lattice.looksBuilt(level, mx, mz, floor, true) ? UNKNOWN : FREE;
                     cells.add(code);
                 }
             int replacing = 0;
@@ -78,20 +76,6 @@ public final class MapPayloads {
             return new Info(r.nodePos(), floor, cells, new ArrayList<>(names.keySet()), new ArrayList<>(names.values()), replacing);
         }
 
-        /**
-         * Модуль без записи, но не камень: чужая постройка (например, сгенерированная TR до аддона).
-         * Смотрим только загруженные чанки — схема не должна генерировать мир.
-         */
-        private static boolean looksBuilt(ServerLevel level, int mx, int mz, int floor) {
-            Block stone = TRBlockRegistry.FOOLS_STONE.get();
-            for (Direction side : Lattice.SIDES) {
-                BlockPos pos = Lattice.nodePos(mx, mz, side, floor);
-                LevelChunk chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
-                if (chunk == null) return false;
-                if (!chunk.getBlockState(pos).is(stone)) return true;
-            }
-            return false;
-        }
     }
 
     /** Тип помещения и название, данное игроком (пусто — нет). */

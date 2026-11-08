@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.network;
 
+import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.Lattice;
 import leonus.tardis_rooms.room.ModuleRegistry;
@@ -30,7 +31,7 @@ public record FitRequestPayload(BlockPos pos, BlockPos replaceCore) implements C
     /** Сервер, главный поток. */
     public static void handle(FitRequestPayload payload, ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return;
-        if (!Lattice.isTardisLevel(level) || !RoomGrowth.holdsScrewdriver(player)) return;
+        if (!Lattice.isTardisLevel(level) || !Screwdriver.held(player)) return;
         ModuleRegistry.Piece replacing = null;
         if (!payload.replaceCore().equals(BlockPos.ZERO)) {
             replacing = ModuleRegistry.get(level).pieceAtCore(payload.replaceCore());

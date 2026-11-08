@@ -19,8 +19,6 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 
 /** Реализация {@link leonus.tardis_rooms.platform.ClientPlatform} для NeoForge. */
 public final class ClientPlatformImpl {
-    private static final Direction[] SIDES_AND_NONE = {Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, null};
-
     /**
      * Как BlockRenderDispatcher.renderSingleBlock, но с данными модели для настоящей позиции блока (их берут модели, которые
      * рисуют содержимое блока-сущности, — котёл с жидкостью из Amendments) и с окраской, как в мире ({@link BlockPreview}).
@@ -37,7 +35,7 @@ public final class ClientPlatformImpl {
         RandomSource random = RandomSource.create();
         for (RenderType rt : model.getRenderTypes(state, RandomSource.create(42), data)) {
             VertexConsumer consumer = buffers.getBuffer(RenderTypeHelper.getEntityRenderType(rt, false));
-            for (Direction side : SIDES_AND_NONE) {
+            for (Direction side : BlockPreview.SIDES_AND_NONE) {
                 random.setSeed(42L);
                 BlockPreview.putQuads(poseStack.last(), consumer, model.getQuads(state, side, random, data, rt), state, level, pos, light, overlay);
             }

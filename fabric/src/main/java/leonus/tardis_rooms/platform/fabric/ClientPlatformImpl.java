@@ -17,8 +17,6 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /** Реализация {@link leonus.tardis_rooms.platform.ClientPlatform} для Fabric. */
 public final class ClientPlatformImpl {
-    private static final Direction[] SIDES_AND_NONE = {Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, null};
-
     /** Как BlockRenderDispatcher.renderSingleBlock, но с окраской, как в мире ({@link BlockPreview}). */
     public static void renderBlock(BlockState state, BlockAndTintGetter level, BlockPos pos, PoseStack poseStack,
                                    MultiBufferSource buffers, int light, int overlay) {
@@ -30,7 +28,7 @@ public final class ClientPlatformImpl {
         BakedModel model = dispatcher.getBlockModel(state);
         VertexConsumer consumer = buffers.getBuffer(ItemBlockRenderTypes.getRenderType(state, false));
         RandomSource random = RandomSource.create();
-        for (Direction side : SIDES_AND_NONE) {
+        for (Direction side : BlockPreview.SIDES_AND_NONE) {
             random.setSeed(42L);
             BlockPreview.putQuads(poseStack.last(), consumer, model.getQuads(state, side, random), state, level, pos, light, overlay);
         }

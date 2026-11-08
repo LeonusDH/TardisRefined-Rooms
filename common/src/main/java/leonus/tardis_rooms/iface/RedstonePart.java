@@ -51,10 +51,7 @@ public final class RedstonePart implements KindPart {
         Set<InterfaceBlockEntity> touched = new LinkedHashSet<>(lastPeers);
         touched.addAll(now);
         lastPeers = List.copyOf(now);
-        for (InterfaceBlockEntity p : touched) {
-            RedstonePart rp = of(p, kind);
-            if (rp != null) rp.updateOutput();
-        }
+        updateOutputs(touched);
         updateOutput();
         int faces = be.data().faces();
         if (faces != lastFaces) {
@@ -81,10 +78,7 @@ public final class RedstonePart implements KindPart {
     public void remove() {
         removed = true;
         input = 0;
-        for (InterfaceBlockEntity p : be.linked()) {
-            RedstonePart rp = of(p, kind);
-            if (rp != null) rp.updateOutput();
-        }
+        updateOutputs(be.linked());
     }
 
     /** Перечитать входящий сигнал и, если он другой, сообщить связанным. */
@@ -104,7 +98,12 @@ public final class RedstonePart implements KindPart {
         }
         if (v == input) return;
         input = v;
-        for (InterfaceBlockEntity p : be.linked()) {
+        updateOutputs(be.linked());
+    }
+
+    /** Пересчитать выход у этих интерфейсов. */
+    private void updateOutputs(Iterable<InterfaceBlockEntity> peers) {
+        for (InterfaceBlockEntity p : peers) {
             RedstonePart rp = of(p, kind);
             if (rp != null) rp.updateOutput();
         }

@@ -10,8 +10,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import whocraft.tardis_refined.common.world.chunk.TardisChunkGenerator;
 import whocraft.tardis_refined.registry.TRBlockRegistry;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -152,14 +154,23 @@ public final class Lattice {
         return openingPos(mx, mz, side, floorY, NODE_A, NODE_DY);
     }
 
-    /** Быстрая проверка для расстановки узлов: на местах всех четырёх проходов модуля камень. */
+    /** Быстрая проверка для расстановки узлов: не хаб, и на местах всех четырёх проходов модуля камень. */
     public static boolean looksEmpty(ServerLevel level, int mx, int mz, int floorY) {
-        if (isHub(level, mx, mz, floorY)) return false;
+        return !isHub(level, mx, mz, floorY) && !looksBuilt(level, mx, mz, floorY, false);
+    }
+
+    /**
+     * Хоть одно место прохода модуля — не камень TARDIS: здесь что-то построено (например, TR до аддона).
+     * {@code loadedOnly} — смотреть только загруженные чанки (незагруженный считается нетронутым): чтобы не генерировать мир.
+     */
+    public static boolean looksBuilt(ServerLevel level, int mx, int mz, int floorY, boolean loadedOnly) {
         Block stone = TRBlockRegistry.FOOLS_STONE.get();
         for (Direction side : SIDES) {
-            if (!level.getBlockState(nodePos(mx, mz, side, floorY)).is(stone)) return false;
+            BlockPos pos = nodePos(mx, mz, side, floorY);
+            if (loadedOnly && level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) == null) return false;
+            if (!level.getBlockState(pos).is(stone)) return true;
         }
-        return true;
+        return false;
     }
 
     /** Строгая проверка перед постройкой: весь объём модуля на этаже — нетронутый камень TARDIS или бедрок. */
@@ -175,6 +186,28 @@ public final class Lattice {
                     if (!s.is(stone) && !s.is(Blocks.BEDROCK) && !s.is(TRoomsBlocks.PANEL_LAMP.get())) return false;
                 }
         return true;
+    }
+
+    /** Сторона модуля {@code module} на этаже {@code floor}, которая ведёт за пределы помещения (к модулю {@link #nx}, {@link #nz}). */
+    public record Edge(int floor, long module, Direction side) {
+        public int mx() { return keyX(module); }
+
+        public int mz() { return keyZ(module); }
+
+        public int nx() { return mx() + side.getStepX(); }
+
+        public int nz() { return mz() + side.getStepZ(); }
+    }
+
+    /** Внешние стороны помещения с этим следом: соседний модуль на том же этаже — уже не его. */
+    public static List<Edge> outerEdges(Map<Integer, Set<Long>> footprint) {
+        List<Edge> out = new ArrayList<>();
+        for (Map.Entry<Integer, Set<Long>> e : footprint.entrySet())
+            for (long m : e.getValue())
+                for (Direction side : SIDES) {
+                    if (!e.getValue().contains(key(keyX(m) + side.getStepX(), keyZ(m) + side.getStepZ()))) out.add(new Edge(e.getKey(), m, side));
+                }
+        return out;
     }
 
     /** Закрывает проход панелью (с узлом роста в центре или глухой). Возвращает false, если прохода нет. */

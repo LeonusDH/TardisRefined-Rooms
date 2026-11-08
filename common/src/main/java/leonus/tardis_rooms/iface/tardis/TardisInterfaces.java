@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.iface.tardis;
 
+import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.iface.InterfaceHost;
 import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import leonus.tardis_rooms.iface.kind.TransferKind;
@@ -19,6 +20,6 @@ public final class TardisInterfaces {
      */
     public static void bootstrap(Function<ResourceLocation, TransferKind.PartFactory> parts) {
         TransferKinds.bootstrap(List.of(BuiltinKinds.plugin(parts)));
-        InterfaceHost.set(new InterfaceHost(TardisLinkScope.INSTANCE, ScrewdriverTools::isScrewdriver));
+        InterfaceHost.set(new InterfaceHost(TardisLinkScope.INSTANCE, Screwdriver::is));
     }
 }

@@ -41,13 +41,8 @@ public class RoomListScreen extends RoomMonitorScreen {
     @Override
     protected void init() {
         super.init();
-        this.setEvents(this::submit, () -> switchScreenToLeft(parent));
-        int vPos = (height - monitorHeight) / 2;
-        addSubmitButton(width / 2 + 25, height - vPos - 25);
-        // Метод TR кнопку не возвращает: она — последний добавленный элемент.
-        if (children().get(children().size() - 1) instanceof net.minecraft.client.gui.components.AbstractWidget w) submitButton = w;
+        submitButton = monitorButtons(this::submit, () -> switchScreenToLeft(parent));
         updateSubmit();
-        addCancelButton(width / 2 + 5, height - vPos - 25);
     }
 
     private void updateSubmit() {

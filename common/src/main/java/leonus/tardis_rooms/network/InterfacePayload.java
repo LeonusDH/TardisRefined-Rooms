@@ -1,14 +1,16 @@
 package leonus.tardis_rooms.network;
 
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
+import leonus.tardis_rooms.iface.InterfaceHost;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.lang.TRoomsText;
-import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -40,7 +42,7 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
 
     /** Сервер, главный поток. */
     public static void handle(InterfacePayload p, ServerPlayer player) {
-        if (!RoomGrowth.holdsScrewdriver(player)) return;
+        if (!InterfaceHost.holdsConfigurator(player)) return;
         if (player.distanceToSqr(p.pos().getCenter()) > 64) return;
         if (!player.mayBuild() || !player.level().mayInteract(player, p.pos())) return;
         if (!(player.level().getBlockEntity(p.pos()) instanceof InterfaceBlockEntity be)) return;
@@ -58,12 +60,12 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
             case FACE -> {
                 // value = операция × 6 + сторона; операция: 0 — следующий режим, 1 — предыдущий, 2 — по умолчанию.
                 if (p.value() >= 0 && p.value() < 18) {
-                    net.minecraft.core.Direction d = net.minecraft.core.Direction.from3DDataValue(p.value() % 6);
-                    leonus.tardis_rooms.iface.FaceMode cur = be.face(d);
+                    Direction d = Direction.from3DDataValue(p.value() % 6);
+                    FaceMode cur = be.face(d);
                     be.setFace(d, switch (p.value() / 6) {
                         case 0 -> cur.next();
                         case 1 -> cur.prev();
-                        default -> leonus.tardis_rooms.iface.FaceMode.DEFAULT;
+                        default -> FaceMode.DEFAULT;
                     });
                 }
             }

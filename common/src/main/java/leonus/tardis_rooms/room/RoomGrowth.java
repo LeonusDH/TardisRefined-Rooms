@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.room;
 
+import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
@@ -10,7 +11,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.vehicle.VehicleEntity;
@@ -20,10 +20,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import whocraft.tardis_refined.TardisRefined;
-import whocraft.tardis_refined.common.items.ScrewdriverItem;
 import whocraft.tardis_refined.registry.TRBlockRegistry;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -31,11 +31,6 @@ import java.util.Set;
 public final class RoomGrowth {
     /** Результат проверки одного варианта для меню. */
     public enum Fit { OK, BLOCKED, OFF_GRID, CUTS_OFF }
-
-    public static boolean holdsScrewdriver(ServerPlayer player) {
-        return player.getItemInHand(InteractionHand.MAIN_HAND).getItem() instanceof ScrewdriverItem
-                || player.getItemInHand(InteractionHand.OFF_HAND).getItem() instanceof ScrewdriverItem;
-    }
 
     // ---------- проверки ----------
 
@@ -115,7 +110,7 @@ public final class RoomGrowth {
 
     public static void tryGrow(ServerPlayer player, BlockPos pos, ResourceLocation pieceId, BlockPos replaceCore) {
         if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
-        if (!holdsScrewdriver(player)) { msg(player, TRoomsText.MSG_NEED_SCREWDRIVER); return; }
+        if (!Screwdriver.held(player)) { msg(player, TRoomsText.MSG_NEED_SCREWDRIVER); return; }
         if (!player.mayBuild() || !level.mayInteract(player, pos)) return;
         ModuleRegistry reg = ModuleRegistry.get(level);
         ModuleRegistry.Piece replacing = null;
@@ -162,7 +157,7 @@ public final class RoomGrowth {
     /** Удаление по запросу игрока с блока управления. */
     public static void tryRemove(ServerPlayer player, BlockPos core) {
         if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
-        if (!holdsScrewdriver(player)) { msg(player, TRoomsText.MSG_NEED_SCREWDRIVER); return; }
+        if (!Screwdriver.held(player)) { msg(player, TRoomsText.MSG_NEED_SCREWDRIVER); return; }
         if (player.distanceToSqr(core.getCenter()) > 64) return;
         if (!player.mayBuild() || !level.mayInteract(player, core)) return;
         ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(core);
@@ -204,12 +199,8 @@ public final class RoomGrowth {
             }
         }
         // Фонари, которые наши заглушки поставили в камень соседей, — убрать (иначе останутся в пустом камне).
-        for (Map.Entry<Integer, Set<Long>> e : piece.footprint.entrySet())
-            for (long m : e.getValue())
-                for (Direction side : Lattice.SIDES) {
-                    int nx = Lattice.keyX(m) + side.getStepX(), nz = Lattice.keyZ(m) + side.getStepZ();
-                    if (!e.getValue().contains(Lattice.key(nx, nz))) Lattice.clearLampsBehind(level, Lattice.keyX(m), Lattice.keyZ(m), side, e.getKey());
-                }
+        List<Lattice.Edge> edges = Lattice.outerEdges(piece.footprint);
+        for (Lattice.Edge e : edges) Lattice.clearLampsBehind(level, e.mx(), e.mz(), e.side(), e.floor());
         BlockState stone = TRBlockRegistry.FOOLS_STONE.get().defaultBlockState();
         BlockPos.MutableBlockPos mp = new BlockPos.MutableBlockPos();
         for (Map.Entry<Integer, Set<Long>> e : piece.footprint.entrySet()) {
@@ -231,22 +222,17 @@ public final class RoomGrowth {
         }
         ModuleRegistry.get(level).removePiece(piece);
         // Проходы соседей, вёдшие в помещение, снова становятся узлами роста.
-        for (Map.Entry<Integer, Set<Long>> e : piece.footprint.entrySet()) {
-            int floor = e.getKey();
-            for (long m : e.getValue()) {
-                for (Direction side : Lattice.SIDES) {
-                    int nx = Lattice.keyX(m) + side.getStepX(), nz = Lattice.keyZ(m) + side.getStepZ();
-                    if (e.getValue().contains(Lattice.key(nx, nz))) continue;
-                    // Ниша в стене соседа на месте прохода — не проход, узел туда не ставим.
-                    if (Boolean.FALSE.equals(Connectivity.plannedExit(ModuleRegistry.get(level), Lattice.key(nx, nz), side.getOpposite(), floor))) continue;
-                    BlockPos theirs = Lattice.nodePos(nx, nz, side.getOpposite(), floor);
-                    BlockState ts = level.getBlockState(theirs);
-                    if (ts.isAir()) {
-                        Lattice.placePanel(level, nx, nz, side.getOpposite(), floor, true);
-                    } else if (ts.is(TRoomsBlocks.ROOM_WALL.get())) {
-                        level.setBlock(theirs, TRoomsBlocks.ROOM_NODE.get().defaultBlockState(), Block.UPDATE_ALL);
-                    }
-                }
+        ModuleRegistry reg = ModuleRegistry.get(level);
+        for (Lattice.Edge e : edges) {
+            Direction back = e.side().getOpposite();
+            // Ниша в стене соседа на месте прохода — не проход, узел туда не ставим.
+            if (Boolean.FALSE.equals(Connectivity.plannedExit(reg, Lattice.key(e.nx(), e.nz()), back, e.floor()))) continue;
+            BlockPos theirs = Lattice.nodePos(e.nx(), e.nz(), back, e.floor());
+            BlockState ts = level.getBlockState(theirs);
+            if (ts.isAir()) {
+                Lattice.placePanel(level, e.nx(), e.nz(), back, e.floor(), true);
+            } else if (ts.is(TRoomsBlocks.ROOM_WALL.get())) {
+                level.setBlock(theirs, TRoomsBlocks.ROOM_NODE.get().defaultBlockState(), Block.UPDATE_ALL);
             }
         }
     }
@@ -261,15 +247,9 @@ public final class RoomGrowth {
         Node node = piece.node;
         Spot spot = standIn(level, node.mx(), node.mz(), node.side(), node.floorY());
         if (spot != null) return spot;
-        for (Map.Entry<Integer, Set<Long>> e : piece.footprint.entrySet()) {
-            for (long m : e.getValue()) {
-                for (Direction side : Lattice.SIDES) {
-                    int nx = Lattice.keyX(m) + side.getStepX(), nz = Lattice.keyZ(m) + side.getStepZ();
-                    if (e.getValue().contains(Lattice.key(nx, nz))) continue;
-                    spot = standIn(level, nx, nz, side.getOpposite(), e.getKey());
-                    if (spot != null) return spot;
-                }
-            }
+        for (Lattice.Edge e : Lattice.outerEdges(piece.footprint)) {
+            spot = standIn(level, e.nx(), e.nz(), e.side().getOpposite(), e.floor());
+            if (spot != null) return spot;
         }
         for (long m : Lattice.hubModules(level))
             for (int floor : Lattice.FLOORS)

@@ -2,9 +2,7 @@ package leonus.tardis_rooms.room;
 
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import whocraft.tardis_refined.registry.TRBlockRegistry;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -41,16 +39,7 @@ public final class Connectivity {
         ModuleRegistry.Piece p = s.reg().ownerOf(m, floor);
         if (p != null) return (s.excluded() != null && p.id == s.excluded()) ? null : p.id;
         if (Lattice.isForbidden(s.level(), mx, mz, floor)) return null;
-        return looksBuilt(s.level(), mx, mz, floor) ? new Native(m, floor) : null;
-    }
-
-    /** Хоть одно место прохода модуля — не камень TARDIS: здесь что-то построено. */
-    private static boolean looksBuilt(ServerLevel level, int mx, int mz, int floor) {
-        Block stone = TRBlockRegistry.FOOLS_STONE.get();
-        for (Direction side : Lattice.SIDES) {
-            if (!level.getBlockState(Lattice.nodePos(mx, mz, side, floor)).is(stone)) return true;
-        }
-        return false;
+        return Lattice.looksBuilt(s.level(), mx, mz, floor, false) ? new Native(m, floor) : null;
     }
 
     private static List<ModFloor> modulesOf(Scene s, Object node) {

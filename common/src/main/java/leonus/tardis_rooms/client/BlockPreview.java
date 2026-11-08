@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -13,6 +14,9 @@ import java.util.List;
 
 /** Отрисовка блока для 3D-превью в окнах. Платформы отдают грани модели ({@code ClientPlatform.renderBlock}), окраска — здесь. */
 public final class BlockPreview {
+    /** Стороны модели и «без стороны» (null) — в этом порядке перебираются квады блока. */
+    public static final Direction[] SIDES_AND_NONE = {Direction.DOWN, Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, null};
+
     /**
      * Грани модели с окраской, как при отрисовке мира: цвет — для настоящей позиции блока и по индексу окраски каждой грани.
      * Ванильная отрисовка «одного блока» берёт цвет индекса 0 для всех граней, а моды красят и другими индексами

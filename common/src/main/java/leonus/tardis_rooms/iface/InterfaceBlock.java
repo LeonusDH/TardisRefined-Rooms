@@ -4,12 +4,14 @@ import com.mojang.serialization.MapCodec;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -62,7 +64,7 @@ public class InterfaceBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.core.Direction direction) {
+    protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
         // direction — от соседа к интерфейсу; своя сторона к соседу — противоположная.
         return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.signal(direction.getOpposite()) : 0;
     }

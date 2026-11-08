@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.network;
 
+import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.Lattice;
 import leonus.tardis_rooms.room.ModuleRegistry;
@@ -75,7 +76,7 @@ public final class ManagePayloads {
         /** Сервер, главный поток. */
         public static void handle(Rename r, ServerPlayer player) {
             if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
-            if (!RoomGrowth.holdsScrewdriver(player) || player.distanceToSqr(r.core().getCenter()) > 64) return;
+            if (!Screwdriver.held(player) || player.distanceToSqr(r.core().getCenter()) > 64) return;
             if (!player.mayBuild() || !level.mayInteract(player, r.core())) return;
             ModuleRegistry reg = ModuleRegistry.get(level);
             ModuleRegistry.Piece piece = reg.pieceAtCore(r.core());
