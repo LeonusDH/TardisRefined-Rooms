@@ -6,7 +6,8 @@ import leonus.tardis_rooms.iface.InterfaceBlock;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
 import leonus.tardis_rooms.iface.Status;
-import leonus.tardis_rooms.iface.TransferType;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -102,24 +103,13 @@ public class JadePlugin implements IWailaPlugin {
             for (Tag k : d.getList("tardis_rooms_kinds", Tag.TAG_STRING)) kinds.add(k.getAsString());
             MutableComponent on = Component.empty();
             first = true;
-            for (TransferType t : TransferType.values()) {
+            for (TransferKind t : TransferKinds.all()) {
                 if (!t.available() || !kinds.contains(t.id().toString())) continue;
                 if (!first) on.append(", ");
-                on.append(name(t));
+                on.append(t.name());
                 first = false;
             }
             if (!first) tooltip.add(on.withStyle(ChatFormatting.DARK_GRAY));
-        }
-
-        private static MutableComponent name(TransferType t) {
-            return (switch (t) {
-                case ENERGY -> TRoomsText.IFACE_ENERGY;
-                case ITEMS -> TRoomsText.IFACE_ITEMS;
-                case FLUIDS -> TRoomsText.IFACE_FLUIDS;
-                case CHEMICALS -> TRoomsText.IFACE_CHEMICALS;
-                case ME -> TRoomsText.IFACE_ME;
-                case REDSTONE -> TRoomsText.IFACE_REDSTONE;
-            }).text();
         }
 
         private static Component flow(Flow f) {

@@ -2,6 +2,9 @@ package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.iface.LinkedStorages.Pick;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.platform.Platform;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
 import net.minecraft.core.Direction;
@@ -18,48 +21,51 @@ final class FabricEnergy {
 
     static void register() { Impl.register(); }
 
-    static Object view(FabricInterfaceTransport transport) { return new Impl.View(transport); }
-
-    /** Грань «вставлять»/«забирать» для энергии: сосед со своей стороны {@code face}. */
-    static void moveFace(FabricInterfaceTransport transport, Direction face, boolean pull) {
-        Impl.moveFace(transport, face, pull);
-    }
+    /** Часть вида «энергия» для интерфейса. Только если Team Reborn Energy установлен. */
+    static KindPart newPart(InterfaceBlockEntity be, TransferKind kind) { return Impl.newPart(be, kind); }
 
     private static final class Impl {
         static void register() {
             EnergyStorage.SIDED.registerForBlockEntity(
-                    (be, side) -> be.open(side) ? (EnergyStorage) FabricInterfaceTransport.of(be).energy() : null, TRoomsBlocks.INTERFACE_BE.get());
+                    (be, side) -> be.open(side) && be.part(BuiltinKinds.energy()) instanceof View v ? v.capability() : null,
+                    TRoomsBlocks.INTERFACE_BE.get());
         }
 
-        static void moveFace(FabricInterfaceTransport transport, Direction face, boolean pull) {
-            if (!(transport.energy() instanceof View mine)) return;
-            EnergyStorage h = mine.sides.at(face);
-            if (h == null) return;
-            if (pull) EnergyStorageUtil.move(h, mine, Long.MAX_VALUE, null);
-            else EnergyStorageUtil.move(mine, h, Long.MAX_VALUE, null);
-        }
+        static KindPart newPart(InterfaceBlockEntity be, TransferKind kind) { return new View(be, kind); }
 
         /** Принятое во вход отдаётся соседям выходов, забираемое из выхода — у соседей входов. Своего запаса нет. */
-        static final class View implements EnergyStorage {
-            private final FabricInterfaceTransport transport;
+        static final class View implements EnergyStorage, KindPart {
+            private final InterfaceBlockEntity be;
+            private final TransferKind kind;
             /** Свои соседи по энергии — их берут связанные интерфейсы. */
-            final LinkedStorages.Sides<EnergyStorage> sides;
+            private final LinkedStorages.Sides<EnergyStorage> sides;
             /** Хранилища энергии у соседей связанных интерфейсов. */
             private final LinkedStorages<EnergyStorage> linked;
 
-            View(FabricInterfaceTransport transport) {
-                this.transport = transport;
-                this.sides = FabricInterfaceTransport.sides(transport.be, EnergyStorage.SIDED);
-                this.linked = new LinkedStorages<>(transport.be, TransferType.ENERGY,
-                        peer -> FabricInterfaceTransport.of(peer).energy() instanceof View v ? v.sides : null);
+            View(InterfaceBlockEntity be, TransferKind kind) {
+                this.be = be;
+                this.kind = kind;
+                this.sides = FabricInterfaceTransport.sides(be, EnergyStorage.SIDED);
+                this.linked = new LinkedStorages<>(be, kind, peer -> peer.part(kind) instanceof View v ? v.sides : null);
             }
 
+            /** Для поиска хранилищ: null — вид выключен (кабели не подключатся). */
+            EnergyStorage capability() { return be.enabled(kind) ? this : null; }
+
+            /** Грань «вставлять»/«забирать»: сосед со своей стороны {@code face}. */
+            @Override
+            public void moveFace(Direction face, boolean pull) {
+                EnergyStorage h = sides.at(face);
+                if (h == null) return;
+                if (pull) EnergyStorageUtil.move(h, this, Long.MAX_VALUE, null);
+                else EnergyStorageUtil.move(this, h, Long.MAX_VALUE, null);
+            }
 
             @Override
-            public boolean supportsInsertion() { return transport.be.canIn(TransferType.ENERGY); }
+            public boolean supportsInsertion() { return be.canIn(kind); }
 
             @Override
-            public boolean supportsExtraction() { return transport.be.canOut(TransferType.ENERGY); }
+            public boolean supportsExtraction() { return be.canOut(kind); }
 
             @Override
             public long insert(long maxAmount, TransactionContext transaction) {

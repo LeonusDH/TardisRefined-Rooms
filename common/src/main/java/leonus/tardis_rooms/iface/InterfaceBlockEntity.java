@@ -1,6 +1,10 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.platform.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -37,7 +41,7 @@ import java.util.Optional;
 public class InterfaceBlockEntity extends BlockEntity {
     private static final int CHECK_INTERVAL = 20;
 
-    private InterfaceData data = InterfaceData.DEFAULT;
+    private InterfaceData data = InterfaceData.defaults();
     private Status status = Status.NO_SHELL;
     /** ТАРДИС, в которой (или у оболочки которой) стоит интерфейс. */
     private ResourceKey<Level> tardis;
@@ -47,6 +51,8 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     /** Передача ресурсов — своя у каждого загрузчика. */
     private final InterfaceTransport transport = InterfacePlatform.createTransport(this);
+    /** Части видов передачи по номеру вида ({@link TransferKind#index()}); null — у вида нет части. */
+    private final KindPart[] parts;
     /** Узел сети ME (с AE2), иначе null. */
     Object me;
     /** Редстоун: сигнал, принятый от соседей (вход), и сигнал, который интерфейс выдаёт (выход). */
@@ -54,6 +60,9 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     public InterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TRoomsBlocks.INTERFACE_BE.get(), pos, state);
+        List<TransferKind> kinds = TransferKinds.all();
+        parts = new KindPart[kinds.size()];
+        for (TransferKind k : kinds) parts[k.index()] = k.createPart(this);
     }
 
     // ---------- настройки ----------
@@ -64,7 +73,10 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     public Flow flow() { return data.flowMode(); }
 
-    public boolean enabled(TransferType t) { return t.available() && data.enabled(t); }
+    public boolean enabled(TransferKind t) { return t.available() && data.enabled(t); }
+
+    /** Часть вида в этом интерфейсе, или null — у вида нет части. */
+    public @Nullable KindPart part(TransferKind t) { return parts[t.index()]; }
 
     public Status status() { return status; }
 
@@ -73,8 +85,6 @@ public class InterfaceBlockEntity extends BlockEntity {
     public ResourceKey<Level> tardis() { return tardis; }
 
     public boolean isConnected() { return status == Status.CONNECTED; }
-
-    public InterfaceTransport transport() { return transport; }
 
     InterfaceNetwork.Key linkKey() { return isConnected() && tardis != null ? new InterfaceNetwork.Key(tardis, data.id()) : null; }
 
@@ -105,7 +115,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     /** Сторона открыта для соседа (не выключена); {@code null} — без стороны (сам блок), открыто. */
     public boolean open(@Nullable Direction side) { return side == null || face(side) != FaceMode.DISABLED; }
 
-    public void toggle(TransferType t) { if (t.available()) setData(data.toggle(t)); }
+    public void toggle(TransferKind t) { if (t.available()) setData(data.toggle(t)); }
 
     public void clearId() { setData(data.withId(0, Optional.empty())); }
 
@@ -135,6 +145,7 @@ public class InterfaceBlockEntity extends BlockEntity {
         setChanged();
         if (level != null && !level.isClientSide()) {
             transport.invalidate();
+            for (KindPart p : parts) if (p != null) p.invalidate();
             BlockState s = getBlockState();
             level.sendBlockUpdated(worldPosition, s, s, Block.UPDATE_CLIENTS);
         }
@@ -160,12 +171,14 @@ public class InterfaceBlockEntity extends BlockEntity {
         super.setRemoved();
         leave();
         transport.remove();
+        for (KindPart p : parts) if (p != null) p.remove();
     }
 
     /** Чанк выгружен. Без {@code @Override} — по той же причине, что и {@link #onLoad()}. */
     public void onChunkUnloaded() {
         leave();
         transport.remove();
+        for (KindPart p : parts) if (p != null) p.unload();
     }
 
     private void leave() {
@@ -179,7 +192,10 @@ public class InterfaceBlockEntity extends BlockEntity {
             be.loadPending = false;
             be.refresh();
         }
-        if (periodic) be.transport.tick();
+        if (periodic) {
+            be.transport.tick();
+            for (KindPart p : be.parts) if (p != null) p.tick();
+        }
         if (be.data.faces() != 0 && (level.getGameTime() + pos.asLong()) % FACE_INTERVAL == 0) be.tickFaces();
     }
 
@@ -200,7 +216,10 @@ public class InterfaceBlockEntity extends BlockEntity {
             if (!(pull ? flow().in : flow().out)) continue;
             BlockPos np = worldPosition.relative(d);
             if (!level.isLoaded(np) || level.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-            transport.moveFace(np, d.getOpposite(), pull);
+            for (TransferKind k : TransferKinds.all()) {
+                KindPart p = parts[k.index()];
+                if (p != null && enabled(k)) p.moveFace(d, pull);
+            }
         }
     }
 
@@ -251,9 +270,9 @@ public class InterfaceBlockEntity extends BlockEntity {
      * Сигнал передаётся от интерфейсов со входом к интерфейсам с выходом. «Вход и выход» для редстоуна — только вход:
      * иначе интерфейс ловил бы свой же сигнал через провод и защёлкивался навсегда.
      */
-    private boolean redstoneReads() { return isConnected() && enabled(TransferType.REDSTONE) && flow().in; }
+    private boolean redstoneReads() { return isConnected() && enabled(BuiltinKinds.redstone()) && flow().in; }
 
-    private boolean redstoneEmits() { return isConnected() && enabled(TransferType.REDSTONE) && flow() == Flow.OUT; }
+    private boolean redstoneEmits() { return isConnected() && enabled(BuiltinKinds.redstone()) && flow() == Flow.OUT; }
 
     public int redstoneOut() { return redstoneOut; }
 
@@ -309,9 +328,11 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     // ---------- передача ----------
 
-    boolean canIn(TransferType t) { return isConnected() && enabled(t) && flow().in; }
+    /** Принимает ли интерфейс этот вид (вход): подключён, вид включён, направление — со входом. */
+    public boolean canIn(TransferKind t) { return isConnected() && enabled(t) && flow().in; }
 
-    boolean canOut(TransferType t) { return isConnected() && enabled(t) && flow().out; }
+    /** Отдаёт ли интерфейс этот вид (выход). */
+    public boolean canOut(TransferKind t) { return isConnected() && enabled(t) && flow().out; }
 
     // ---------- сохранение и перенос с предметом ----------
 
@@ -327,7 +348,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        if (tag.contains("interface")) data = InterfaceData.CODEC.parse(NbtOps.INSTANCE, tag.get("interface")).result().orElse(InterfaceData.DEFAULT);
+        if (tag.contains("interface")) data = InterfaceData.CODEC.parse(NbtOps.INSTANCE, tag.get("interface")).result().orElse(InterfaceData.defaults());
         // На сервере это пересчитает refresh(); на клиенте — показываем присланное.
         status = Status.of(tag.getByte("status"));
         peers = tag.getInt("peers");
@@ -345,7 +366,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     @Override
     protected void collectImplicitComponents(DataComponentMap.Builder builder) {
         super.collectImplicitComponents(builder);
-        if (!data.equals(InterfaceData.DEFAULT)) builder.set(TRoomsBlocks.INTERFACE_DATA.get(), data);
+        if (!data.equals(InterfaceData.defaults())) builder.set(TRoomsBlocks.INTERFACE_DATA.get(), data);
     }
 
     // Mojang пометила метод устаревшим, но замены в 1.21.1 нет: без него настройки попадут в предмет дважды (тегом и компонентом).

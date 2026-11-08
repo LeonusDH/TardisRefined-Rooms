@@ -1,25 +1,49 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.iface.LinkedStorages.Pick;
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import net.minecraft.core.Direction;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import java.util.List;
 
-/** Жидкости через интерфейс: залитое во вход уходит в баки у выходов, сливаемое из выхода — из баков у входов. */
-final class FluidView implements IFluidHandler {
+/** Жидкости через интерфейс (часть вида): залитое во вход уходит в баки у выходов, сливаемое из выхода — из баков у входов. */
+final class FluidView implements IFluidHandler, KindPart {
     private final InterfaceBlockEntity be;
-    private final NeoForgeInterfaceTransport transport;
+    private final TransferKind kind;
+    /** Свои соседи по жидкостям — их берут связанные интерфейсы. */
+    private final LinkedStorages.Sides<IFluidHandler> sides;
+    /** Баки у соседей связанных интерфейсов. */
+    private final LinkedStorages<IFluidHandler> linked;
 
-    FluidView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
+    FluidView(InterfaceBlockEntity be, TransferKind kind) {
         this.be = be;
-        this.transport = transport;
+        this.kind = kind;
+        this.sides = NeoForgeInterfaceTransport.sides(be, Capabilities.FluidHandler.BLOCK);
+        this.linked = new LinkedStorages<>(be, kind, peer -> peer.part(kind) instanceof FluidView v ? v.sides : null);
     }
 
-    private int inTanks() { return be.canIn(TransferType.FLUIDS) ? 1 : 0; }
+    /** Для возможности блока: null — вид выключен (трубы не подключатся). */
+    IFluidHandler capability() { return be.enabled(kind) ? this : null; }
+
+    @Override
+    public void moveFace(Direction face, boolean pull) {
+        IFluidHandler h = sides.at(face);
+        if (h == null) return;
+        IFluidHandler from = pull ? h : this, to = pull ? this : h;
+        FluidStack probe = from.drain(NeoForgeInterfaceTransport.FLUID_PER_OP, FluidAction.SIMULATE);
+        if (probe.isEmpty()) return;
+        int can = to.fill(probe, FluidAction.SIMULATE);
+        if (can > 0) to.fill(from.drain(probe.copyWithAmount(can), FluidAction.EXECUTE), FluidAction.EXECUTE);
+    }
+
+    private int inTanks() { return be.canIn(kind) ? 1 : 0; }
 
     private List<IFluidHandler> sources() {
-        return be.canOut(TransferType.FLUIDS) ? transport.linkedFluids.get(Pick.FROM) : List.of();
+        return be.canOut(kind) ? linked.get(Pick.FROM) : List.of();
     }
 
     @Override
@@ -59,16 +83,16 @@ final class FluidView implements IFluidHandler {
 
     @Override
     public boolean isFluidValid(int tank, FluidStack stack) {
-        return be.canIn(TransferType.FLUIDS);
+        return be.canIn(kind);
     }
 
     @Override
     public int fill(FluidStack resource, FluidAction action) {
-        if (resource.isEmpty() || !be.canIn(TransferType.FLUIDS) || InterfaceNetwork.depth > 0) return 0;
+        if (resource.isEmpty() || !be.canIn(kind) || InterfaceNetwork.depth > 0) return 0;
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IFluidHandler h : transport.linkedFluids.get(Pick.TO)) {
+            for (IFluidHandler h : linked.get(Pick.TO)) {
                 if (done >= resource.getAmount()) break;
                 done += h.fill(resource.copyWithAmount(resource.getAmount() - done), action);
             }
@@ -80,7 +104,7 @@ final class FluidView implements IFluidHandler {
 
     @Override
     public FluidStack drain(FluidStack resource, FluidAction action) {
-        if (resource.isEmpty() || !be.canOut(TransferType.FLUIDS) || InterfaceNetwork.depth > 0) return FluidStack.EMPTY;
+        if (resource.isEmpty() || !be.canOut(kind) || InterfaceNetwork.depth > 0) return FluidStack.EMPTY;
         InterfaceNetwork.depth++;
         try {
             FluidStack out = FluidStack.EMPTY;
@@ -99,7 +123,7 @@ final class FluidView implements IFluidHandler {
 
     @Override
     public FluidStack drain(int maxDrain, FluidAction action) {
-        if (maxDrain <= 0 || !be.canOut(TransferType.FLUIDS) || InterfaceNetwork.depth > 0) return FluidStack.EMPTY;
+        if (maxDrain <= 0 || !be.canOut(kind) || InterfaceNetwork.depth > 0) return FluidStack.EMPTY;
         // Берём первую жидкость, какая найдётся, и дальше только её.
         FluidStack first = FluidStack.EMPTY;
         InterfaceNetwork.depth++;

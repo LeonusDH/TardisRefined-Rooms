@@ -4,7 +4,8 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceTools;
-import leonus.tardis_rooms.iface.TransferType;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
@@ -32,7 +33,7 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
     public InterfacePayload(BlockPos pos, int action, int value) { this(pos, action, value, Optional.empty()); }
 
     /** Включить или выключить вид передачи. */
-    public static InterfacePayload toggle(BlockPos pos, TransferType t) { return new InterfacePayload(pos, TOGGLE, 0, Optional.of(t.id())); }
+    public static InterfacePayload toggle(BlockPos pos, TransferKind t) { return new InterfacePayload(pos, TOGGLE, 0, Optional.of(t.id())); }
 
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -46,7 +47,7 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
         switch (p.action()) {
             case FLOW -> be.setFlow(Flow.of(p.value()));
             case TOGGLE -> {
-                TransferType t = p.kind().map(TransferType::byId).orElse(null);
+                TransferKind t = p.kind().map(TransferKinds::byId).orElse(null);
                 if (t != null) be.toggle(t);
             }
             case GENERATE -> {

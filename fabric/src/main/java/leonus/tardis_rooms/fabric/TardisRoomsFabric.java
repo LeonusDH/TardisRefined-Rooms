@@ -6,6 +6,8 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.command.TRoomsCommands;
 import leonus.tardis_rooms.iface.FabricInterfaceTransport;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.network.CustomRoomsPayload;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
@@ -42,12 +44,15 @@ import net.neoforged.fml.config.ModConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 /** Точка входа на Fabric: регистрация, конфиг, пакеты, подписки на события. */
 public final class TardisRoomsFabric implements ModInitializer {
     @Override
     public void onInitialize() {
+        // Виды передачи — до всего остального: их номера нужны интерфейсам с первого же блока.
+        TransferKinds.bootstrap(List.of(BuiltinKinds.plugin(FabricInterfaceTransport::parts)));
         try {
             Files.createDirectories(Platform.configDir().resolve(TardisRooms.MODID));
         } catch (IOException e) {
@@ -82,8 +87,8 @@ public final class TardisRoomsFabric implements ModInitializer {
     private static void registerStorages() {
         var type = TRoomsBlocks.INTERFACE_BE.get();
         // С выключенной стороны трубы интерфейса не видят.
-        ItemStorage.SIDED.registerForBlockEntity((be, side) -> be.open(side) ? FabricInterfaceTransport.of(be).items() : null, type);
-        FluidStorage.SIDED.registerForBlockEntity((be, side) -> be.open(side) ? FabricInterfaceTransport.of(be).fluids() : null, type);
+        ItemStorage.SIDED.registerForBlockEntity(FabricInterfaceTransport::items, type);
+        FluidStorage.SIDED.registerForBlockEntity(FabricInterfaceTransport::fluids, type);
         FabricInterfaceTransport.registerEnergy();
     }
 

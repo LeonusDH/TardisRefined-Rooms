@@ -6,7 +6,7 @@ import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.LinkScope;
-import leonus.tardis_rooms.iface.TransferType;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -147,7 +147,7 @@ public final class InterfaceGameTests {
         chests(h, 10);
         Pair p = pair(h);
         p.a.setFace(Direction.WEST, FaceMode.PULL);
-        p.b.toggle(TransferType.ITEMS);
+        p.b.toggle(BuiltinKinds.items());
         nothingMoved(h, 10);
     }
 
@@ -198,8 +198,8 @@ public final class InterfaceGameTests {
     public static void redstone(GameTestHelper h) {
         h.setBlock(DST, Blocks.REDSTONE_LAMP);
         Pair p = pair(h);
-        p.a.toggle(TransferType.REDSTONE);
-        p.b.toggle(TransferType.REDSTONE);
+        p.a.toggle(BuiltinKinds.redstone());
+        p.b.toggle(BuiltinKinds.redstone());
         p.b.setFlow(Flow.OUT);
         h.startSequence()
                 .thenExecute(() -> h.setBlock(SRC, Blocks.REDSTONE_BLOCK))
@@ -213,8 +213,8 @@ public final class InterfaceGameTests {
     public static void redstoneDisabledSide(GameTestHelper h) {
         h.setBlock(DST, Blocks.REDSTONE_LAMP);
         Pair p = pair(h);
-        p.a.toggle(TransferType.REDSTONE);
-        p.b.toggle(TransferType.REDSTONE);
+        p.a.toggle(BuiltinKinds.redstone());
+        p.b.toggle(BuiltinKinds.redstone());
         p.b.setFlow(Flow.OUT);
         p.b.setFace(Direction.EAST, FaceMode.DISABLED);
         h.setBlock(SRC, Blocks.REDSTONE_BLOCK);
@@ -231,8 +231,8 @@ public final class InterfaceGameTests {
     public static void settingsSurviveItem(GameTestHelper h) {
         InterfaceBlockEntity a = iface(h, A, NEXT_ID.getAndIncrement());
         a.setFlow(Flow.OUT);
-        a.toggle(TransferType.FLUIDS);
-        a.toggle(TransferType.REDSTONE);
+        a.toggle(BuiltinKinds.fluids());
+        a.toggle(BuiltinKinds.redstone());
         a.setFace(Direction.NORTH, FaceMode.PUSH);
         a.setFace(Direction.UP, FaceMode.DISABLED);
         ItemStack stack = new ItemStack(TRoomsBlocks.INTERFACE_ITEM.get());

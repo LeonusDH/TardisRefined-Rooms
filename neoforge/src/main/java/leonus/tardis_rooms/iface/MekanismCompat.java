@@ -2,6 +2,9 @@ package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.iface.LinkedStorages.Pick;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.platform.Platform;
 import mekanism.api.Action;
 import mekanism.api.chemical.ChemicalStack;
@@ -45,34 +48,21 @@ public final class MekanismCompat {
     /** Отдельный класс, чтобы лямбда с типами Mekanism не грузилась без него. */
     private static final class Registration {
         static void register(RegisterCapabilitiesEvent event) {
-            event.registerBlockEntity(cap(), TRoomsBlocks.INTERFACE_BE.get(), (be, side) -> be.open(side) ? (IChemicalHandler) NeoForgeInterfaceTransport.of(be).chemicals() : null);
+            event.registerBlockEntity(cap(), TRoomsBlocks.INTERFACE_BE.get(),
+                    (be, side) -> be.open(side) && be.part(BuiltinKinds.chemicals()) instanceof ChemicalView v ? v.capability() : null);
         }
     }
 
-    /** Грань «вставлять»/«забирать» для химикатов: сосед со своей стороны {@code face}. */
-    static void moveFace(NeoForgeInterfaceTransport transport, Direction face, boolean pull, long max) {
-        if (!enabled()) return;
-        Mover.move(transport, face, pull, max);
+    /** Часть вида «химикаты» для интерфейса. Только если Mekanism установлен. */
+    static KindPart newPart(InterfaceBlockEntity be, TransferKind kind) {
+        return Parts.create(be, kind);
     }
 
-    private static final class Mover {
-        static void move(NeoForgeInterfaceTransport transport, Direction face, boolean pull, long max) {
-            if (!(transport.chemicals() instanceof ChemicalView mine)) return;
-            IChemicalHandler h = mine.sides.at(face);
-            if (h == null) return;
-            IChemicalHandler from = pull ? h : mine, to = pull ? mine : h;
-            ChemicalStack probe = from.extractChemical(max, Action.SIMULATE);
-            if (probe.isEmpty()) return;
-            ChemicalStack rest = to.insertChemical(probe, Action.SIMULATE);
-            long can = probe.getAmount() - rest.getAmount();
-            if (can <= 0) return;
-            ChemicalStack moved = from.extractChemical(probe.copyWithAmount(can), Action.EXECUTE);
-            to.insertChemical(moved, Action.EXECUTE);
+    /** Отдельный класс, чтобы {@link ChemicalView} (с типами Mekanism) не грузился без него. */
+    private static final class Parts {
+        static KindPart create(InterfaceBlockEntity be, TransferKind kind) {
+            return new ChemicalView(be, kind);
         }
-    }
-
-    static Object newView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
-        return enabled() ? new ChemicalView(be, transport) : null;
     }
 
     /**
@@ -81,24 +71,41 @@ public final class MekanismCompat {
      * Трубы Mekanism вставляют и забирают через {@link #insertChemical(ChemicalStack, Action)} и
      * {@link #extractChemical(long, Action)} — они переопределены и баков не перебирают.
      */
-    private static final class ChemicalView implements IChemicalHandler {
+    private static final class ChemicalView implements IChemicalHandler, KindPart {
         private final InterfaceBlockEntity be;
-        private final NeoForgeInterfaceTransport transport;
+        private final TransferKind kind;
         /** Свои соседи по химикатам — их берут связанные интерфейсы. */
         final LinkedStorages.Sides<IChemicalHandler> sides;
         /** Хранилища химикатов у соседей связанных интерфейсов (у кого химикаты выключены, вида нет — пропускаются). */
         private final LinkedStorages<IChemicalHandler> linked;
 
-        ChemicalView(InterfaceBlockEntity be, NeoForgeInterfaceTransport transport) {
+        ChemicalView(InterfaceBlockEntity be, TransferKind kind) {
             this.be = be;
-            this.transport = transport;
+            this.kind = kind;
             this.sides = NeoForgeInterfaceTransport.sides(be, cap());
-            this.linked = new LinkedStorages<>(be, TransferType.CHEMICALS,
-                    peer -> NeoForgeInterfaceTransport.of(peer).chemicals() instanceof ChemicalView v ? v.sides : null);
+            this.linked = new LinkedStorages<>(be, kind, peer -> peer.part(kind) instanceof ChemicalView v ? v.sides : null);
+        }
+
+        /** Для возможности блока: null — вид выключен или недоступен (трубы не подключатся). */
+        IChemicalHandler capability() { return be.enabled(kind) ? this : null; }
+
+        /** Грань «вставлять»/«забирать»: сосед со своей стороны {@code face}. */
+        @Override
+        public void moveFace(Direction face, boolean pull) {
+            IChemicalHandler h = sides.at(face);
+            if (h == null) return;
+            IChemicalHandler from = pull ? h : this, to = pull ? this : h;
+            ChemicalStack probe = from.extractChemical(NeoForgeInterfaceTransport.FLUID_PER_OP, Action.SIMULATE);
+            if (probe.isEmpty()) return;
+            ChemicalStack rest = to.insertChemical(probe, Action.SIMULATE);
+            long can = probe.getAmount() - rest.getAmount();
+            if (can <= 0) return;
+            ChemicalStack moved = from.extractChemical(probe.copyWithAmount(can), Action.EXECUTE);
+            to.insertChemical(moved, Action.EXECUTE);
         }
 
         private List<IChemicalHandler> sources() {
-            return be.canOut(TransferType.CHEMICALS) ? linked.get(Pick.FROM) : List.of();
+            return be.canOut(kind) ? linked.get(Pick.FROM) : List.of();
         }
 
         /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
@@ -139,7 +146,7 @@ public final class MekanismCompat {
 
         @Override
         public boolean isValid(int tank, ChemicalStack stack) {
-            return be.canIn(TransferType.CHEMICALS);
+            return be.canIn(kind);
         }
 
         @Override
@@ -150,7 +157,7 @@ public final class MekanismCompat {
         /** Поданное — сразу в хранилища у связанных выходов. */
         @Override
         public ChemicalStack insertChemical(ChemicalStack stack, Action action) {
-            if (stack.isEmpty() || !be.canIn(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return stack;
+            if (stack.isEmpty() || !be.canIn(kind) || InterfaceNetwork.depth > 0) return stack;
             InterfaceNetwork.depth++;
             try {
                 ChemicalStack rest = stack;
@@ -180,7 +187,7 @@ public final class MekanismCompat {
         /** Забрать что угодно: первый химикат, какой найдётся, — и дальше только его, по всем хранилищам (как у жидкостей). */
         @Override
         public ChemicalStack extractChemical(long amount, Action action) {
-            if (amount <= 0 || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return ChemicalStack.EMPTY;
+            if (amount <= 0 || !be.canOut(kind) || InterfaceNetwork.depth > 0) return ChemicalStack.EMPTY;
             ChemicalStack first = ChemicalStack.EMPTY;
             InterfaceNetwork.depth++;
             try {
@@ -197,7 +204,7 @@ public final class MekanismCompat {
         /** Забрать именно этот химикат — сколько наберётся по всем хранилищам у связанных входов. */
         @Override
         public ChemicalStack extractChemical(ChemicalStack stack, Action action) {
-            if (stack.isEmpty() || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return ChemicalStack.EMPTY;
+            if (stack.isEmpty() || !be.canOut(kind) || InterfaceNetwork.depth > 0) return ChemicalStack.EMPTY;
             InterfaceNetwork.depth++;
             try {
                 ChemicalStack out = ChemicalStack.EMPTY;

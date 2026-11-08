@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
@@ -17,14 +19,23 @@ import java.util.stream.Stream;
  * Настройки интерфейса. Хранятся в блоке и переносятся вместе с ним (предмет помнит их после разрушения);
  * сбрасываются в верстаке или кнопкой в меню.
  * {@code id} 0 — идентификатора нет; {@code tardis} — ТАРДИС, которой он принадлежит.
- * {@code types} — включённые виды передачи, по биту на вид ({@link TransferType#bit()}), только в памяти;
+ * {@code types} — включённые виды передачи, по биту на вид ({@link TransferKind#bit()}), только в памяти;
  * {@code otherKinds} — включённые виды, которых в этой игре нет (мод убрали): хранятся как есть, чтобы вернуться с модом.
  * В сохранении и по сети виды — список id ({@code kinds}).
  */
 public record InterfaceData(int id, Optional<ResourceLocation> tardis, int flow, int types, int faces, List<ResourceLocation> otherKinds) {
-    /** По умолчанию: в обе стороны, всё кроме сети ME (её связь меняет устройство сетей — включается явно). */
-    public static final InterfaceData DEFAULT = new InterfaceData(0, Optional.empty(), Flow.BOTH.ordinal(),
-            TransferType.ENERGY.bit() | TransferType.ITEMS.bit() | TransferType.FLUIDS.bit() | TransferType.CHEMICALS.bit(), 0, List.of());
+    private static volatile InterfaceData defaults;
+
+    /** Новый интерфейс: в обе стороны, виды — те, что включены по умолчанию ({@link TransferKind#enabledByDefault()}). */
+    public static InterfaceData defaults() {
+        InterfaceData d = defaults;
+        if (d == null) {
+            int bits = 0;
+            for (TransferKind k : TransferKinds.all()) if (k.enabledByDefault()) bits |= k.bit();
+            defaults = d = new InterfaceData(0, Optional.empty(), Flow.BOTH.ordinal(), bits, 0, List.of());
+        }
+        return d;
+    }
 
     /**
      * Старый формат хранил виды битами в {@code types}: бит → id. Таблица постоянная — с порядком видов в игре
@@ -68,7 +79,7 @@ public record InterfaceData(int id, Optional<ResourceLocation> tardis, int flow,
             for (int b = 0; b < LEGACY_BITS.size(); b++) if ((bits & (1 << b)) != 0) kinds.add(LEGACY_BITS.get(b));
             return fromKinds(s.id(), s.tardis(), s.flow(), kinds, s.faces());
         }
-        return new InterfaceData(s.id(), s.tardis(), s.flow(), DEFAULT.types, s.faces(), List.of());
+        return new InterfaceData(s.id(), s.tardis(), s.flow(), defaults().types, s.faces(), List.of());
     }
 
     private Stored toStored() {
@@ -80,7 +91,7 @@ public record InterfaceData(int id, Optional<ResourceLocation> tardis, int flow,
         int bits = 0;
         List<ResourceLocation> other = new ArrayList<>();
         for (ResourceLocation k : kinds) {
-            TransferType t = TransferType.byId(k);
+            TransferKind t = TransferKinds.byId(k);
             if (t != null) bits |= t.bit();
             else if (!other.contains(k)) other.add(k);
         }
@@ -90,20 +101,20 @@ public record InterfaceData(int id, Optional<ResourceLocation> tardis, int flow,
     /** Включённые виды списком id: известные по порядку видов, затем неизвестные. */
     public List<ResourceLocation> kinds() {
         List<ResourceLocation> out = new ArrayList<>();
-        for (TransferType t : TransferType.values()) if ((types & t.bit()) != 0) out.add(t.id());
+        for (TransferKind t : TransferKinds.all()) if ((types & t.bit()) != 0) out.add(t.id());
         out.addAll(otherKinds);
         return out;
     }
 
     public Flow flowMode() { return Flow.of(flow); }
 
-    public boolean enabled(TransferType t) { return (types & t.bit()) != 0; }
+    public boolean enabled(TransferKind t) { return (types & t.bit()) != 0; }
 
     public InterfaceData withId(int id, Optional<ResourceLocation> tardis) { return new InterfaceData(id, tardis, flow, types, faces, otherKinds); }
 
     public InterfaceData withFlow(Flow f) { return new InterfaceData(id, tardis, f.ordinal(), types, faces, otherKinds); }
 
-    public InterfaceData toggle(TransferType t) { return new InterfaceData(id, tardis, flow, types ^ t.bit(), faces, otherKinds); }
+    public InterfaceData toggle(TransferKind t) { return new InterfaceData(id, tardis, flow, types ^ t.bit(), faces, otherKinds); }
 
     /** Режим грани (по 2 бита на грань в {@code faces}). */
     public FaceMode face(net.minecraft.core.Direction d) { return face(faces, d); }

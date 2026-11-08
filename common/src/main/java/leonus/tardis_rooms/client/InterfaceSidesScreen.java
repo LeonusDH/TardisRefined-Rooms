@@ -72,7 +72,7 @@ public class InterfaceSidesScreen extends Screen {
 
     private InterfaceData data() {
         var l = Minecraft.getInstance().level;
-        return l != null && l.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.data() : InterfaceData.DEFAULT;
+        return l != null && l.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.data() : InterfaceData.defaults();
     }
 
     @Override

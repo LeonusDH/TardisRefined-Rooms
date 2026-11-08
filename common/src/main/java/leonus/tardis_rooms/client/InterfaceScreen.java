@@ -7,7 +7,9 @@ import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
 import leonus.tardis_rooms.iface.InterfaceLink;
 import leonus.tardis_rooms.iface.Status;
-import leonus.tardis_rooms.iface.TransferType;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.InterfacePayload;
 import leonus.tardis_rooms.room.Node;
@@ -46,7 +48,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
     private static final ResourceLocation ICON_PASTE_OFF = sprite("iface/paste_off");
 
     private final BlockPos pos;
-    private InterfaceData data = InterfaceData.DEFAULT;
+    private InterfaceData data = InterfaceData.defaults();
     private Status status = Status.NO_SHELL;
     private int peers;
     private int heldId;
@@ -126,17 +128,6 @@ public class InterfaceScreen extends RoomMonitorScreen {
         return Component.literal(InterfaceData.hex(id)).withStyle(ChatFormatting.AQUA);
     }
 
-    private static TRoomsText typeName(TransferType t) {
-        return switch (t) {
-            case ENERGY -> TRoomsText.IFACE_ENERGY;
-            case ITEMS -> TRoomsText.IFACE_ITEMS;
-            case FLUIDS -> TRoomsText.IFACE_FLUIDS;
-            case CHEMICALS -> TRoomsText.IFACE_CHEMICALS;
-            case ME -> TRoomsText.IFACE_ME;
-            case REDSTONE -> TRoomsText.IFACE_REDSTONE;
-        };
-    }
-
     static TRoomsText flowName(Flow f) {
         return switch (f) {
             case IN -> TRoomsText.IFACE_FLOW_IN;
@@ -158,17 +149,15 @@ public class InterfaceScreen extends RoomMonitorScreen {
     @Override
     public ObjectSelectionList<SelectionListEntry> createSelectionList() {
         GenericMonitorSelectionList<SelectionListEntry> list = newList();
-        for (TransferType t : TransferType.values()) {
+        for (TransferKind t : TransferKinds.all()) {
             if (!t.available()) continue;
             boolean on = data.enabled(t);
-            Component label = typeName(t).text().append(": ").append((on ? TRoomsText.IFACE_ON : TRoomsText.IFACE_OFF).text()
+            Component label = t.name().copy().append(": ").append((on ? TRoomsText.IFACE_ON : TRoomsText.IFACE_OFF).text()
                     .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
             SelectionListEntry e = new SelectionListEntry(label, x -> send(InterfacePayload.toggle(pos, t)), listLeft());
-            TRoomsText tip = switch (t) {
-                case ME -> TRoomsText.IFACE_ME_TOOLTIP;
-                case REDSTONE -> TRoomsText.IFACE_REDSTONE_TOOLTIP;
-                default -> TRoomsText.IFACE_TYPE_TOOLTIP;
-            };
+            TRoomsText tip = t == BuiltinKinds.me() ? TRoomsText.IFACE_ME_TOOLTIP
+                    : t == BuiltinKinds.redstone() ? TRoomsText.IFACE_REDSTONE_TOOLTIP
+                    : TRoomsText.IFACE_TYPE_TOOLTIP;
             tip(e, tip.text().withStyle(ChatFormatting.BLUE));
             list.children().add(e);
         }

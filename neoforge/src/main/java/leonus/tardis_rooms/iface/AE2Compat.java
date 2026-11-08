@@ -17,6 +17,7 @@ import appeng.items.tools.MemoryCardItem;
 import appeng.util.Platform;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -81,7 +82,7 @@ public final class AE2Compat {
         }
 
         static void update(InterfaceBlockEntity be) {
-            boolean wanted = be.isConnected() && be.enabled(TransferType.ME) && !be.isRemoved();
+            boolean wanted = be.isConnected() && be.enabled(BuiltinKinds.me()) && !be.isRemoved();
             MeLink link = be.me instanceof MeLink l ? l : null;
             if (wanted && link == null) {
                 link = new MeLink(be);

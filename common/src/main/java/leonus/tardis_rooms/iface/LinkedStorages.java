@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.iface;
 
 import com.google.common.math.LongMath;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -37,7 +38,7 @@ public final class LinkedStorages<T> {
     }
 
     private final InterfaceBlockEntity be;
-    private final TransferType type;
+    private final TransferKind type;
     private final Function<InterfaceBlockEntity, Sides<T>> sidesOf;
     private final Map<Pick, List<T>> memo = new EnumMap<>(Pick.class);
     private long memoTick = Long.MIN_VALUE;
@@ -46,7 +47,7 @@ public final class LinkedStorages<T> {
      * @param type    вид передачи: связанные интерфейсы, у которых он выключен, пропускаются
      * @param sidesOf соседи этого вида у связанного интерфейса (null — вид у него сейчас недоступен)
      */
-    public LinkedStorages(InterfaceBlockEntity be, TransferType type, Function<InterfaceBlockEntity, Sides<T>> sidesOf) {
+    public LinkedStorages(InterfaceBlockEntity be, TransferKind type, Function<InterfaceBlockEntity, Sides<T>> sidesOf) {
         this.be = be;
         this.type = type;
         this.sidesOf = sidesOf;

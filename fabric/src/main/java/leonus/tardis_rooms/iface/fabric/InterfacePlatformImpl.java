@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class InterfacePlatformImpl {
     public static InterfaceTransport createTransport(InterfaceBlockEntity be) {
-        return new FabricInterfaceTransport(be);
+        return new FabricInterfaceTransport();
     }
 
     public static boolean chemicalsAvailable() {
