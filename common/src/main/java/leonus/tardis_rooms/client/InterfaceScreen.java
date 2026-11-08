@@ -114,8 +114,12 @@ public class InterfaceScreen extends RoomMonitorScreen {
     }
 
     private void send(int action, int value) {
+        send(new InterfacePayload(pos, action, value));
+    }
+
+    private void send(InterfacePayload p) {
         RoomManageScreen.click();
-        Platform.sendToServer(new InterfacePayload(pos, action, value));
+        Platform.sendToServer(p);
     }
 
     private static Component hex(int id) {
@@ -159,7 +163,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
             boolean on = data.enabled(t);
             Component label = typeName(t).text().append(": ").append((on ? TRoomsText.IFACE_ON : TRoomsText.IFACE_OFF).text()
                     .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
-            SelectionListEntry e = new SelectionListEntry(label, x -> Platform.sendToServer(InterfacePayload.toggle(pos, t)), listLeft());
+            SelectionListEntry e = new SelectionListEntry(label, x -> send(InterfacePayload.toggle(pos, t)), listLeft());
             TRoomsText tip = switch (t) {
                 case ME -> TRoomsText.IFACE_ME_TOOLTIP;
                 case REDSTONE -> TRoomsText.IFACE_REDSTONE_TOOLTIP;
