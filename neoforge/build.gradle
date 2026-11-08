@@ -15,10 +15,9 @@ configurations {
         canBeResolved = true
         canBeConsumed = false
     }
+    // При запуске (тесты, датаген) common не кладётся отдельным jar: у common и neoforge общие пакеты, и NeoForge
+    // не запустит два модуля с одним пакетом. Вместо этого классы common входят в тот же мод (loom.mods ниже).
     compileClasspath.extendsFrom common
-    // При запуске (тесты, датаген) common приходит только через developmentNeoForge — уже преобразованным.
-    // Сырой common рядом с ним NeoForge принимает за второй мод с теми же пакетами и не запускается.
-    developmentNeoForge.extendsFrom common
     shadowBundle {
         canBeResolved = true
         canBeConsumed = false
@@ -26,6 +25,12 @@ configurations {
 }
 
 loom {
+    mods {
+        tardis_rooms {
+            sourceSet sourceSets.main
+            sourceSet 'main', ':common'
+        }
+    }
     runs {
         // gradlew :neoforge:runData — английский перевод из TRoomsText в common/src/generated/resources (файл хранится в репозитории).
         data {
