@@ -48,6 +48,8 @@ processResources {
 
 shadowJar {
     exclude 'architectury.common.json'
+    // Игровые тесты — только для разработки.
+    exclude 'leonus/tardis_rooms/gametest/**', 'leonus/tardis_rooms/fabric/gametest/**', 'data/tardis_rooms/structure/gametest/**'
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
 }

@@ -21,7 +21,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 import whocraft.tardis_refined.common.items.ScrewdriverItem;
-import whocraft.tardis_refined.registry.TRDimensionTypes;
 
 /**
  * Интерфейс ТАРДИС: ставится в любом помещении ТАРДИС, а вне её — только вплотную к оболочке
@@ -46,7 +45,7 @@ public class InterfaceBlock extends BaseEntityBlock {
 
     /** Можно ли поставить здесь: в ТАРДИС — везде, снаружи — только рядом с оболочкой. */
     public static boolean canPlaceAt(Level level, BlockPos pos) {
-        return TRDimensionTypes.isTARDISDimension(level) || !InterfaceBlockEntity.nearbyTardises(level, pos).isEmpty();
+        return !LinkScope.of(level, pos).isEmpty();
     }
 
     @Override

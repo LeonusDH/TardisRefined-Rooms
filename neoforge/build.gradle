@@ -33,6 +33,23 @@ loom {
             programArgs '--output', project(':common').file('src/generated/resources').absolutePath
             programArgs '--existing', project(':common').file('src/main/resources').absolutePath
         }
+        // gradlew :neoforge:runGameTestServer — игровые тесты (leonus.tardis_rooms.gametest): сервер без окна
+        // проходит их и выходит; упавшие тесты — ошибка сборки.
+        gameTestServer {
+            server()
+            forgeTemplate.set('gameTestServer')
+            systemProperties.put('neoforge.enabledGameTestNamespaces', rootProject.mod_id)
+            runDirectory.set(file('build/gametest'))
+            generateRunConfig.set(false)
+        }
+    }
+}
+
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    doFirst {
+        def dir = file('build/gametest')
+        dir.mkdirs()
+        new File(dir, 'eula.txt').text = 'eula=true\n'
     }
 }
 
@@ -60,6 +77,8 @@ processResources {
 shadowJar {
     exclude 'fabric.mod.json'
     exclude 'architectury.common.json'
+    // Игровые тесты — только для разработки.
+    exclude 'leonus/tardis_rooms/gametest/**', 'leonus/tardis_rooms/neoforge/gametest/**', 'data/tardis_rooms/structure/gametest/**'
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
 }
