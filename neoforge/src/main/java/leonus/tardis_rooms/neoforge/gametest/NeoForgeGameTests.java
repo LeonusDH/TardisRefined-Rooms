@@ -14,10 +14,6 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @GameTestHolder(TardisRooms.MODID)
 @PrefixGameTestTemplate(false)
 public final class NeoForgeGameTests {
-    static {
-        InterfaceGameTests.setUp();
-    }
-
     private NeoForgeGameTests() {}
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)

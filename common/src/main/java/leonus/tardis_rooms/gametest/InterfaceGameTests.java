@@ -47,16 +47,13 @@ public final class InterfaceGameTests {
 
     private InterfaceGameTests() {}
 
-    /** Вызвать один раз до тестов. */
-    public static void setUp() {
-        LinkScopes.set((level, pos) -> List.of(TEST_TARDIS));
-    }
-
     // ---------- раскладка ----------
 
     private record Pair(InterfaceBlockEntity a, InterfaceBlockEntity b) {}
 
     private static InterfaceBlockEntity iface(GameTestHelper h, BlockPos pos, int id) {
+        // Область — здесь, а не при загрузке тестов: на Fabric тесты загружаются раньше, чем мод задаёт свою область.
+        LinkScopes.set((level, p) -> List.of(TEST_TARDIS));
         h.setBlock(pos, TRoomsBlocks.INTERFACE.get());
         InterfaceBlockEntity be = h.getBlockEntity(pos);
         be.pasteId(id, Optional.empty());

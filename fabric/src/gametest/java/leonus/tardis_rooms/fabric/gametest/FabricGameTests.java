@@ -12,10 +12,6 @@ import net.minecraft.gametest.framework.GameTestHelper;
 public final class FabricGameTests {
     private static final String TEMPLATE = TardisRooms.MODID + ":" + InterfaceGameTests.TEMPLATE;
 
-    static {
-        InterfaceGameTests.setUp();
-    }
-
     @GameTest(template = TEMPLATE)
     public static void itemsPull(GameTestHelper h) { InterfaceGameTests.itemsPull(h); }
 
