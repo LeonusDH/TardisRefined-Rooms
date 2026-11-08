@@ -34,7 +34,7 @@ public class InterfaceItem extends BlockItem {
         super.appendHoverText(stack, context, tooltip, flag);
         InterfaceData d = stack.get(TRoomsBlocks.INTERFACE_DATA.get());
         if (d != null && d.id() != 0) {
-            tooltip.add(TRoomsText.IFACE_ID.text(Component.literal(InterfaceData.hex(d.id())).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
+            tooltip.add(TRoomsText.IFACE_ID.text(InterfaceTools.idText(d.id())).withStyle(ChatFormatting.GRAY));
             tooltip.add(TRoomsText.IFACE_ITEM_CLEAR_HINT.text().withStyle(ChatFormatting.DARK_GRAY));
         }
     }

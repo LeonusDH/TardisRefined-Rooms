@@ -1,6 +1,6 @@
 package leonus.tardis_rooms.fabric.client;
 
-import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.network.CustomRoomsPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
 import leonus.tardis_rooms.network.ManagePayloads;
@@ -20,7 +20,7 @@ public final class TardisRoomsFabricClient implements ClientModInitializer {
         client(ManagePayloads.Info.TYPE, ManagePayloads.Info::handle);
         client(MapPayloads.Info.TYPE, MapPayloads.Info::handle);
         client(CustomRoomsPayload.TYPE, CustomRoomsPayload::handle);
-        ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> InterfaceTools.appendTooltip(stack, lines));
+        ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> ScrewdriverTools.appendTooltip(stack, lines));
     }
 
     /** Пакет с сервера: обработчик — на главном потоке клиента. */

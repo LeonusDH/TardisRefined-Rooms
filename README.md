@@ -157,6 +157,15 @@ You need JDK 21. Mekanism, AE2, Jade and Team Reborn Energy come from Maven auto
 
 The code shared by both loaders lives in `common/`; `neoforge/` and `fabric/` hold only what differs between them.
 
+The interface code in `common/.../iface` doesn't depend on Tardis Refined. What it transfers (energy, items, fluids, chemicals, ME, redstone) are entries of an internal registry (`iface/kind`), each with its own per-interface part. The TARDIS-specific pieces, which interfaces link to which and the screwdriver, are in `iface/tardis`.
+
+### Tests
+
+- `./gradlew :common:test` runs the unit tests (no game needed).
+- `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGameTestServer` start a server without a window, run the interface game tests and exit. A failed test fails the task.
+
+On GitHub the build runs on every push, and the tests run on demand: Actions → Tests → Run workflow, all of them or one suite.
+
 > [!NOTE]
 > Java treats `!` in a path as a separator inside jar paths, so if the project folder has `!` in its path, the game (data generation, test runs) fails to start. `build.bat` works around it by mapping the folder to a temporary drive letter; when running Gradle by hand, use a path without `!`.
 

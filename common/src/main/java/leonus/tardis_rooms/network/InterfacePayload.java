@@ -3,9 +3,9 @@ package leonus.tardis_rooms.network;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
-import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
+import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
@@ -54,7 +54,7 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
                 if (!be.generateId()) player.displayClientMessage(TRoomsText.MSG_INTERFACE_NO_TARDIS.text(), true);
             }
             case CLEAR -> be.clearId();
-            case PASTE -> InterfaceTools.paste(player, be);
+            case PASTE -> ScrewdriverTools.paste(player, be);
             case FACE -> {
                 // value = операция × 6 + сторона; операция: 0 — следующий режим, 1 — предыдущий, 2 — по умолчанию.
                 if (p.value() >= 0 && p.value() < 18) {

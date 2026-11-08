@@ -85,8 +85,8 @@ public class InterfaceBlockEntity extends BlockEntity {
     void setData(InterfaceData d) {
         if (d.equals(data)) return;
         data = d;
-        if (level != null && !level.isClientSide()) refresh();
-        changed();
+        // refresh() сам сообщает об изменении, если сменилось состояние связи; второй раз — незачем.
+        if (level == null || level.isClientSide() || !refresh()) changed();
     }
 
     public void setFlow(Flow f) { setData(data.withFlow(f)); }
@@ -240,8 +240,8 @@ public class InterfaceBlockEntity extends BlockEntity {
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
 
-    /** Пересчитывает, к какой ТАРДИС подключён интерфейс и с кем связан. */
-    void refresh() {
+    /** Пересчитывает, к какой области подключён интерфейс и с кем связан. true — что-то сменилось, об этом уже сообщено. */
+    boolean refresh() {
         ResourceKey<Level> t = null;
         Status st;
         List<ResourceKey<Level>> found = LinkScope.of(level, worldPosition);
@@ -262,10 +262,10 @@ public class InterfaceBlockEntity extends BlockEntity {
             joinedKey = key;
         }
         int p = key != null ? InterfaceNetwork.peers(this).size() : 0;
-        if (changedState || p != peers) {
-            peers = p;
-            changed();
-        }
+        if (!changedState && p == peers) return false;
+        peers = p;
+        changed();
+        return true;
     }
 
     /** Связанные интерфейсы (сервер). */

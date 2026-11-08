@@ -2,6 +2,7 @@ package leonus.tardis_rooms.neoforge;
 
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import leonus.tardis_rooms.room.custom.CustomRooms;
@@ -23,7 +24,7 @@ final class NeoForgeEvents {
         bus.addListener(NeoForgeEvents::onRightClickBlock);
         bus.addListener(NeoForgeEvents::onLeftClickBlock);
         bus.addListener(NeoForgeEvents::onRightClickItem);
-        bus.addListener((ItemTooltipEvent e) -> InterfaceTools.appendTooltip(e.getItemStack(), e.getToolTip()));
+        bus.addListener((ItemTooltipEvent e) -> ScrewdriverTools.appendTooltip(e.getItemStack(), e.getToolTip()));
         bus.addListener((AddReloadListenerEvent e) -> e.addListener(CustomRooms.INSTANCE));
         bus.addListener((OnDatapackSyncEvent e) -> e.getRelevantPlayers().forEach(CustomRooms::sync));
         bus.addListener((RegisterCommandsEvent e) -> TRoomsCommands.register(e.getDispatcher()));
@@ -37,6 +38,7 @@ final class NeoForgeEvents {
 
     private static void onRightClickBlock(PlayerInteractEvent.RightClickBlock e) {
         InterfaceTools.UseResult r = InterfaceTools.onUseBlock(e.getEntity(), e.getLevel(), e.getHitVec(), e.getItemStack());
+        if (!r.handled()) r = ScrewdriverTools.onUseBlock(e.getEntity(), e.getLevel(), e.getHitVec(), e.getItemStack());
         if (!r.handled()) return;
         e.setCanceled(true);
         e.setCancellationResult(r.result());
@@ -48,15 +50,15 @@ final class NeoForgeEvents {
             e.setCanceled(true);
             return;
         }
-        if (!InterfaceTools.onAttackBlock(e.getEntity(), e.getLevel(), e.getPos())) return;
+        if (!ScrewdriverTools.onAttackBlock(e.getEntity(), e.getLevel(), e.getPos())) return;
         e.setCanceled(true);
         if (e.getLevel().isClientSide() && e.getAction() == PlayerInteractEvent.LeftClickBlock.Action.START) {
-            InterfaceTools.requestPaste(e.getPos());
+            ScrewdriverTools.requestPaste(e.getPos());
         }
     }
 
     private static void onRightClickItem(PlayerInteractEvent.RightClickItem e) {
-        if (!InterfaceTools.onUseItem(e.getEntity(), e.getLevel(), e.getItemStack())) return;
+        if (!ScrewdriverTools.onUseItem(e.getEntity(), e.getLevel(), e.getItemStack())) return;
         e.setCanceled(true);
         e.setCancellationResult(InteractionResult.SUCCESS);
     }

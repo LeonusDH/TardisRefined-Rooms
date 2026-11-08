@@ -8,8 +8,8 @@ import java.util.List;
 
 /**
  * Область связи: к чему относится место. Интерфейсы одной области с одинаковым ID связаны; идентификаторы выдаёт
- * измерение области ({@link InterfaceIds}). Область задаёт тот, кто встраивает интерфейс (у этого аддона —
- * ТАРДИС: {@link leonus.tardis_rooms.iface.tardis.TardisLinkScope}); сам интерфейс о ТАРДИС не знает.
+ * измерение области ({@link InterfaceIds}). Область задаёт тот, кто встраивает интерфейс ({@link InterfaceHost}; у этого
+ * аддона — ТАРДИС: {@link leonus.tardis_rooms.iface.tardis.TardisLinkScope}); сам интерфейс о ТАРДИС не знает.
  */
 @FunctionalInterface
 public interface LinkScope {
@@ -18,6 +18,6 @@ public interface LinkScope {
 
     /** Области места по текущей области связи игры. */
     static List<ResourceKey<Level>> of(Level level, BlockPos pos) {
-        return LinkScopes.current().scopes(level, pos);
+        return InterfaceHost.current().scope().scopes(level, pos);
     }
 }

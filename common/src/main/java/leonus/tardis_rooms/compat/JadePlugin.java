@@ -5,6 +5,7 @@ import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlock;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
+import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.Status;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
@@ -77,7 +78,7 @@ public class JadePlugin implements IWailaPlugin {
             Status st = Status.of(d.getByte("tardis_rooms_status"));
             tooltip.add(st.text());
             int id = d.getInt("tardis_rooms_id");
-            if (id != 0) tooltip.add(TRoomsText.IFACE_ID.text(Component.literal(InterfaceData.hex(id)).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
+            if (id != 0) tooltip.add(TRoomsText.IFACE_ID.text(InterfaceTools.idText(id)).withStyle(ChatFormatting.GRAY));
             // Режимы сторон — собственная настройка интерфейса: видны и без связи.
             int faceBits = d.getInt("tardis_rooms_faces");
             MutableComponent faces = Component.empty();
@@ -86,8 +87,8 @@ public class JadePlugin implements IWailaPlugin {
                 leonus.tardis_rooms.iface.FaceMode m = InterfaceData.face(faceBits, dir);
                 if (m == leonus.tardis_rooms.iface.FaceMode.DEFAULT) continue;
                 if (!first) faces.append(", ");
-                faces.append(leonus.tardis_rooms.iface.InterfaceTools.faceName(dir).text()).append(": ")
-                        .append(leonus.tardis_rooms.iface.InterfaceTools.faceModeName(m).text()
+                faces.append(InterfaceTools.faceName(dir).text()).append(": ")
+                        .append(InterfaceTools.faceModeName(m).text()
                                 .withStyle(switch (m) {
                                     case PUSH -> ChatFormatting.GOLD;
                                     case PULL -> ChatFormatting.AQUA;
@@ -98,7 +99,7 @@ public class JadePlugin implements IWailaPlugin {
             if (!first) tooltip.add(TRoomsText.JADE_INTERFACE_FACES.text(faces).withStyle(ChatFormatting.GRAY));
             if (st != Status.CONNECTED) return;
             tooltip.add(TRoomsText.IFACE_PEERS.text(d.getInt("tardis_rooms_peers")).withStyle(ChatFormatting.GRAY));
-            tooltip.add(TRoomsText.IFACE_FLOW.text(flow(Flow.of(d.getByte("tardis_rooms_flow")))).withStyle(ChatFormatting.GRAY));
+            tooltip.add(TRoomsText.IFACE_FLOW.text(InterfaceTools.flowName(Flow.of(d.getByte("tardis_rooms_flow"))).text()).withStyle(ChatFormatting.GRAY));
             Set<String> kinds = new HashSet<>();
             for (Tag k : d.getList("tardis_rooms_kinds", Tag.TAG_STRING)) kinds.add(k.getAsString());
             MutableComponent on = Component.empty();
@@ -112,12 +113,5 @@ public class JadePlugin implements IWailaPlugin {
             if (!first) tooltip.add(on.withStyle(ChatFormatting.DARK_GRAY));
         }
 
-        private static Component flow(Flow f) {
-            return (switch (f) {
-                case IN -> TRoomsText.IFACE_FLOW_IN;
-                case OUT -> TRoomsText.IFACE_FLOW_OUT;
-                case BOTH -> TRoomsText.IFACE_FLOW_BOTH;
-            }).text();
-        }
     }
 }

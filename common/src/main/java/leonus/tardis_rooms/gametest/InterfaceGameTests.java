@@ -5,7 +5,7 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
-import leonus.tardis_rooms.iface.LinkScopes;
+import leonus.tardis_rooms.iface.InterfaceHost;
 import leonus.tardis_rooms.iface.RedstonePart;
 import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import net.minecraft.core.BlockPos;
@@ -53,7 +53,7 @@ public final class InterfaceGameTests {
 
     private static InterfaceBlockEntity iface(GameTestHelper h, BlockPos pos, int id) {
         // Область — здесь, а не при загрузке тестов: на Fabric тесты загружаются раньше, чем мод задаёт свою область.
-        LinkScopes.set((level, p) -> List.of(TEST_TARDIS));
+        InterfaceHost.set(new InterfaceHost((level, p) -> List.of(TEST_TARDIS), InterfaceHost.current().configurator()));
         h.setBlock(pos, TRoomsBlocks.INTERFACE.get());
         InterfaceBlockEntity be = h.getBlockEntity(pos);
         be.pasteId(id, Optional.empty());

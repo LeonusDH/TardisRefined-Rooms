@@ -20,7 +20,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
-import whocraft.tardis_refined.common.items.ScrewdriverItem;
 
 /**
  * Интерфейс ТАРДИС: ставится в любом помещении ТАРДИС, а вне её — только вплотную к оболочке
@@ -99,7 +98,7 @@ public class InterfaceBlock extends BaseEntityBlock {
             ItemInteractionResult r = be.useItem(stack, player);
             if (r != null) return r;
         }
-        if (!(stack.getItem() instanceof ScrewdriverItem)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (!InterfaceHost.isConfigurator(stack)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);
         return ItemInteractionResult.sidedSuccess(level.isClientSide());
     }
