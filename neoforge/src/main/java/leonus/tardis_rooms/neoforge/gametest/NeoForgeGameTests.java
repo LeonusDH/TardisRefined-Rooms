@@ -55,4 +55,10 @@ public final class NeoForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void settingsSurviveItem(GameTestHelper h) { InterfaceGameTests.settingsSurviveItem(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void redstoneInputRemoved(GameTestHelper h) { InterfaceGameTests.redstoneInputRemoved(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void redstoneRelinked(GameTestHelper h) { InterfaceGameTests.redstoneRelinked(h); }
 }

@@ -14,8 +14,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Передача через интерфейс на NeoForge — capabilities. Виды передачи — части ({@link EnergyView}, {@link ItemView},
- * {@link FluidView}, химикаты Mekanism): то, что видят трубы; поданное в них сразу уходит соседям связанных интерфейсов.
- * Здесь — общее для всех видов: сообщить о смене возможностей и сеть ME.
+ * {@link FluidView}, химикаты Mekanism, сеть ME): то, что видят трубы и кабели; поданное сразу уходит соседям связанных
+ * интерфейсов. Здесь — общее для всех видов: сообщить о смене возможностей.
  */
 public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     /** До стольких мБ жидкости или химиката за одну операцию грани. */
@@ -33,6 +33,7 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
         if (id.equals(BuiltinKinds.ITEMS)) return ItemView::new;
         if (id.equals(BuiltinKinds.FLUIDS)) return FluidView::new;
         if (id.equals(BuiltinKinds.CHEMICALS)) return MekanismCompat.LOADED ? MekanismCompat::newPart : null;
+        if (id.equals(BuiltinKinds.ME)) return AE2Compat.LOADED ? AE2Compat::newPart : null;
         return null;
     }
 
@@ -54,17 +55,6 @@ public final class NeoForgeInterfaceTransport implements InterfaceTransport {
     public void invalidate() {
         Level level = be.getLevel();
         if (level != null) level.invalidateCapabilities(be.getBlockPos());
-        AE2Compat.update(be); // стороны, открытые для кабелей ME, — сразу, а не на ближайшем секундном такте
-    }
-
-    @Override
-    public void tick() {
-        AE2Compat.update(be);
-    }
-
-    @Override
-    public void remove() {
-        AE2Compat.destroy(be);
     }
 
     // ---------- соседи ----------

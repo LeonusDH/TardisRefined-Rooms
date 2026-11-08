@@ -2,6 +2,7 @@ package leonus.tardis_rooms.iface.kind;
 
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.InterfacePlatform;
+import leonus.tardis_rooms.iface.RedstonePart;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -10,7 +11,7 @@ import java.util.function.Function;
 
 /**
  * Встроенные виды передачи. Регистрируются плагином ({@link #plugin(Function)}) — как и любые другие;
- * платформа даёт части видов, остальное (id, порядок, что включено по умолчанию, когда доступно) — здесь.
+ * платформа даёт части видов, остальное (id, порядок, что включено по умолчанию, когда доступно, редстоун) — здесь.
  * Химикаты — с Mekanism, сеть ME — с Applied Energistics 2.
  */
 public final class BuiltinKinds {
@@ -37,7 +38,7 @@ public final class BuiltinKinds {
             reg.kind(CHEMICALS).enabledByDefault().available(InterfacePlatform::chemicalsAvailable)
                     .name(() -> TRoomsText.IFACE_CHEMICALS.text()).parts(parts.apply(CHEMICALS)).register();
             reg.kind(ME).available(InterfacePlatform::meAvailable).name(() -> TRoomsText.IFACE_ME.text()).parts(parts.apply(ME)).register();
-            reg.kind(REDSTONE).name(() -> TRoomsText.IFACE_REDSTONE.text()).parts(parts.apply(REDSTONE)).register();
+            reg.kind(REDSTONE).name(() -> TRoomsText.IFACE_REDSTONE.text()).parts(RedstonePart::new).register(); // одна на все платформы
         };
     }
 

@@ -6,6 +6,7 @@ import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.LinkScope;
+import leonus.tardis_rooms.iface.RedstonePart;
 import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -209,6 +210,36 @@ public final class InterfaceGameTests {
                 .thenSucceed();
     }
 
+    /** Интерфейс со входом убрали — лампа у выхода гаснет. */
+    public static void redstoneInputRemoved(GameTestHelper h) {
+        h.setBlock(DST, Blocks.REDSTONE_LAMP);
+        Pair p = pair(h);
+        p.a.toggle(BuiltinKinds.redstone());
+        p.b.toggle(BuiltinKinds.redstone());
+        p.b.setFlow(Flow.OUT);
+        h.startSequence()
+                .thenExecute(() -> h.setBlock(SRC, Blocks.REDSTONE_BLOCK))
+                .thenWaitUntil(() -> h.assertBlockProperty(DST, RedstoneLampBlock.LIT, true))
+                .thenExecute(() -> h.setBlock(A, Blocks.AIR))
+                .thenWaitUntil(() -> h.assertBlockProperty(DST, RedstoneLampBlock.LIT, false))
+                .thenSucceed();
+    }
+
+    /** У входа сменили ID — связь с выходом рвётся, лампа гаснет. */
+    public static void redstoneRelinked(GameTestHelper h) {
+        h.setBlock(DST, Blocks.REDSTONE_LAMP);
+        Pair p = pair(h);
+        p.a.toggle(BuiltinKinds.redstone());
+        p.b.toggle(BuiltinKinds.redstone());
+        p.b.setFlow(Flow.OUT);
+        h.startSequence()
+                .thenExecute(() -> h.setBlock(SRC, Blocks.REDSTONE_BLOCK))
+                .thenWaitUntil(() -> h.assertBlockProperty(DST, RedstoneLampBlock.LIT, true))
+                .thenExecute(() -> p.a.pasteId(NEXT_ID.getAndIncrement(), Optional.empty()))
+                .thenWaitUntil(() -> h.assertBlockProperty(DST, RedstoneLampBlock.LIT, false))
+                .thenSucceed();
+    }
+
     /** Выключенная сторона не выдаёт сигнал. */
     public static void redstoneDisabledSide(GameTestHelper h) {
         h.setBlock(DST, Blocks.REDSTONE_LAMP);
@@ -219,7 +250,7 @@ public final class InterfaceGameTests {
         p.b.setFace(Direction.EAST, FaceMode.DISABLED);
         h.setBlock(SRC, Blocks.REDSTONE_BLOCK);
         h.runAfterDelay(20, () -> {
-            h.assertTrue(p.b.redstoneOut() == 15, "интерфейс не получил сигнал");
+            h.assertTrue(p.b.part(BuiltinKinds.redstone()) instanceof RedstonePart rp && rp.output() == 15, "интерфейс не получил сигнал");
             h.assertBlockProperty(DST, RedstoneLampBlock.LIT, false);
             h.succeed();
         });

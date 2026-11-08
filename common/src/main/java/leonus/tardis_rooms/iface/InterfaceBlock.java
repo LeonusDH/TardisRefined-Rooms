@@ -65,22 +65,22 @@ public class InterfaceBlock extends BaseEntityBlock {
     @Override
     protected int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.core.Direction direction) {
         // direction — от соседа к интерфейсу; своя сторона к соседу — противоположная.
-        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be && be.open(direction.getOpposite()) ? be.redstoneOut() : 0;
+        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.signal(direction.getOpposite()) : 0;
     }
 
     @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean moving) {
         super.neighborChanged(state, level, pos, block, fromPos, moving);
-        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) be.updateRedstoneInput();
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) be.neighborChanged();
     }
 
-    /** Убрали интерфейс — связанные пересчитывают свой сигнал без него. */
+    /** Интерфейс убирают (не выгрузка чанка): видам — хук «убран», пока он ещё связан (связанные пересчитывают без него). */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
-        java.util.List<InterfaceBlockEntity> peers = !level.isClientSide() && !state.is(newState.getBlock())
-                && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.linked() : java.util.List.of();
+        if (!level.isClientSide() && !state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
+            be.removedFromWorld();
+        }
         super.onRemove(state, level, pos, newState, moving);
-        for (InterfaceBlockEntity p : peers) p.updateRedstoneOutput();
     }
 
     @Override
@@ -95,8 +95,9 @@ public class InterfaceBlock extends BaseEntityBlock {
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (InterfacePlatform.isMemoryCard(stack) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
-            return InterfacePlatform.useMemoryCard(stack, be, player);
+        if (level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
+            ItemInteractionResult r = be.useItem(stack, player);
+            if (r != null) return r;
         }
         if (!(stack.getItem() instanceof ScrewdriverItem)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);

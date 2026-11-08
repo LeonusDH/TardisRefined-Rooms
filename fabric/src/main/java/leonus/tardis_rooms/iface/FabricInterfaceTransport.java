@@ -75,12 +75,6 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
     @Override
     public void invalidate() {}
 
-    @Override
-    public void tick() {}
-
-    @Override
-    public void remove() {}
-
     // ---------- соседи ----------
 
     /** Соседи блока по {@code lookup}: по BlockApiCache на сторону. */

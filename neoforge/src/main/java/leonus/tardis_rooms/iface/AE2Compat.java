@@ -18,6 +18,8 @@ import appeng.util.Platform;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +27,7 @@ import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -54,59 +57,18 @@ public final class AE2Compat {
         if (LOADED) Impl.register(event);
     }
 
-    static void update(InterfaceBlockEntity be) {
-        if (LOADED) Impl.update(be);
-    }
-
-    static void destroy(InterfaceBlockEntity be) {
-        if (LOADED) Impl.destroy(be);
-    }
-
-    public static boolean isMemoryCard(ItemStack stack) {
-        return enabled() && Impl.isCard(stack);
-    }
-
-    /** Карта памяти по интерфейсу: с Shift — скопировать идентификатор в карту, без — вставить из карты. */
-    public static ItemInteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
-        return enabled() ? Impl.useCard(stack, be, player) : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    /** Часть вида «сеть ME» для интерфейса. Только если AE2 установлен. */
+    static KindPart newPart(InterfaceBlockEntity be, TransferKind kind) {
+        return Impl.newPart(be, kind);
     }
 
     private static final class Impl {
         static void register(RegisterCapabilitiesEvent event) {
             event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST, TRoomsBlocks.INTERFACE_BE.get(),
-                    (be, ctx) -> be.me instanceof MeLink l ? l : null);
+                    (be, ctx) -> be.part(BuiltinKinds.me()) instanceof MePart p ? p.link : null);
         }
 
-        static boolean isCard(ItemStack stack) {
-            return stack.getItem() instanceof IMemoryCard;
-        }
-
-        static void update(InterfaceBlockEntity be) {
-            boolean wanted = be.isConnected() && be.enabled(BuiltinKinds.me()) && !be.isRemoved();
-            MeLink link = be.me instanceof MeLink l ? l : null;
-            if (wanted && link == null) {
-                link = new MeLink(be);
-                be.me = link;
-                link.node.create(be.getLevel(), be.getBlockPos());
-                be.getLevel().invalidateCapabilities(be.getBlockPos());
-            } else if (!wanted && link != null) {
-                destroy(be);
-                be.getLevel().invalidateCapabilities(be.getBlockPos());
-                return;
-            }
-            if (link != null) {
-                link.exposeOpenSides();
-                link.sync();
-            }
-        }
-
-        static void destroy(InterfaceBlockEntity be) {
-            if (be.me instanceof MeLink l) {
-                l.conns.clear();
-                l.node.destroy();
-            }
-            be.me = null;
-        }
+        static KindPart newPart(InterfaceBlockEntity be, TransferKind kind) { return new MePart(be, kind); }
 
         static ItemInteractionResult useCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
             if (player.level().isClientSide()) return ItemInteractionResult.SUCCESS;
@@ -139,16 +101,82 @@ public final class AE2Compat {
         }
     }
 
+    /**
+     * Сеть ME (часть вида): узел AE2 есть, пока вид включён и интерфейс подключён; при выгрузке и удалении узел убирается.
+     * Карта памяти работает, пока AE2 доступен, даже если у этого интерфейса сеть ME выключена.
+     */
+    private static final class MePart implements KindPart {
+        private final InterfaceBlockEntity be;
+        private final TransferKind kind;
+        /** Узел и соединения, или null — узла сейчас нет. */
+        @Nullable MeLink link;
+
+        MePart(InterfaceBlockEntity be, TransferKind kind) {
+            this.be = be;
+            this.kind = kind;
+        }
+
+        /** Стороны, открытые для кабелей ME, — сразу, а не на ближайшем секундном такте. */
+        @Override
+        public void invalidate() { update(); }
+
+        @Override
+        public void tick() { update(); }
+
+        @Override
+        public void unload() { destroy(); }
+
+        @Override
+        public void remove() { destroy(); }
+
+        /** Карта памяти по интерфейсу: с Shift — скопировать идентификатор в карту, без — вставить из карты. */
+        @Override
+        public @Nullable ItemInteractionResult useItem(ItemStack stack, Player player) {
+            return stack.getItem() instanceof IMemoryCard ? Impl.useCard(stack, be, player) : null;
+        }
+
+        private void update() {
+            boolean wanted = be.isConnected() && be.enabled(kind) && !be.isRemoved();
+            if (wanted && link == null) {
+                link = new MeLink(be, this);
+                link.node.create(be.getLevel(), be.getBlockPos());
+                be.getLevel().invalidateCapabilities(be.getBlockPos());
+            } else if (!wanted && link != null) {
+                destroy();
+                be.getLevel().invalidateCapabilities(be.getBlockPos());
+                return;
+            }
+            if (link != null) {
+                link.exposeOpenSides();
+                link.sync();
+            }
+        }
+
+        private void destroy() {
+            if (link == null) return;
+            link.conns.clear();
+            link.node.destroy();
+            link = null;
+        }
+
+        /** Узел этой части у связанного интерфейса, если он там есть. */
+        @Nullable IGridNode nodeOf(InterfaceBlockEntity peer) {
+            return peer.part(kind) instanceof MePart p && p.link != null ? p.link.node.getNode() : null;
+        }
+    }
+
     /** Узел сети ME интерфейса и его соединения со связанными интерфейсами. */
     private static final class MeLink implements IInWorldGridNodeHost {
         private static final IGridNodeListener<InterfaceBlockEntity> LISTENER = (owner, node) -> owner.setChanged();
 
         final InterfaceBlockEntity be;
+        final MePart part;
         final IManagedGridNode node;
         final Map<InterfaceBlockEntity, IGridConnection> conns = new HashMap<>();
 
-        MeLink(InterfaceBlockEntity be) {
+        MeLink(InterfaceBlockEntity be, MePart part) {
             this.be = be;
+            this.part = part;
             this.node = GridHelper.createManagedNode(be, LISTENER)
                     .setFlags(GridFlags.DENSE_CAPACITY)
                     .setIdlePowerUsage(1.0)
@@ -180,12 +208,13 @@ public final class AE2Compat {
             if (mine == null) return;
             Set<InterfaceBlockEntity> wanted = new HashSet<>();
             for (InterfaceBlockEntity peer : be.linked()) {
-                if (!(peer.me instanceof MeLink other) || other.node.getNode() == null) continue;
+                IGridNode other = part.nodeOf(peer);
+                if (other == null) continue;
                 if (order(be).compareTo(order(peer)) >= 0) continue; // соединение создаёт тот, у кого «меньше» адрес
                 wanted.add(peer);
                 if (!conns.containsKey(peer)) {
                     try {
-                        conns.put(peer, GridHelper.createConnection(mine, other.node.getNode()));
+                        conns.put(peer, GridHelper.createConnection(mine, other));
                     } catch (Exception e) {
                         TardisRooms.debug("ME link {} -> {} failed: {}", be.getBlockPos(), peer.getBlockPos(), e.toString());
                     }
