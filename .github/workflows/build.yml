@@ -63,3 +63,8 @@ jobs:
       - name: Game tests (NeoForge)
         timeout-minutes: 10
         run: ./gradlew :neoforge:runGameTestServer --no-daemon
+
+      - name: Game tests (Fabric)
+        if: success() || failure()
+        timeout-minutes: 10
+        run: ./gradlew :fabric:runGameTestServer --no-daemon

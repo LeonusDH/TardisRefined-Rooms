@@ -36,8 +36,38 @@ dependencies {
     // Энергия: Team Reborn Energy — стандарт на Fabric. Необязательна: её обычно вкладывают в себя технические моды.
     modCompileOnly("teamreborn:energy:${rootProject.reborn_energy_version}") { transitive = false }
 
-    // Tardis Refined для Fabric: только для компиляции, в игре ставится отдельным модом.
+    // Tardis Refined для Fabric: только для компиляции, в игре ставится отдельным модом. Игровым тестам нужен и при запуске.
     modCompileOnly files("${rootDir}/libs/${rootProject.tr_fabric_jar}")
+    modLocalRuntime files("${rootDir}/libs/${rootProject.tr_fabric_jar}")
+}
+
+// Игровые тесты: отдельный тестовый мод (src/gametest) с точкой входа fabric-gametest; в готовый мод не входит.
+// gradlew :fabric:runGameTestServer — сервер без окна проходит тесты и выходит; упавшие тесты — ошибка сборки.
+sourceSets {
+    gametest {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
+loom {
+    runs {
+        gameTestServer {
+            server()
+            source sourceSets.gametest
+            systemProperties.put('fabric-api.gametest', '')
+            runDirectory.set(file('build/gametest'))
+            generateRunConfig.set(false)
+        }
+    }
+}
+
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    doFirst {
+        def dir = file('build/gametest')
+        dir.mkdirs()
+        new File(dir, 'eula.txt').text = 'eula=true\n'
+    }
 }
 
 processResources {
@@ -49,7 +79,7 @@ processResources {
 shadowJar {
     exclude 'architectury.common.json'
     // Игровые тесты — только для разработки.
-    exclude 'leonus/tardis_rooms/gametest/**', 'leonus/tardis_rooms/fabric/gametest/**', 'data/tardis_rooms/structure/gametest/**'
+    exclude 'leonus/tardis_rooms/gametest/**', 'data/tardis_rooms/structure/gametest/**'
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
 }

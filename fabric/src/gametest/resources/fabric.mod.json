@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "tardis_rooms_gametest",
+  "version": "1",
+  "name": "TARDIS Refined: Rooms game tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "leonus.tardis_rooms.fabric.gametest.FabricGameTests"
+    ]
+  },
+  "depends": {
+    "tardis_rooms": "*"
+  }
+}
