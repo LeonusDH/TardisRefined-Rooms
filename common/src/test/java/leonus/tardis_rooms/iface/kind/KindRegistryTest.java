@@ -46,6 +46,7 @@ class KindRegistryTest {
         assertTrue(r.byId(id("b")).enabledByDefault());
         assertFalse(r.byId(id("a")).enabledByDefault());
         assertTrue(r.byId(id("a")).available(), "по умолчанию вид доступен");
+        assertNull(r.byId(id("a")).tooltip(), "по умолчанию без пояснения");
     }
 
     @Test

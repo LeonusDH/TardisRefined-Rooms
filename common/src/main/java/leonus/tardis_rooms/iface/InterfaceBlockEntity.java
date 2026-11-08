@@ -26,9 +26,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
-import whocraft.tardis_refined.common.blockentity.shell.ShellBaseBlockEntity;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -268,18 +266,6 @@ public class InterfaceBlockEntity extends BlockEntity {
             peers = p;
             changed();
         }
-    }
-
-    /** Разные ТАРДИС, чьи оболочки стоят вплотную к блоку (куб 3×3×3 и на блок ниже — оболочка высотой 2). */
-    public static List<ResourceKey<Level>> nearbyTardises(Level level, BlockPos pos) {
-        List<ResourceKey<Level>> out = new ArrayList<>();
-        for (BlockPos p : BlockPos.betweenClosed(pos.offset(-1, -2, -1), pos.offset(1, 1, 1))) {
-            if (level.getBlockEntity(p) instanceof ShellBaseBlockEntity shell) {
-                ResourceKey<Level> id = shell.getTardisId();
-                if (id != null && !out.contains(id)) out.add(id);
-            }
-        }
-        return out;
     }
 
     /** Связанные интерфейсы (сервер). */

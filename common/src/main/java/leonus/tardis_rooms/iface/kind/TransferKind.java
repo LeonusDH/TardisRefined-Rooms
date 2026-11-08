@@ -27,6 +27,7 @@ public final class TransferKind {
     private final boolean enabledByDefault;
     private final BooleanSupplier available;
     private final Supplier<Component> name;
+    private final @Nullable Supplier<Component> tooltip;
     private final @Nullable PartFactory parts;
 
     private TransferKind(Builder b, int index) {
@@ -35,6 +36,7 @@ public final class TransferKind {
         this.enabledByDefault = b.enabledByDefault;
         this.available = b.available;
         this.name = b.name;
+        this.tooltip = b.tooltip;
         this.parts = b.parts;
     }
 
@@ -55,6 +57,9 @@ public final class TransferKind {
     /** Название для меню и подсказок. */
     public Component name() { return name.get(); }
 
+    /** Пояснение в меню, или null — без пояснения. */
+    public @Nullable Component tooltip() { return tooltip == null ? null : tooltip.get(); }
+
     /** Часть вида для интерфейса, или null — своей части у вида нет. */
     public @Nullable KindPart createPart(InterfaceBlockEntity be) {
         return parts == null ? null : parts.create(be, this);
@@ -70,6 +75,7 @@ public final class TransferKind {
         private boolean enabledByDefault;
         private BooleanSupplier available = () -> true;
         private Supplier<Component> name;
+        private @Nullable Supplier<Component> tooltip;
         private @Nullable PartFactory parts;
         private boolean done;
 
@@ -93,6 +99,12 @@ public final class TransferKind {
 
         public Builder name(Supplier<Component> name) {
             this.name = Objects.requireNonNull(name);
+            return this;
+        }
+
+        /** Пояснение в меню (по умолчанию — нет). */
+        public Builder tooltip(Supplier<Component> tooltip) {
+            this.tooltip = Objects.requireNonNull(tooltip);
             return this;
         }
 

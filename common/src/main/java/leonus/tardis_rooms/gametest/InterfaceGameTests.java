@@ -5,7 +5,7 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
-import leonus.tardis_rooms.iface.LinkScope;
+import leonus.tardis_rooms.iface.LinkScopes;
 import leonus.tardis_rooms.iface.RedstonePart;
 import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import net.minecraft.core.BlockPos;
@@ -49,7 +49,7 @@ public final class InterfaceGameTests {
 
     /** Вызвать один раз до тестов. */
     public static void setUp() {
-        LinkScope.overrideForTests((level, pos) -> List.of(TEST_TARDIS));
+        LinkScopes.set((level, pos) -> List.of(TEST_TARDIS));
     }
 
     // ---------- раскладка ----------

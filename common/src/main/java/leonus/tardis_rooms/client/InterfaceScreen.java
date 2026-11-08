@@ -7,7 +7,6 @@ import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
 import leonus.tardis_rooms.iface.InterfaceLink;
 import leonus.tardis_rooms.iface.Status;
-import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
@@ -155,10 +154,8 @@ public class InterfaceScreen extends RoomMonitorScreen {
             Component label = t.name().copy().append(": ").append((on ? TRoomsText.IFACE_ON : TRoomsText.IFACE_OFF).text()
                     .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
             SelectionListEntry e = new SelectionListEntry(label, x -> send(InterfacePayload.toggle(pos, t)), listLeft());
-            TRoomsText tip = t == BuiltinKinds.me() ? TRoomsText.IFACE_ME_TOOLTIP
-                    : t == BuiltinKinds.redstone() ? TRoomsText.IFACE_REDSTONE_TOOLTIP
-                    : TRoomsText.IFACE_TYPE_TOOLTIP;
-            tip(e, tip.text().withStyle(ChatFormatting.BLUE));
+            Component tip = t.tooltip();
+            if (tip != null) tip(e, tip.copy().withStyle(ChatFormatting.BLUE));
             list.children().add(e);
         }
         return list;

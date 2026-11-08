@@ -6,8 +6,7 @@ import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.iface.AE2Compat;
 import leonus.tardis_rooms.iface.MekanismCompat;
 import leonus.tardis_rooms.iface.NeoForgeInterfaceTransport;
-import leonus.tardis_rooms.iface.kind.BuiltinKinds;
-import leonus.tardis_rooms.iface.kind.TransferKinds;
+import leonus.tardis_rooms.iface.tardis.TardisInterfaces;
 import leonus.tardis_rooms.network.CustomRoomsPayload;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
@@ -41,7 +40,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -50,8 +48,7 @@ import java.util.function.Consumer;
 @Mod(TardisRooms.MODID)
 public final class TardisRoomsNeoForge {
     public TardisRoomsNeoForge(IEventBus modBus, ModContainer container) {
-        // Виды передачи — до всего остального: их номера нужны интерфейсам с первого же блока.
-        TransferKinds.bootstrap(List.of(BuiltinKinds.plugin(NeoForgeInterfaceTransport::parts)));
+        TardisInterfaces.bootstrap(NeoForgeInterfaceTransport::parts); // до всего остального
         try {
             Files.createDirectories(Platform.configDir().resolve(TardisRooms.MODID));
         } catch (IOException e) {
