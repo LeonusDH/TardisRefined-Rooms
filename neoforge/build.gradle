@@ -44,7 +44,9 @@ loom {
         // проходит их и выходит; упавшие тесты — ошибка сборки.
         gameTestServer {
             server()
-            forgeTemplate.set('gameTestServer')
+            // Как шаблон gameTestServer у NeoForge: сервер проходит тесты и выходит.
+            systemProperties.put('neoforge.enableGameTest', 'true')
+            systemProperties.put('neoforge.gameTestServer', 'true')
             systemProperties.put('neoforge.enabledGameTestNamespaces', rootProject.mod_id)
             runDirectory.set(file('build/gametest'))
             generateRunConfig.set(false)
