@@ -29,6 +29,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
     // Конфиг на ModConfigSpec. Ставится вместе с TR (вложен в его jar), поэтому сами его не вкладываем.
     modCompileOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${rootProject.forge_config_api_port_version}"
+    modLocalRuntime "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${rootProject.forge_config_api_port_version}" // для игровых тестов
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
     shadowBundle(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
