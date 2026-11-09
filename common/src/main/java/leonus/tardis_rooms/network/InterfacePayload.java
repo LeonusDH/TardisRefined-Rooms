@@ -42,7 +42,7 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
 
     /** Сервер, главный поток. */
     public static void handle(InterfacePayload p, ServerPlayer player) {
-        String who = player.getGameProfile().getName();
+        String who = TardisRooms.who(player);
         String why = !InterfaceHost.holdsConfigurator(player) ? "no screwdriver in hand"
                 : player.distanceToSqr(p.pos().getCenter()) > 64 ? "too far"
                 : !player.mayBuild() || !player.level().mayInteract(player, p.pos()) ? "may not build here"

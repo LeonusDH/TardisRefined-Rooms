@@ -67,38 +67,32 @@ public final class RoomBlockEntities {
     /**
      * Места блок-сущностей, которые мешают удалить помещение; пусто — можно.
      * {@code template} — отпечатки шаблона ({@link #fingerprint}); null — помещение старое, без отпечатков.
+     * {@code removable} — места ({@link BlockPos#asLong}), а {@code matchers} — описания блоков, которые помещение
+     * отметило как уходящие с ним.
      */
-    public static List<BlockPos> blockers(ServerLevel level, List<BoundingBox> boxes, @Nullable Map<Long, Integer> template) {
-        return blockers(level, boxes, template, Set.of());
-    }
-
-    /** То же; {@code removable} — места ({@link BlockPos#asLong}), которые помещение отметило как уходящие с ним. */
-    public static List<BlockPos> blockers(ServerLevel level, List<BoundingBox> boxes, @Nullable Map<Long, Integer> template, Set<Long> removable) {
-        return blockers(level, boxes, template, removable, List.of());
-    }
-
-    /** То же; {@code matchers} — описания блоков, которые помещение отметило как уходящие с ним (где бы они ни стояли). */
     public static List<BlockPos> blockers(ServerLevel level, List<BoundingBox> boxes, @Nullable Map<Long, Integer> template,
                                          Set<Long> removable, List<BlockMatcher> matchers) {
+        List<BlockMatcher> config = RemovableBlocks.current(); // один раз на проверку, а не на каждую блок-сущность
         List<BlockPos> out = new ArrayList<>();
         forEach(level, boxes, be -> {
-            if (!(be instanceof InterfaceBlockEntity) && (removable.contains(be.getBlockPos().asLong()) || matchesAny(level, be, matchers))) return;
-            if (blocks(level, be, template)) out.add(be.getBlockPos().immutable());
+            if (blocks(level, be, template, removable, config, matchers)) out.add(be.getBlockPos().immutable());
         });
         return out;
+    }
+
+    private static boolean blocks(ServerLevel level, BlockEntity be, @Nullable Map<Long, Integer> template, Set<Long> removable,
+                                  List<BlockMatcher> config, List<BlockMatcher> matchers) {
+        if (be instanceof InterfaceBlockEntity) return true;
+        if (ignored(be) || removable.contains(be.getBlockPos().asLong())
+                || matchesAny(level, be, config) || matchesAny(level, be, matchers)) return false;
+        if (template == null) return hasContents(be);
+        Integer expected = template.get(be.getBlockPos().asLong());
+        return expected == null || expected != hash(level, be);
     }
 
     private static boolean matchesAny(ServerLevel level, BlockEntity be, List<BlockMatcher> matchers) {
         for (BlockMatcher m : matchers) if (m.test(level, be.getBlockPos(), be.getBlockState())) return true;
         return false;
-    }
-
-    private static boolean blocks(ServerLevel level, BlockEntity be, @Nullable Map<Long, Integer> template) {
-        if (be instanceof InterfaceBlockEntity) return true;
-        if (ignored(be) || RemovableBlocks.matches(level, be.getBlockPos(), be.getBlockState())) return false;
-        if (template == null) return hasContents(be);
-        Integer expected = template.get(be.getBlockPos().asLong());
-        return expected == null || expected != hash(level, be);
     }
 
     /** Блоки TR и наши служебные — часть самой ТАРДИС. */

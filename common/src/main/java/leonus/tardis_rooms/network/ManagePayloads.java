@@ -37,12 +37,12 @@ public final class ManagePayloads {
         public static void handle(Request r, ServerPlayer player) {
             if (!(player.level() instanceof ServerLevel level)) return;
             if (!Lattice.isTardisLevel(level) || player.distanceToSqr(r.core().getCenter()) > 64) {
-                TardisRooms.debug("{}: room info for {} ignored: not in a TARDIS or too far", player.getGameProfile().getName(), r.core().toShortString());
+                TardisRooms.debug("{}: room info for {} ignored: not in a TARDIS or too far", TardisRooms.who(player), r.core().toShortString());
                 return;
             }
             ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(r.core());
             if (piece == null) {
-                TardisRooms.debug("{}: room info for {} ignored: no room there", player.getGameProfile().getName(), r.core().toShortString());
+                TardisRooms.debug("{}: room info for {} ignored: no room there", TardisRooms.who(player), r.core().toShortString());
                 return;
             }
             // Почему нельзя удалить. Мешают только вещи внутри — можно удалить вместе с ними (окно подтверждения):
@@ -139,7 +139,7 @@ public final class ManagePayloads {
             String name = net.minecraft.util.StringUtil.filterText(r.name()).trim();
             if (name.length() > ModuleRegistry.MAX_NAME) name = name.substring(0, ModuleRegistry.MAX_NAME).trim();
             reg.rename(piece, name);
-            TardisRooms.debug("{} renamed #{} to \"{}\"", player.getGameProfile().getName(), piece.id, name);
+            TardisRooms.debug("{} renamed #{} to \"{}\"", TardisRooms.who(player), piece.id, name);
             Request.handle(new Request(r.core()), player);
         }
     }

@@ -36,7 +36,7 @@ public final class TRoomsCommands {
                         .then(Commands.argument("core", BlockPosArgument.blockPos())
                                 .executes(ctx -> {
                                     RoomGrowth.showBlockers(ctx.getSource().getPlayerOrException(),
-                                            BlockPosArgument.getBlockPos(ctx, "core"), false);
+                                            BlockPosArgument.getBlockPos(ctx, "core"), false, false);
                                     return 1;
                                 }))));
     }

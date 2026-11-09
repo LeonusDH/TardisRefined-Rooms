@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -171,17 +171,8 @@ public final class ModuleRegistry extends SavedData {
             BlockPos core = NbtUtils.readBlockPos(t, "core").orElse(null);
             Piece p = new Piece(t.getInt("id"), id, node, fp, core);
             if (t.contains("name", Tag.TAG_STRING)) p.customName = t.getString("name");
-            if (t.contains("removable", Tag.TAG_LONG_ARRAY)) {
-                Set<Long> rm = new HashSet<>();
-                for (long v : t.getLongArray("removable")) rm.add(v);
-                p.removable = Set.copyOf(rm);
-            }
-            if (t.contains("removable_match", Tag.TAG_LIST)) {
-                ListTag rl = t.getList("removable_match", Tag.TAG_STRING);
-                List<String> pm = new ArrayList<>();
-                for (int k = 0; k < rl.size(); k++) pm.add(rl.getString(k));
-                p.removableMatch = List.copyOf(pm);
-            }
+            p.removable = Arrays.stream(t.getLongArray("removable")).boxed().collect(Collectors.toUnmodifiableSet());
+            p.removableMatch = t.getList("removable_match", Tag.TAG_STRING).stream().map(Tag::getAsString).toList();
             if (t.contains("template", Tag.TAG_COMPOUND)) {
                 CompoundTag tt = t.getCompound("template");
                 long[] at = tt.getLongArray("pos");

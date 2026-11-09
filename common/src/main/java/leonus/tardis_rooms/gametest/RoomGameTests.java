@@ -49,7 +49,11 @@ public final class RoomGameTests {
     }
 
     private static List<BlockPos> blockers(GameTestHelper h, Map<Long, Integer> template) {
-        return RoomBlockEntities.blockers(h.getLevel(), box(h), template);
+        return blockers(h, template, Set.of(), List.of());
+    }
+
+    private static List<BlockPos> blockers(GameTestHelper h, Map<Long, Integer> template, Set<Long> marked, List<BlockMatcher> matchers) {
+        return RoomBlockEntities.blockers(h.getLevel(), box(h), template, marked, matchers);
     }
 
     private static void expect(GameTestHelper h, List<BlockPos> actual, BlockPos... relative) {
@@ -170,9 +174,9 @@ public final class RoomGameTests {
         ((Container) h.getBlockEntity(CHEST)).setItem(0, new ItemStack(Items.DIAMOND));
         ((LecternBlockEntity) h.getBlockEntity(LECTERN)).setBook(new ItemStack(Items.WRITABLE_BOOK));
         Set<Long> marked = Set.of(h.absolutePos(CHEST).asLong(), h.absolutePos(EXTRA).asLong());
-        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, marked), LECTERN);
+        expect(h, blockers(h, template, marked, List.of()), LECTERN);
         h.setBlock(EXTRA, TRoomsBlocks.INTERFACE.get());
-        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, marked), LECTERN, EXTRA);
+        expect(h, blockers(h, template, marked, List.of()), LECTERN, EXTRA);
         h.succeed();
     }
 
@@ -183,12 +187,12 @@ public final class RoomGameTests {
         ((Container) h.getBlockEntity(CHEST)).setItem(0, new ItemStack(Items.DIAMOND));
         ((LecternBlockEntity) h.getBlockEntity(LECTERN)).setBook(new ItemStack(Items.WRITABLE_BOOK));
         List<BlockMatcher> diamondChest = List.of(BlockMatcher.parse("minecraft:chest{Items:[{id:\"minecraft:diamond\"}]}"));
-        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(), diamondChest), LECTERN);
+        expect(h, blockers(h, template, Set.of(), diamondChest), LECTERN);
         ((Container) h.getBlockEntity(CHEST)).setItem(0, new ItemStack(Items.EMERALD));
-        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(), diamondChest), CHEST, LECTERN);
-        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(), List.of(BlockMatcher.parse("*:lect*"))), CHEST);
+        expect(h, blockers(h, template, Set.of(), diamondChest), CHEST, LECTERN);
+        expect(h, blockers(h, template, Set.of(), List.of(BlockMatcher.parse("*:lect*"))), CHEST);
         h.setBlock(EXTRA, TRoomsBlocks.INTERFACE.get());
-        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(),
+        expect(h, blockers(h, template, Set.of(),
                 List.of(BlockMatcher.parse("@minecraft"), BlockMatcher.parse("@" + TardisRooms.MODID))), EXTRA);
         h.succeed();
     }

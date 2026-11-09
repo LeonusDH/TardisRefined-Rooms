@@ -28,7 +28,7 @@ public class InterfaceItem extends BlockItem {
                 context.getPlayer().displayClientMessage(TRoomsText.MSG_INTERFACE_PLACE.text(), true);
             } else if (context.getPlayer() != null) {
                 TardisRooms.debug("{}: interface not placed at {}: not in a TARDIS and not next to its shell",
-                        context.getPlayer().getGameProfile().getName(), context.getClickedPos().toShortString());
+                        TardisRooms.who(context.getPlayer()), context.getClickedPos().toShortString());
             }
             return InteractionResult.FAIL;
         }

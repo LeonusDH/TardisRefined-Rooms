@@ -270,9 +270,9 @@ public class RoomManageScreen extends RoomMonitorScreen {
             sorted.sort(Map.Entry.<ResourceLocation, Integer>comparingByValue().reversed());
             for (int i = 0; i < Math.min(KINDS_SHOWN, sorted.size()); i++) {
                 var k = sorted.get(i);
-                Component name = BuiltInRegistries.BLOCK.get(k.getKey()).getName();
-                SelectionListEntry line = new SelectionListEntry(Component.empty().append(name).append(" \u00d7" + k.getValue()).withStyle(ChatFormatting.GRAY), e -> {}, listLeft(), false);
-                tip(line, Component.empty().append(name).append(" \u00d7" + k.getValue()));
+                Component text = Component.empty().append(BuiltInRegistries.BLOCK.get(k.getKey()).getName()).append(" \u00d7" + k.getValue());
+                SelectionListEntry line = new SelectionListEntry(text.copy().withStyle(ChatFormatting.GRAY), e -> {}, listLeft(), false);
+                tip(line, text);
                 list.children().add(line);
             }
             if (sorted.size() > KINDS_SHOWN) {

@@ -79,13 +79,9 @@ public final class RoomGrowth {
     /**
      * Показать игроку, что мешает удалить помещение: кнопка в меню блока управления ({@code inChat} — сообщение
      * в чат) или нажатие на сообщение в чате (повтор — над хотбаром). Игрок может уже отойти искать: до
-     * {@value #SHOW_RANGE} блоков. Ничего не мешает — так и сказать.
+     * {@value #SHOW_RANGE} блоков. Ничего не мешает — так и сказать. {@code arm} — открыто окно подтверждения
+     * «удалить вместе с ними»: пошёл отсчёт ({@link ForceRemoval}).
      */
-    public static void showBlockers(ServerPlayer player, BlockPos core, boolean inChat) {
-        showBlockers(player, core, inChat, false);
-    }
-
-    /** То же; {@code arm} — открыто окно подтверждения «удалить вместе с ними»: пошёл отсчёт ({@link ForceRemoval}). */
     public static void showBlockers(ServerPlayer player, BlockPos core, boolean inChat, boolean arm) {
         String what = "showing what's in the way of the room at " + core.toShortString();
         if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) { ignored(player, what, "not in a TARDIS"); return; }
@@ -94,7 +90,7 @@ public final class RoomGrowth {
         if (piece == null) { ignored(player, what, "no room there"); return; }
         if (arm) ForceRemoval.arm(player.getUUID(), level.dimension(), core, System.currentTimeMillis());
         List<BlockPos> blockers = blockers(level, piece);
-        TardisRooms.debug("{}: what's in the way of #{}{}: {}", who(player), piece.id, arm ? " (confirmation window opened, countdown started)" : "",
+        TardisRooms.debug("{}: what's in the way of #{}{}: {}", TardisRooms.who(player), piece.id, arm ? " (confirmation window opened, countdown started)" : "",
                 blockers.isEmpty() ? "nothing" : describe(level, blockers));
         if (blockers.isEmpty()) {
             msg(player, TRoomsText.MSG_NOTHING_BLOCKS);
@@ -147,7 +143,7 @@ public final class RoomGrowth {
             List<BlockPos> blockers = blockers(level, replacing);
             if (!blockers.isEmpty()) {
                 BlockerHighlight.show(player, replacing.core, blockers, true);
-                TardisRooms.debug("{}: replacing #{} refused: in the way: {}", who(player), replacing.id, describe(level, blockers));
+                TardisRooms.debug("{}: replacing #{} refused: in the way: {}", TardisRooms.who(player), replacing.id, describe(level, blockers));
                 return;
             }
             if (TardisRoomsConfig.debug()) TardisRooms.debug("Replacing #{}; graph: {}", replacing.id, Connectivity.describe(level));
@@ -161,7 +157,7 @@ public final class RoomGrowth {
         Map<Long, Integer> template = RoomBlockEntities.fingerprint(level, RoomBlockEntities.boxes(plan.get().footprint()));
         ModuleRegistry.Piece added = reg.addPiece(pieceId, node, plan.get().footprint(), core, template, plan.get().removable(), plan.get().removableMatch());
         for (Map.Entry<Integer, Set<Long>> e : plan.get().footprint().entrySet()) Lattice.refresh(level, e.getValue(), e.getKey());
-        TardisRooms.LOGGER.info("{} {} {} as #{} from module {},{} {} floor {} in {}, control block at {}", who(player),
+        TardisRooms.LOGGER.info("{} {} {} as #{} from module {},{} {} floor {} in {}, control block at {}", TardisRooms.who(player),
                 replacing != null ? "replaced #" + replacing.id + " with" : "grew", pieceId, added.id, node.mx(), node.mz(), node.side(),
                 node.floorY(), level.dimension().location(), core.toShortString());
         TardisRooms.debug("Room #{}: {} template block entities remembered, {} removable places, {} removable descriptions",
@@ -189,16 +185,16 @@ public final class RoomGrowth {
         if (!blockers.isEmpty()) {
             if (!force || !ForceRemoval.take(player.getUUID(), level.dimension(), core, System.currentTimeMillis())) {
                 BlockerHighlight.show(player, core, blockers, true);
-                TardisRooms.debug("{}: removal of #{} refused{}: in the way: {}", who(player), piece.id,
+                TardisRooms.debug("{}: removal of #{} refused{}: in the way: {}", TardisRooms.who(player), piece.id,
                         force ? " (confirmation window not open for 10 s, or expired)" : "", describe(level, blockers));
                 return;
             }
             // Вещи пропадут — это стоит видеть в обычном логе: кто, что и где.
-            TardisRooms.LOGGER.info("{} removes #{} together with what's in the way, which is lost: {}", who(player), piece.id, describe(level, blockers));
+            TardisRooms.LOGGER.info("{} removes #{} together with what's in the way, which is lost: {}", TardisRooms.who(player), piece.id, describe(level, blockers));
         }
         if (TardisRoomsConfig.debug()) TardisRooms.debug("Removing #{}; graph: {}", piece.id, Connectivity.describe(level));
         demolish(level, piece);
-        TardisRooms.LOGGER.info("{} removed {} (#{}) in {}", who(player), piece.pieceId, piece.id, level.dimension().location());
+        TardisRooms.LOGGER.info("{} removed {} (#{}) in {}", TardisRooms.who(player), piece.pieceId, piece.id, level.dimension().location());
         msg(player, TRoomsText.MSG_REMOVED);
     }
 
@@ -295,9 +291,10 @@ public final class RoomGrowth {
                     if (spot != null) return spot;
                 }
         Direction in = node.side().getOpposite();
+        BlockPos fallback = Lattice.nodePos(node.mx(), node.mz(), node.side(), node.floorY()).relative(in, 2).atY(node.floorY() + 2);
         TardisRooms.LOGGER.warn("Removing room #{} in {}: no open passage to move players to, using {}", piece.id,
-                level.dimension().location(), Lattice.nodePos(node.mx(), node.mz(), node.side(), node.floorY()).relative(in, 2).atY(node.floorY() + 2).toShortString());
-        return new Spot(Lattice.nodePos(node.mx(), node.mz(), node.side(), node.floorY()).relative(in, 2).atY(node.floorY() + 2), in);
+                level.dimension().location(), fallback.toShortString());
+        return new Spot(fallback, in);
     }
 
     /** Место в двух блоках от прохода внутрь модуля, где можно стоять (пол снизу, два блока воздуха), или null. */
@@ -346,16 +343,12 @@ public final class RoomGrowth {
 
     static void msg(ServerPlayer player, TRoomsText text) {
         player.displayClientMessage(text.text(), true);
-        TardisRooms.debug("{}: {}", who(player), text.key());
+        TardisRooms.debug("{}: {}", TardisRooms.who(player), text.key());
     }
 
     /** Запрос игрока отброшен без сообщения ему (не та позиция, далеко, нет прав) — в подробности, с причиной. */
     static void ignored(ServerPlayer player, String what, String why) {
-        TardisRooms.debug("{}: {} ignored: {}", who(player), what, why);
-    }
-
-    static String who(ServerPlayer player) {
-        return player.getGameProfile().getName();
+        TardisRooms.debug("{}: {} ignored: {}", TardisRooms.who(player), what, why);
     }
 
     /** Мешающие блоки для лога: «minecraft:chest ×2, minecraft:lectern ×1». */

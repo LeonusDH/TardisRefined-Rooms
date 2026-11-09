@@ -2,9 +2,6 @@ package leonus.tardis_rooms.room;
 
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
-import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +41,8 @@ public final class RemovableBlocks {
     private static volatile List<? extends String> parsedFrom;
     private static volatile List<BlockMatcher> matchers = List.of();
 
-    /** Уходит ли этот блок вместе с помещением, что бы в нём ни было. */
-    public static boolean matches(ServerLevel level, BlockPos pos, BlockState state) {
+    /** Блоки из файла, которые уходят вместе с помещением, что бы в них ни было. Файл изменился — разбираются заново. */
+    public static List<BlockMatcher> current() {
         List<? extends String> now = TardisRoomsConfig.removableBlocks();
         if (now != parsedFrom) {
             Parsed p = parse(now);
@@ -54,8 +51,7 @@ public final class RemovableBlocks {
             matchers = p.matchers();
             parsedFrom = now;
         }
-        for (BlockMatcher x : matchers) if (x.test(level, pos, state)) return true;
-        return false;
+        return matchers;
     }
 
     private RemovableBlocks() {}

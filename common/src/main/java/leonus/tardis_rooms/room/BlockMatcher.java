@@ -60,8 +60,7 @@ public final class BlockMatcher {
             return new BlockMatcher(s, Pattern.compile(re.toString()), null);
         }
         // Описание блока. id проверяем сами, до реестра: так неправильная строка не трогает реестры.
-        int end = s.length();
-        for (char c : new char[]{'[', '{'}) { int i = s.indexOf(c); if (i >= 0) end = Math.min(end, i); }
+        int end = idEnd(s);
         String id = s.substring(s.startsWith("#") ? 1 : 0, end);
         if (ResourceLocation.tryParse(id) == null) throw new IllegalArgumentException("bad block id in \"" + s + "\"");
         try {
@@ -84,10 +83,16 @@ public final class BlockMatcher {
             parse(s);
             return;
         }
-        int end = s.length();
-        for (char c : new char[]{'[', '{'}) { int i = s.indexOf(c); if (i >= 0) end = Math.min(end, i); }
+        int end = idEnd(s);
         if (ResourceLocation.tryParse(s.substring(1, end)) == null) throw new IllegalArgumentException("bad tag id in \"" + s + "\"");
         if (end < s.length() && !(s.endsWith("]") || s.endsWith("}"))) throw new IllegalArgumentException("unexpected text after the tag in \"" + s + "\"");
+    }
+
+    /** Где кончается id блока или тега: до свойств {@code [...]} или данных {@code {...}}. */
+    private static int idEnd(String s) {
+        int end = s.length();
+        for (char c : new char[]{'[', '{'}) { int i = s.indexOf(c); if (i >= 0) end = Math.min(end, i); }
+        return end;
     }
 
     /** Подходит ли блок {@code state} в {@code pos}. */

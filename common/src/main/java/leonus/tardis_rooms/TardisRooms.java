@@ -3,6 +3,7 @@ package leonus.tardis_rooms;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.platform.Platform;
+import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,11 @@ public final class TardisRooms {
     /** Пишутся ли подробности хоть куда-нибудь — чтобы не собирать дорогие сообщения впустую. */
     public static boolean debugEnabled() {
         return TardisRoomsConfig.debug() || LOGGER.isDebugEnabled();
+    }
+
+    /** Игрок для лога — по имени. */
+    public static String who(Player player) {
+        return player.getGameProfile().getName();
     }
 
     /** Совместимость с другим модом: название для лога, id мода и включена ли она в настройках. */

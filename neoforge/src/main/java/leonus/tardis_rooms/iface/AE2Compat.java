@@ -86,7 +86,7 @@ public final class AE2Compat {
                 stack.set(AEComponents.MEMORY_CARD_COLORS, new MemoryCardColors(c[0], c[0], c[1], c[1], c[2], c[2], c[3], c[3]));
                 be.data().tardis().ifPresent(t -> stack.set(AEComponents.EXPORTED_SETTINGS, Map.of(CARD_TARDIS_KEY, t.toString())));
                 card.notifyUser(player, MemoryCardMessages.SETTINGS_SAVED);
-                TardisRooms.debug("{}: memory card copied ID {} from the interface at {}", player.getGameProfile().getName(),
+                TardisRooms.debug("{}: memory card copied ID {} from the interface at {}", TardisRooms.who(player),
                         InterfaceData.hex(be.id()), be.getBlockPos().toShortString());
             } else {
                 Short freq = stack.get(AEComponents.EXPORTED_P2P_FREQUENCY);
@@ -96,7 +96,7 @@ public final class AE2Compat {
                 }
                 Map<String, String> settings = stack.get(AEComponents.EXPORTED_SETTINGS);
                 Optional<ResourceLocation> owner = Optional.ofNullable(settings == null ? null : settings.get(CARD_TARDIS_KEY)).map(ResourceLocation::tryParse);
-                TardisRooms.debug("{}: memory card pasted ID {} into the interface at {}", player.getGameProfile().getName(),
+                TardisRooms.debug("{}: memory card pasted ID {} into the interface at {}", TardisRooms.who(player),
                         InterfaceData.hex(freq & 0xFFFF), be.getBlockPos().toShortString());
                 be.pasteId(freq & 0xFFFF, owner);
                 card.notifyUser(player, MemoryCardMessages.SETTINGS_LOADED);

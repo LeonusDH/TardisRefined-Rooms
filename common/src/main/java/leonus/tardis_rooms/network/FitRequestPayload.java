@@ -32,7 +32,7 @@ public record FitRequestPayload(BlockPos pos, BlockPos replaceCore) implements C
     public static void handle(FitRequestPayload payload, ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) return;
         if (!Lattice.isTardisLevel(level) || !Screwdriver.held(player)) {
-            TardisRooms.debug("{}: catalogue check at {} ignored: not in a TARDIS or no screwdriver", player.getGameProfile().getName(), payload.pos().toShortString());
+            TardisRooms.debug("{}: catalogue check at {} ignored: not in a TARDIS or no screwdriver", TardisRooms.who(player), payload.pos().toShortString());
             return;
         }
         ModuleRegistry.Piece replacing = null;

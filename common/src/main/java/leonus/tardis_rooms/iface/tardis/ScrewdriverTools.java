@@ -48,7 +48,7 @@ public final class ScrewdriverTools {
         int m = Math.floorMod(mode(stack) + (step >= 0 ? 1 : -1), MODES);
         if (m == MODE_NORMAL) stack.remove(TRoomsBlocks.SCREWDRIVER_MODE.get());
         else stack.set(TRoomsBlocks.SCREWDRIVER_MODE.get(), m);
-        TardisRooms.debug("{}: screwdriver mode {}", player.getGameProfile().getName(), m == MODE_CONFIG ? "setup" : "normal");
+        TardisRooms.debug("{}: screwdriver mode {}", TardisRooms.who(player), m == MODE_CONFIG ? "setup" : "normal");
         player.displayClientMessage(TRoomsText.MSG_SCREWDRIVER_MODE.text(modeName(m).text().withStyle(ChatFormatting.AQUA)), true);
     }
 
@@ -76,7 +76,7 @@ public final class ScrewdriverTools {
             return UseResult.CONSUMED;
         }
         stack.set(TRoomsBlocks.INTERFACE_LINK.get(), be.link());
-        TardisRooms.debug("{}: screwdriver copied ID {} from the interface at {}", player.getGameProfile().getName(), InterfaceData.hex(be.id()), pos.toShortString());
+        TardisRooms.debug("{}: screwdriver copied ID {} from the interface at {}", TardisRooms.who(player), InterfaceData.hex(be.id()), pos.toShortString());
         player.displayClientMessage(TRoomsText.MSG_INTERFACE_COPIED.text(InterfaceTools.idText(be.id())), true);
         return UseResult.CONSUMED;
     }
@@ -103,7 +103,7 @@ public final class ScrewdriverTools {
         if (!configMode(stack)) return false;
         if (level.isClientSide() || !player.isShiftKeyDown()) return true;
         if (stack.remove(TRoomsBlocks.INTERFACE_LINK.get()) != null) {
-            TardisRooms.debug("{}: screwdriver forgot the interface ID", player.getGameProfile().getName());
+            TardisRooms.debug("{}: screwdriver forgot the interface ID", TardisRooms.who(player));
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_FORGOTTEN.text(), true);
         }
         return true;
@@ -118,7 +118,7 @@ public final class ScrewdriverTools {
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_SCREWDRIVER_EMPTY.text(), true);
             return;
         }
-        TardisRooms.debug("{}: screwdriver pasted ID {} into the interface at {}", player.getGameProfile().getName(), InterfaceData.hex(link.id()),
+        TardisRooms.debug("{}: screwdriver pasted ID {} into the interface at {}", TardisRooms.who(player), InterfaceData.hex(link.id()),
                 be.getBlockPos().toShortString());
         be.pasteId(link.id(), link.tardis());
         player.displayClientMessage(TRoomsText.MSG_INTERFACE_PASTED.text(InterfaceTools.idText(link.id())), true);

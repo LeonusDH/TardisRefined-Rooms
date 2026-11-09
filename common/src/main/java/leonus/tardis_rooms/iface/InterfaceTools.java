@@ -47,15 +47,15 @@ public final class InterfaceTools {
     private static UseResult wrench(Player player, Level level, BlockPos pos, Direction face, InterfaceBlockEntity be) {
         if (level.isClientSide()) return UseResult.CONSUMED;
         if (!player.mayBuild() || !level.mayInteract(player, pos)) {
-            TardisRooms.debug("{}: wrench on the interface at {} ignored: may not build here", player.getGameProfile().getName(), pos.toShortString());
+            TardisRooms.debug("{}: wrench on the interface at {} ignored: may not build here", TardisRooms.who(player), pos.toShortString());
             return UseResult.CONSUMED;
         }
         if (player.isShiftKeyDown()) {
-            TardisRooms.debug("{}: wrench picked up the interface at {}", player.getGameProfile().getName(), pos.toShortString());
+            TardisRooms.debug("{}: wrench picked up the interface at {}", TardisRooms.who(player), pos.toShortString());
             be.dismantle(player);
         } else if (face != null) {
             FaceMode m = be.face(face).next();
-            TardisRooms.debug("{}: wrench set the {} side of the interface at {} to {}", player.getGameProfile().getName(), face, pos.toShortString(), m);
+            TardisRooms.debug("{}: wrench set the {} side of the interface at {} to {}", TardisRooms.who(player), face, pos.toShortString(), m);
             be.setFace(face, m);
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_FACE.text(faceName(face).text(), faceModeName(m).text().withStyle(ChatFormatting.AQUA)), true);
         }
