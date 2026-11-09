@@ -6,7 +6,9 @@ import leonus.tardis_rooms.iface.InterfaceBlock;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
 import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.iface.LinkedTotals;
 import leonus.tardis_rooms.iface.Status;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
@@ -18,6 +20,8 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.Accessor;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
@@ -27,8 +31,11 @@ import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
 import snownee.jade.api.config.IPluginConfig;
+import snownee.jade.api.view.IServerExtensionProvider;
+import snownee.jade.api.view.ViewGroup;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -40,6 +47,7 @@ public class JadePlugin implements IWailaPlugin {
     @Override
     public void register(IWailaCommonRegistration registration) {
         registration.registerBlockDataProvider(InterfaceInfo.INSTANCE, InterfaceBlockEntity.class);
+        registration.registerEnergyStorage(InterfaceEnergy.INSTANCE, InterfaceBlockEntity.class);
     }
 
     @Override
@@ -112,6 +120,27 @@ public class JadePlugin implements IWailaPlugin {
             }
             if (!first) tooltip.add(on.withStyle(ChatFormatting.DARK_GRAY));
         }
+    }
 
+    /**
+     * Полоса энергии в подсказке. Без настоящих хранилищ у связанных интерфейсов интерфейс называет кабелям условную
+     * ёмкость (иначе часть кабелей к нему не подключается), и встроенный показ Jade рисовал бы «0 / 2,1 G». Здесь Jade
+     * спрашивает раньше встроенного показа: нет настоящей ёмкости — пустой ответ, полосы нет; есть — null, и Jade
+     * показывает как обычно (настоящие цифры). То, что видят кабели, не меняется.
+     */
+    public enum InterfaceEnergy implements IServerExtensionProvider<CompoundTag> {
+        INSTANCE;
+
+        private static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "interface_energy");
+
+        @Override
+        public ResourceLocation getUid() { return UID; }
+
+        @Override
+        public @Nullable List<ViewGroup<CompoundTag>> getGroups(Accessor<?> accessor) {
+            if (accessor.getTarget() instanceof InterfaceBlockEntity be
+                    && be.part(BuiltinKinds.energy()) instanceof LinkedTotals t && t.linkedTotals()[1] > 0) return null;
+            return List.of();
+        }
     }
 }

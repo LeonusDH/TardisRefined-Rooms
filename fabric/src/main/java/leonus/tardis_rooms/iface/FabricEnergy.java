@@ -34,7 +34,7 @@ final class FabricEnergy {
         static KindPart newPart(InterfaceBlockEntity be, TransferKind kind) { return new View(be, kind); }
 
         /** Принятое во вход отдаётся соседям выходов, забираемое из выхода — у соседей входов. Своего запаса нет. */
-        static final class View implements EnergyStorage, KindPart {
+        static final class View implements EnergyStorage, KindPart, LinkedTotals {
             private final InterfaceBlockEntity be;
             private final TransferKind kind;
             /** Свои соседи по энергии — их берут связанные интерфейсы. */
@@ -101,17 +101,18 @@ final class FabricEnergy {
 
             /** Своего запаса нет: показываем заряд хранилищ у связанных интерфейсов (его и рисует Jade). */
             @Override
-            public long getAmount() { return totals()[0]; }
+            public long getAmount() { return linkedTotals()[0]; }
 
             /** Если связанных хранилищ нет — ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
             @Override
             public long getCapacity() {
-                long cap = totals()[1];
+                long cap = linkedTotals()[1];
                 return cap > 0 ? cap : Integer.MAX_VALUE;
             }
 
-            /** Заряд и ёмкость хранилищ у связанных интерфейсов. */
-            private long[] totals() {
+            /** Заряд и ёмкость хранилищ у связанных интерфейсов (настоящие, без условной ёмкости). */
+            @Override
+            public long[] linkedTotals() {
                 return linked.totals(EnergyStorage::getAmount, EnergyStorage::getCapacity);
             }
         }

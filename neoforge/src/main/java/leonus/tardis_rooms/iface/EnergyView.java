@@ -10,7 +10,7 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 /**
  * Энергия через интерфейс (часть вида): принятое во вход отдаётся соседям выходов, забираемое из выхода — у соседей входов.
  */
-final class EnergyView implements IEnergyStorage, KindPart {
+final class EnergyView implements IEnergyStorage, KindPart, LinkedTotals {
     private final InterfaceBlockEntity be;
     private final TransferKind kind;
     /** Свои соседи по энергии — их берут связанные интерфейсы. */
@@ -71,17 +71,18 @@ final class EnergyView implements IEnergyStorage, KindPart {
 
     /** Своего запаса нет: показываем заряд хранилищ у связанных интерфейсов (его и рисует Jade). */
     @Override
-    public int getEnergyStored() { return (int) Math.min(Integer.MAX_VALUE, totals()[0]); }
+    public int getEnergyStored() { return (int) Math.min(Integer.MAX_VALUE, linkedTotals()[0]); }
 
     /** Если связанных хранилищ нет — ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
     @Override
     public int getMaxEnergyStored() {
-        long cap = totals()[1];
+        long cap = linkedTotals()[1];
         return cap > 0 ? (int) Math.min(Integer.MAX_VALUE, cap) : Integer.MAX_VALUE;
     }
 
-    /** Заряд и ёмкость хранилищ у связанных интерфейсов. */
-    private long[] totals() {
+    /** Заряд и ёмкость хранилищ у связанных интерфейсов (настоящие, без условной ёмкости). */
+    @Override
+    public long[] linkedTotals() {
         return linked.totals(IEnergyStorage::getEnergyStored, IEnergyStorage::getMaxEnergyStored);
     }
 
