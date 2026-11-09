@@ -25,7 +25,7 @@ import java.util.Optional;
  *   "entrance": {"x": 0, "z": 0, "side": "south"},   // выход, которым помещение пристраивается к узлу
  *   "exits": [{"x": 0, "z": 0, "side": "north"}],    // остальные выходы; "floor": 1 — на втором этаже
  *   "control_block": [11, 0, 11],            // необязательно; блок управления (y = 0 — пол нижнего этажа)
- *   "removable": [[3, 2, 5], [3, 2, 5, 1], "minecraft:player_head{profile:{name:\"MHF_Question\"}}"],
+ *   "removable": [[3, 2, 5], [3, 2, 5, 1], "minecraft:player_head{SkullOwner:{Name:\"MHF_Question\"}}"],
  *                                            // необязательно; блоки, которые уходят вместе с помещением, что бы в них
  *                                            // ни было: места (x, y, z в шаблоне и этаж, по умолчанию 0) или описания
  *                                            // блоков (BlockMatcher) — любой такой блок в помещении

@@ -71,7 +71,7 @@ public final class TardisRoomsConfig {
                         "  \"#minecraft:banners\"           - blocks with the tag",
                         "  \"mekanism:*_cable\", \"*:*_sign\" - block ids where * is any text (without a namespace: minecraft)",
                         "  \"@mekanism\"                    - every block of the mod (alternatively: \"mekanism:*\")",
-                        "  \"minecraft:player_head{profile:{name:\\\"MHF_Question\\\"}}\", \"#minecraft:candles[lit=false]\"",
+                        "  \"minecraft:player_head{SkullOwner:{Name:\\\"MHF_Question\\\"}}\", \"#minecraft:candles[lit=false]\"",
                         "                                  - as in /execute if block: block states and data (data matches partially)",
                         "",
                         "WARNING: anything in these blocks is lost together with the room. Don't add blocks where players keep things;",

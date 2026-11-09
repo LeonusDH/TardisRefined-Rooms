@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  * <ul>
  *   <li>{@code @mekanism} — все блоки мода (то же, что {@code mekanism:*});</li>
  *   <li>{@code mekanism:*_cable}, {@code *:*_sign} — id с {@code *} на месте любых символов;</li>
- *   <li>{@code minecraft:lectern}, {@code #minecraft:banners}, {@code minecraft:player_head{profile:{name:"MHF_Question"}}},
+ *   <li>{@code minecraft:lectern}, {@code #minecraft:banners}, {@code minecraft:player_head{SkullOwner:{Name:"MHF_Question"}}},
  *       {@code #minecraft:candles[lit=false]} — как в {@code /execute if block}: блок или тег, по желанию свойства
  *       и данные (данные сравниваются частично).</li>
  * </ul>

@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
  * ({@link ForwardingStorage}) — то, что видят трубы: поданное сразу уходит соседям связанных интерфейсов.
  */
 public final class FabricInterfaceTransport implements InterfaceTransport {
-    /** За одну операцию грани: до стопки предметов и до 16 вёдер жидкости (как на NeoForge). */
+    /** За одну операцию грани: до стопки предметов и до 16 вёдер жидкости (как на Forge). */
     static final long ITEMS_PER_OP = 64, FLUID_PER_OP = FluidConstants.BUCKET * 16;
 
     /** Части встроенных видов на Fabric по id вида (для {@link BuiltinKinds#plugin}); null — у вида здесь нет части. */
