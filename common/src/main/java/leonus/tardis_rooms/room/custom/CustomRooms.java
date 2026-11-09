@@ -158,7 +158,7 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
         });
         for (String pattern : def.patterns()) {
             try {
-                BlockMatcher.parse(pattern);
+                BlockMatcher.check(pattern);
             } catch (IllegalArgumentException e) {
                 problems.add("removable \"" + pattern + "\": " + e.getMessage());
             }

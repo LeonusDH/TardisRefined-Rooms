@@ -29,8 +29,8 @@ Both take the same strings:
 
 ## Mistakes
 
-- In a datapack, a wrong entry is reported in the server log when datapacks load, as `Datapack room <id>: removable "...": <reason>`, and the room is skipped.
-- In `removable_with_room.json`, a wrong entry is skipped with a warning in the log, `tardis_rooms/removable_with_room.json: skipping ...`; the rest still works. If the file itself can't be read (broken JSON), the error goes to the log and the default list is used until the file is fixed.
+- In a datapack, a wrongly written entry is reported in the server log when datapacks load, as `Datapack room <id>: removable "...": <reason>`, and the room is skipped. Tags aren't loaded yet at that moment, so a tag that doesn't exist is reported later, the first time the room is checked: `Room <n> (<id>): removable: skipping ...`.
+- In `removable_with_room.json`, entries are checked the first time they are needed, once tags are loaded. A wrong entry is skipped with a warning in the log, `tardis_rooms/removable_with_room.json: skipping ...`; the rest still works. If the file itself can't be read (broken JSON), the error goes to the log and the default list is used until the file is fixed.
 
 ## Be careful
 

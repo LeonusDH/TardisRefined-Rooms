@@ -46,6 +46,16 @@ class RemovableBlocksTest {
     }
 
     @Test
+    void datapackCheckDoesNotNeedTags() {
+        BlockMatcher.check("#minecraft:banners");
+        BlockMatcher.check("#minecraft:candles[lit=false]");
+        BlockMatcher.check("#mymod:decor{a:1}");
+        BlockMatcher.check("@mekanism");
+        assertThrows(IllegalArgumentException.class, () -> BlockMatcher.check("#Bad Tag!"));
+        assertThrows(IllegalArgumentException.class, () -> BlockMatcher.check("#minecraft:banners[lit=false]junk"));
+    }
+
+    @Test
     void fileFormat() {
         assertEquals(List.of("@mekanism", "#minecraft:banners"),
                 RemovableBlocks.entries("{\"_comment\": \"x\", \"blocks\": [\"@mekanism\", \"#minecraft:banners\"]}"));

@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.room;
 
+import leonus.tardis_rooms.TardisRooms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -48,9 +49,13 @@ public final class ModuleRegistry extends SavedData {
         public List<String> removableMatch = List.of();
         private List<BlockMatcher> matchers;
 
-        /** {@link #removableMatch}, разобранные (неправильные — пропущены: при загрузке датапака они уже отсеяны). */
+        /** {@link #removableMatch}, разобранные при первом использовании (неправильные — в лог и пропущены). */
         public List<BlockMatcher> matchers() {
-            if (matchers == null) matchers = RemovableBlocks.parse(removableMatch).matchers();
+            if (matchers == null) {
+                RemovableBlocks.Parsed p = RemovableBlocks.parse(removableMatch);
+                for (String b : p.bad()) TardisRooms.LOGGER.warn("Room {} ({}): removable: skipping {}", id, pieceId, b);
+                matchers = p.matchers();
+            }
             return matchers;
         }
 

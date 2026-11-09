@@ -36,7 +36,10 @@ public final class BlockMatcher {
         this.predicate = predicate;
     }
 
-    /** Разобрать строку. Неправильная — {@link IllegalArgumentException} с причиной. */
+    /**
+     * Разобрать строку. Неправильная — {@link IllegalArgumentException} с причиной. Записи с тегами разбирать только
+     * после загрузки тегов (не во время загрузки датапаков): иначе тег окажется «неизвестным».
+     */
     public static BlockMatcher parse(String raw) {
         String s = raw.trim();
         if (s.isEmpty()) throw new IllegalArgumentException("empty entry");
@@ -69,6 +72,22 @@ public final class BlockMatcher {
         } catch (CommandSyntaxException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
+    }
+
+    /**
+     * Проверка записи при загрузке датапака. Теги в этот момент ещё не загружены, поэтому у записи с {@code #}
+     * проверяется только сама запись, а есть ли такой тег, выяснится при первом использовании ({@link #parse}).
+     */
+    public static void check(String raw) {
+        String s = raw.trim();
+        if (!s.startsWith("#")) {
+            parse(s);
+            return;
+        }
+        int end = s.length();
+        for (char c : new char[]{'[', '{'}) { int i = s.indexOf(c); if (i >= 0) end = Math.min(end, i); }
+        if (ResourceLocation.tryParse(s.substring(1, end)) == null) throw new IllegalArgumentException("bad tag id in \"" + s + "\"");
+        if (end < s.length() && !(s.endsWith("]") || s.endsWith("}"))) throw new IllegalArgumentException("unexpected text after the tag in \"" + s + "\"");
     }
 
     /** Подходит ли блок {@code state} в {@code pos}. */

@@ -23,8 +23,9 @@ import java.util.List;
  * Блоки, которые никогда не мешают удалить помещение и уходят вместе с ним, что бы в них ни было, — из отдельного
  * файла {@code config/tardis_rooms/removable_with_room.json} (строки — см. {@link BlockMatcher}). Отдельно от
  * основных настроек: сборке проще дописать свои моды. Файла нет — создаётся со списком по умолчанию. Читается
- * при загрузке датапаков ({@link #reload}): при запуске сервера и по /reload. Неправильные строки пропускаются
- * с предупреждением в логе.
+ * при загрузке датапаков ({@link #reload}): при запуске сервера и по /reload. Разбираются строки при первом
+ * использовании: во время загрузки датапаков теги ещё не загружены. Неправильные строки пропускаются с
+ * предупреждением в логе.
  */
 public final class RemovableBlocks {
     public static final String FILE = TardisRooms.MODID + "/removable_with_room.json";
@@ -83,6 +84,8 @@ public final class RemovableBlocks {
         return GSON.toJson(o) + "\n";
     }
 
+    /** Строки из файла (null — ещё не читали) и разобранные из них (null — ещё не разбирали). */
+    private static volatile List<String> entries;
     private static volatile List<BlockMatcher> matchers;
 
     /** Перечитать файл (при загрузке датапаков: блоки всех модов уже зарегистрированы). */
@@ -100,15 +103,18 @@ public final class RemovableBlocks {
             TardisRooms.LOGGER.error("Could not read {}: {}. Using the default list until it is fixed.", file, e.getMessage());
             list = DEFAULT;
         }
-        Parsed p = parse(list);
-        for (String b : p.bad()) TardisRooms.LOGGER.warn("{}: skipping {}", FILE, b);
-        matchers = p.matchers();
+        entries = List.copyOf(list);
+        matchers = null; // разберём при первом использовании, когда загрузятся теги
     }
 
     /** Уходит ли этот блок вместе с помещением, что бы в нём ни было. */
     public static boolean matches(ServerLevel level, BlockPos pos, BlockState state) {
         List<BlockMatcher> m = matchers;
-        if (m == null) matchers = m = parse(DEFAULT).matchers(); // файл ещё не читали
+        if (m == null) {
+            Parsed p = parse(entries != null ? entries : DEFAULT);
+            for (String b : p.bad()) TardisRooms.LOGGER.warn("{}: skipping {}", FILE, b);
+            matchers = m = p.matchers();
+        }
         for (BlockMatcher x : m) if (x.test(level, pos, state)) return true;
         return false;
     }
