@@ -80,4 +80,7 @@ public final class FabricGameTests {
 
     @GameTest(template = TEMPLATE)
     public static void roomDoubleChestIsOneTarget(GameTestHelper h) { RoomGameTests.doubleChestIsOneTarget(h); }
+
+    @GameTest(template = TEMPLATE)
+    public static void roomRemovableTagIgnored(GameTestHelper h) { RoomGameTests.removableTagIgnored(h); }
 }

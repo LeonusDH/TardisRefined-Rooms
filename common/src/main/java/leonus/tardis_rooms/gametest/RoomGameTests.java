@@ -147,4 +147,17 @@ public final class RoomGameTests {
         h.assertTrue(width > 1.5, "рамка двойного сундука шириной " + width);
         h.succeed();
     }
+
+    /** Блоки из метки removable_with_room не мешают, даже поставленные после роста; интерфейс — всё равно мешает. */
+    public static void removableTagIgnored(GameTestHelper h) {
+        Map<Long, Integer> template = RoomBlockEntities.fingerprint(h.getLevel(), box(h));
+        h.setBlock(CHEST, Blocks.OAK_SIGN);
+        h.setBlock(LECTERN, Blocks.WHITE_BANNER);
+        h.assertTrue(h.getBlockState(CHEST).is(RoomBlockEntities.REMOVABLE), "табличка не в метке");
+        expect(h, blockers(h, template));
+        expect(h, blockers(h, null));
+        h.setBlock(EXTRA, TRoomsBlocks.INTERFACE.get());
+        expect(h, blockers(h, template), EXTRA);
+        h.succeed();
+    }
 }

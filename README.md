@@ -11,7 +11,9 @@ An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Mine
 - The interior sits on a fixed grid of modules across five floors: the hub floor, three below it and one above.
 - **Room Growth Nodes** sit in the passages. Right-click one with the sonic screwdriver to open a catalogue of rooms and corridors. Pick one and the TARDIS grows it behind the wall. Growing is free.
 - The catalogue shows a top-down plan of each option and a **floor map** of what's already taken: built rooms, the hub, zones where nothing can be built, and where the new space would go.
-- Every room has a **Room Control Block**. Use the screwdriver on it to replace or remove the room. A room is never removed while it still has your things inside (containers or machines you placed or filled), or if other rooms connect through it. Blocks that came with the room itself, such as an empty lectern in a datapack room, don't count as long as nobody has touched them.
+- Every room has a **Room Control Block**. Use the screwdriver on it to replace or remove the room. A room can't be removed if other rooms connect through it.
+- Your things inside also keep a room from being removed or replaced: containers or machines you placed or filled. Blocks that came with the room itself, such as an empty lectern in a datapack room, don't count as long as nobody has touched them. The addon tells you in chat which block is in the way and where, and outlines the blocks in the way through walls for 15 seconds. Click the message to outline them again.
+- You can still remove such a room together with everything in it: the removal window lists what is in the way and unlocks **Remove all** after a 10-second countdown. Those blocks and everything in them are lost.
 - Where a passage leads nowhere, a **Passage Seal** closes it. When a neighbouring space is free, the seal becomes a new growth node.
 - Datapacks can add their own rooms, and any built room can be exported as one. See [Custom rooms from datapacks](#custom-rooms-from-datapacks).
 
@@ -104,6 +106,19 @@ The passages at 8–10 are not centred in the wall, so when a room is turned to 
 A two-level room grows upwards from the node's level, so it can't be grown from the top level. On the top level only 18 blocks of height are available.
 
 Problems are reported in the server log when datapacks load, one line per problem, starting with `Datapack room <id>:`. A room with problems is skipped.
+
+### Blocks removed with a room
+
+Blocks in the `tardis_rooms:removable_with_room` block tag never keep a room from being removed: they go with the room, whatever is in them. By default the tag holds signs, banners and heads. A datapack can add more, for example decorative blocks of your own rooms that players are not expected to fill:
+
+```json
+// data/tardis_rooms/tags/block/removable_with_room.json
+{
+  "values": ["mymod:display_shelf", "#mymod:decorations"]
+}
+```
+
+Anything in such a block is lost together with the room, so don't add blocks where players keep things.
 
 ### Exporting a room
 
