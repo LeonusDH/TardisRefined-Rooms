@@ -39,25 +39,20 @@ final class ForwardingStorage<T> implements Storage<T> {
     /** Для поиска хранилищ: null — вид выключен (трубы не подключатся). */
     Storage<T> storage() { return be.enabled(kind) ? this : null; }
 
-    /**
-     * {сколько лежит, сколько влезает} в хранилищах, которые интерфейс отдаёт на выход (их видят трубы и показывает
-     * Jade, см. {@link #iterator()}): у связанных интерфейсов со входом, кроме граней «вставлять».
-     */
+    /** {сколько лежит, сколько влезает} в хранилищах у связанных интерфейсов. */
     long[] linkedTotals() {
-        return supportsExtraction() ? linked.totals(Pick.FROM, ForwardingStorage::amount, ForwardingStorage::capacity) : new long[2];
+        return linked.totals(ForwardingStorage::amount, ForwardingStorage::capacity);
     }
-
-    // Хранилища, из которых забирать нельзя, iterator() пропускает — пропускаем и здесь.
 
     private static <V> long amount(Storage<V> s) {
         long n = 0;
-        if (s.supportsExtraction()) for (StorageView<V> v : s) n += v.getAmount();
+        for (StorageView<V> v : s) n += v.getAmount();
         return n;
     }
 
     private static <V> long capacity(Storage<V> s) {
         long n = 0;
-        if (s.supportsExtraction()) for (StorageView<V> v : s) n += v.getCapacity();
+        for (StorageView<V> v : s) n += v.getCapacity();
         return n;
     }
 

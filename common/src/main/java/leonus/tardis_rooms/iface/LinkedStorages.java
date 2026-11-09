@@ -97,16 +97,11 @@ public final class LinkedStorages<T> {
      * Под защитой от повторного входа: чужое хранилище, отвечая, может спросить интерфейс, и счёт пошёл бы по кругу.
      */
     public long[] totals(ToLongFunction<T> amount, ToLongFunction<T> capacity) {
-        return totals(Pick.ALL, amount, capacity);
-    }
-
-    /** То же, но только по хранилищам {@code pick} (например, только те, откуда можно забрать). */
-    public long[] totals(Pick pick, ToLongFunction<T> amount, ToLongFunction<T> capacity) {
         long[] out = new long[2];
         if (InterfaceNetwork.depth > 0) return out;
         InterfaceNetwork.depth++;
         try {
-            for (T h : get(pick)) {
+            for (T h : get(Pick.ALL)) {
                 out[0] = LongMath.saturatedAdd(out[0], amount.applyAsLong(h));
                 out[1] = LongMath.saturatedAdd(out[1], capacity.applyAsLong(h));
             }

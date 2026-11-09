@@ -34,13 +34,10 @@ final class ItemView implements IItemHandler, KindPart, LinkedTotals {
     /** Для возможности блока: null — вид выключен (трубы не подключатся). */
     IItemHandler capability() { return be.enabled(kind) ? this : null; }
 
-    /**
-     * Сколько предметов и места в хранилищах, которые интерфейс отдаёт на выход (их видят трубы и показывает Jade):
-     * у связанных интерфейсов со входом, кроме граней «вставлять».
-     */
+    /** Сколько предметов в хранилищах у связанных интерфейсов и сколько в них места. */
     @Override
     public long[] linkedTotals() {
-        return be.canOut(kind) ? linked.totals(Pick.FROM, ItemView::count, ItemView::room) : new long[2];
+        return linked.totals(ItemView::count, ItemView::room);
     }
 
     private static long count(IItemHandler h) {
