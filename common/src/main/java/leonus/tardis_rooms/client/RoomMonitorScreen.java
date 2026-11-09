@@ -82,6 +82,14 @@ public abstract class RoomMonitorScreen extends MonitorOS {
     protected int rightColumn() { return (width + FRAME_W) / 2 + 4; }
 
     /** Верх колонок кнопок — на уровне экрана монитора. */
+    /** Квадратная кнопка 20×20 со значком в точке (x, y); подсказка — заголовок (золотым) и пояснение. */
+    static SpriteIconButton iconButton(int x, int y, ResourceLocation icon, MutableComponent title, MutableComponent hint, Runnable onPress) {
+        SpriteIconButton b = SpriteIconButton.builder(title, btn -> onPress.run(), true).width(20).sprite(icon, 20, 20).build();
+        b.setPosition(x, y);
+        b.setTooltip(Tooltip.create(title.copy().withStyle(ChatFormatting.GOLD).append("\n").append(hint.withStyle(ChatFormatting.GRAY))));
+        return b;
+    }
+
     protected int columnTop() { return (height - monitorHeight) / 2 + 2; }
 
     /**
@@ -89,9 +97,7 @@ public abstract class RoomMonitorScreen extends MonitorOS {
      * Монитор TR рисует свои виджеты только в пределах экрана монитора, поэтому эти рисуем сами.
      */
     protected int sideButton(int x, int y, ResourceLocation icon, MutableComponent title, MutableComponent hint, Runnable onPress) {
-        SpriteIconButton b = SpriteIconButton.builder(title, btn -> onPress.run(), true).width(20).sprite(icon, 20, 20).build();
-        b.setPosition(x, y);
-        b.setTooltip(Tooltip.create(title.copy().withStyle(ChatFormatting.GOLD).append("\n").append(hint.withStyle(ChatFormatting.GRAY))));
+        SpriteIconButton b = iconButton(x, y, icon, title, hint, onPress);
         addWidget(b);
         sideButtons.add(b);
         lastButton = b;

@@ -109,16 +109,16 @@ public final class MekanismCompat {
         }
 
         /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
-        private List<Object[]> filled() {
-            List<Object[]> out = new ArrayList<>();
+        private List<HandlerSlot<IChemicalHandler>> filled() {
+            List<HandlerSlot<IChemicalHandler>> out = new ArrayList<>();
             for (IChemicalHandler h : sources())
-                for (int t = 0; t < h.getChemicalTanks(); t++) if (!h.getChemicalInTank(t).isEmpty()) out.add(new Object[]{h, t});
+                for (int t = 0; t < h.getChemicalTanks(); t++) if (!h.getChemicalInTank(t).isEmpty()) out.add(new HandlerSlot<>(h, t));
             return out;
         }
 
-        private Object[] locate(int tank) {
+        private HandlerSlot<IChemicalHandler> locate(int tank) {
             if (tank < 0) return null;
-            List<Object[]> f = filled();
+            List<HandlerSlot<IChemicalHandler>> f = filled();
             return tank < f.size() ? f.get(tank) : null;
         }
 
@@ -129,8 +129,8 @@ public final class MekanismCompat {
 
         @Override
         public ChemicalStack getChemicalInTank(int tank) {
-            Object[] l = locate(tank);
-            return l == null ? ChemicalStack.EMPTY : ((IChemicalHandler) l[0]).getChemicalInTank((int) l[1]);
+            HandlerSlot<IChemicalHandler> l = locate(tank);
+            return l == null ? ChemicalStack.EMPTY : l.from().getChemicalInTank(l.index());
         }
 
         @Override
@@ -140,8 +140,8 @@ public final class MekanismCompat {
 
         @Override
         public long getChemicalTankCapacity(int tank) {
-            Object[] l = locate(tank);
-            return l == null ? 0 : ((IChemicalHandler) l[0]).getChemicalTankCapacity((int) l[1]);
+            HandlerSlot<IChemicalHandler> l = locate(tank);
+            return l == null ? 0 : l.from().getChemicalTankCapacity(l.index());
         }
 
         @Override
@@ -174,11 +174,11 @@ public final class MekanismCompat {
         @Override
         public ChemicalStack extractChemical(int tank, long amount, Action action) {
             if (amount <= 0 || InterfaceNetwork.depth > 0) return ChemicalStack.EMPTY;
-            Object[] l = locate(tank);
+            HandlerSlot<IChemicalHandler> l = locate(tank);
             if (l == null) return ChemicalStack.EMPTY;
             InterfaceNetwork.depth++;
             try {
-                return ((IChemicalHandler) l[0]).extractChemical((int) l[1], amount, action);
+                return l.from().extractChemical(l.index(), amount, action);
             } finally {
                 InterfaceNetwork.depth--;
             }

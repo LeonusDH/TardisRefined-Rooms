@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.protocol.Packet;
@@ -127,6 +128,7 @@ public class InterfaceBlockEntity extends BlockEntity {
     private void changed() {
         setChanged();
         if (level != null && !level.isClientSide()) {
+            InterfaceNetwork.version++;
             transport.invalidate();
             for (KindPart p : parts) if (p != null) p.invalidate();
             BlockState s = getBlockState();
@@ -196,13 +198,14 @@ public class InterfaceBlockEntity extends BlockEntity {
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, InterfaceBlockEntity be) {
-        boolean periodic = (level.getGameTime() + pos.asLong()) % CHECK_INTERVAL == 0;
-        if (be.loadPending || periodic) {
+        // Сдвиг на позицию — чтобы интерфейсы не проверялись все в один и тот же тик.
+        long t = level.getGameTime() + pos.asLong();
+        if (be.loadPending || t % CHECK_INTERVAL == 0) {
             be.loadPending = false;
             be.refresh();
             for (KindPart p : be.parts) if (p != null) p.tick();
         }
-        if (be.data.faces() != 0 && (level.getGameTime() + pos.asLong()) % FACE_INTERVAL == 0) be.tickFaces();
+        if (be.data.faces() != 0 && t % FACE_INTERVAL == 0) be.tickFaces();
     }
 
     // ---------- грани «вставлять» / «забирать» ----------
@@ -300,7 +303,7 @@ public class InterfaceBlockEntity extends BlockEntity {
         status = Status.of(tag.getByte("status"));
         peers = tag.getInt("peers");
         ResourceLocation t = tag.contains("in_tardis") ? ResourceLocation.tryParse(tag.getString("in_tardis")) : null;
-        if (joinedKey == null) tardis = t == null ? null : ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, t);
+        if (joinedKey == null) tardis = t == null ? null : ResourceKey.create(Registries.DIMENSION, t);
     }
 
     @Override

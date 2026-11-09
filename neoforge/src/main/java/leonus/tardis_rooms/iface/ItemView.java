@@ -77,21 +77,22 @@ final class ItemView implements IItemHandler, KindPart {
         return n;
     }
 
-    /** Источник и номер слота в нём для слота {@code slot}, или null (приёмный слот / нет такого). */
-    private Object[] locate(int slot) {
+    /** Где на самом деле лежит слот {@code slot}, или null (приёмный слот / нет такого). */
+    private HandlerSlot<IItemHandler> locate(int slot) {
         int s = slot - inSlots();
         if (s < 0) return null;
         for (IItemHandler h : sources()) {
-            if (s < h.getSlots()) return new Object[]{h, s};
-            s -= h.getSlots();
+            int n = h.getSlots();
+            if (s < n) return new HandlerSlot<>(h, s);
+            s -= n;
         }
         return null;
     }
 
     @Override
     public ItemStack getStackInSlot(int slot) {
-        Object[] l = locate(slot);
-        return l == null ? ItemStack.EMPTY : ((IItemHandler) l[0]).getStackInSlot((int) l[1]);
+        HandlerSlot<IItemHandler> l = locate(slot);
+        return l == null ? ItemStack.EMPTY : l.from().getStackInSlot(l.index());
     }
 
     @Override
@@ -113,11 +114,11 @@ final class ItemView implements IItemHandler, KindPart {
     @Override
     public ItemStack extractItem(int slot, int amount, boolean simulate) {
         if (amount <= 0 || InterfaceNetwork.depth > 0) return ItemStack.EMPTY;
-        Object[] l = locate(slot);
+        HandlerSlot<IItemHandler> l = locate(slot);
         if (l == null) return ItemStack.EMPTY;
         InterfaceNetwork.depth++;
         try {
-            return ((IItemHandler) l[0]).extractItem((int) l[1], amount, simulate);
+            return l.from().extractItem(l.index(), amount, simulate);
         } finally {
             InterfaceNetwork.depth--;
         }
@@ -125,8 +126,8 @@ final class ItemView implements IItemHandler, KindPart {
 
     @Override
     public int getSlotLimit(int slot) {
-        Object[] l = locate(slot);
-        return l == null ? 64 : ((IItemHandler) l[0]).getSlotLimit((int) l[1]);
+        HandlerSlot<IItemHandler> l = locate(slot);
+        return l == null ? 64 : l.from().getSlotLimit(l.index());
     }
 
     @Override

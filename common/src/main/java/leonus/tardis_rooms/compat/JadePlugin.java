@@ -1,6 +1,8 @@
 package leonus.tardis_rooms.compat;
 
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.TardisRoomsConfig;
+import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlock;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
@@ -13,6 +15,7 @@ import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -66,7 +69,7 @@ public class JadePlugin implements IWailaPlugin {
         /** Ключи с префиксом: данные с сервера у всех плагинов Jade лежат в одном теге, а «id» и «status» там могут быть заняты. */
         @Override
         public void appendServerData(CompoundTag tag, BlockAccessor accessor) {
-            if (!leonus.tardis_rooms.TardisRoomsConfig.compatJade() || !(accessor.getBlockEntity() instanceof InterfaceBlockEntity be)) return;
+            if (!TardisRoomsConfig.compatJade() || !(accessor.getBlockEntity() instanceof InterfaceBlockEntity be)) return;
             tag.putByte("tardis_rooms_status", (byte) be.status().ordinal());
             tag.putInt("tardis_rooms_id", be.id());
             tag.putInt("tardis_rooms_peers", be.peerCount());
@@ -80,7 +83,7 @@ public class JadePlugin implements IWailaPlugin {
 
         @Override
         public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-            if (!leonus.tardis_rooms.TardisRoomsConfig.compatJade()) return;
+            if (!TardisRoomsConfig.compatJade()) return;
             CompoundTag d = accessor.getServerData();
             if (!d.contains("tardis_rooms_status")) return;
             Status st = Status.of(d.getByte("tardis_rooms_status"));
@@ -91,17 +94,11 @@ public class JadePlugin implements IWailaPlugin {
             int faceBits = d.getInt("tardis_rooms_faces");
             MutableComponent faces = Component.empty();
             boolean first = true;
-            for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-                leonus.tardis_rooms.iface.FaceMode m = InterfaceData.face(faceBits, dir);
-                if (m == leonus.tardis_rooms.iface.FaceMode.DEFAULT) continue;
+            for (Direction dir : Direction.values()) {
+                FaceMode m = InterfaceData.face(faceBits, dir);
+                if (m == FaceMode.DEFAULT) continue;
                 if (!first) faces.append(", ");
-                faces.append(InterfaceTools.faceName(dir).text()).append(": ")
-                        .append(InterfaceTools.faceModeName(m).text()
-                                .withStyle(switch (m) {
-                                    case PUSH -> ChatFormatting.GOLD;
-                                    case PULL -> ChatFormatting.AQUA;
-                                    default -> ChatFormatting.RED;
-                                }));
+                faces.append(InterfaceTools.faceName(dir).text()).append(": ").append(InterfaceTools.faceModeText(m));
                 first = false;
             }
             if (!first) tooltip.add(TRoomsText.JADE_INTERFACE_FACES.text(faces).withStyle(ChatFormatting.GRAY));
@@ -138,6 +135,8 @@ public class JadePlugin implements IWailaPlugin {
 
         @Override
         public @Nullable List<ViewGroup<CompoundTag>> getGroups(Accessor<?> accessor) {
+            // Совместимость с Jade выключена в настройках — не вмешиваемся, показ как у Jade без аддона.
+            if (!TardisRoomsConfig.compatJade()) return null;
             if (accessor.getTarget() instanceof InterfaceBlockEntity be
                     && be.part(BuiltinKinds.energy()) instanceof LinkedTotals t && t.linkedTotals()[1] > 0) return null;
             return List.of();

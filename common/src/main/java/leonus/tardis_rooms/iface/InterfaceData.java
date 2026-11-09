@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBuf;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
+import net.minecraft.core.Direction;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
@@ -117,11 +118,11 @@ public record InterfaceData(int id, Optional<ResourceLocation> tardis, int flow,
     public InterfaceData toggle(TransferKind t) { return new InterfaceData(id, tardis, flow, types ^ t.bit(), faces, otherKinds); }
 
     /** Режим грани (по 2 бита на грань в {@code faces}). */
-    public FaceMode face(net.minecraft.core.Direction d) { return face(faces, d); }
+    public FaceMode face(Direction d) { return face(faces, d); }
 
-    public static FaceMode face(int faces, net.minecraft.core.Direction d) { return FaceMode.of((faces >> (d.get3DDataValue() * 2)) & 3); }
+    public static FaceMode face(int faces, Direction d) { return FaceMode.of((faces >> (d.get3DDataValue() * 2)) & 3); }
 
-    public InterfaceData withFace(net.minecraft.core.Direction d, FaceMode m) {
+    public InterfaceData withFace(Direction d, FaceMode m) {
         int shift = d.get3DDataValue() * 2;
         return new InterfaceData(id, tardis, flow, types, (faces & ~(3 << shift)) | (m.ordinal() << shift), otherKinds);
     }

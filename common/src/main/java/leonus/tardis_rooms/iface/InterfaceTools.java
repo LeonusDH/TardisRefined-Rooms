@@ -77,6 +77,16 @@ public final class InterfaceTools {
         };
     }
 
+    /** Режим грани для показа — своим цветом (меню сторон, Jade). */
+    public static MutableComponent faceModeText(FaceMode m) {
+        return faceModeName(m).text().withStyle(switch (m) {
+            case DEFAULT -> ChatFormatting.GRAY;
+            case PUSH -> ChatFormatting.GOLD;
+            case PULL -> ChatFormatting.AQUA;
+            case DISABLED -> ChatFormatting.RED;
+        });
+    }
+
     public static TRoomsText flowName(Flow f) {
         return switch (f) {
             case IN -> TRoomsText.IFACE_FLOW_IN;

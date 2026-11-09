@@ -53,31 +53,33 @@ final class FluidView implements IFluidHandler, KindPart {
         return n;
     }
 
-    private Object[] locate(int tank) {
+    /** Где на самом деле бак {@code tank}, или null (приёмный бак / нет такого). */
+    private HandlerSlot<IFluidHandler> locate(int tank) {
         int t = tank - inTanks();
         if (t < 0) return null;
         for (IFluidHandler h : sources()) {
-            if (t < h.getTanks()) return new Object[]{h, t};
-            t -= h.getTanks();
+            int n = h.getTanks();
+            if (t < n) return new HandlerSlot<>(h, t);
+            t -= n;
         }
         return null;
     }
 
     @Override
     public FluidStack getFluidInTank(int tank) {
-        Object[] l = locate(tank);
-        return l == null ? FluidStack.EMPTY : ((IFluidHandler) l[0]).getFluidInTank((int) l[1]);
+        HandlerSlot<IFluidHandler> l = locate(tank);
+        return l == null ? FluidStack.EMPTY : l.from().getFluidInTank(l.index());
     }
 
     @Override
     public int getTankCapacity(int tank) {
-        Object[] l = locate(tank);
+        HandlerSlot<IFluidHandler> l = locate(tank);
         // Приёмный бак (всегда пуст — всё сразу уходит дальше) и пустые баки соседей — с ёмкостью 0: Jade такие баки
         // пропускает и не рисует пустыми полосками. Трубы заливают через fill() и сливают через drain(), ёмкость не смотрят;
         // из пустого бака забирать всё равно нечего.
         if (l == null) return 0;
-        IFluidHandler h = (IFluidHandler) l[0];
-        int t = (int) l[1];
+        IFluidHandler h = l.from();
+        int t = l.index();
         return h.getFluidInTank(t).isEmpty() ? 0 : h.getTankCapacity(t);
     }
 

@@ -4,7 +4,9 @@ import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
+import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.lang.TRoomsText;
+import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -15,6 +17,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -39,7 +42,7 @@ public final class RoomGrowth {
         Map<Integer, Map<Long, Boolean>> cache = new HashMap<>();
         Map<ResourceLocation, Fit> out = new HashMap<>();
         Set<Object> before = null; // связность «до» одна на все варианты — считаем раз и только если понадобится
-        for (PieceCatalog.Option o : PieceCatalog.options(node, leonus.tardis_rooms.room.custom.CustomRooms.INSTANCE.infos())) {
+        for (PieceCatalog.Option o : PieceCatalog.options(node, CustomRooms.INSTANCE.infos())) {
             Optional<PieceCatalog.Plan> plan = PieceCatalog.plan(o.id(), node);
             if (plan.isEmpty()) { out.put(o.id(), Fit.OFF_GRID); continue; }
             if (!isFree(level, plan.get(), cache, replacing)) { out.put(o.id(), Fit.BLOCKED); continue; }
@@ -95,7 +98,7 @@ public final class RoomGrowth {
                             BlockPos p = be.getBlockPos();
                             if (p.getX() < ox || p.getX() >= ox + Lattice.MODULE || p.getZ() < oz || p.getZ() >= oz + Lattice.MODULE) continue;
                             if (p.getY() < floor || p.getY() >= floor + Lattice.BAND) continue;
-                            if (be instanceof leonus.tardis_rooms.iface.InterfaceBlockEntity) return true;
+                            if (be instanceof InterfaceBlockEntity) return true;
                             String ns = BuiltInRegistries.BLOCK.getKey(be.getBlockState().getBlock()).getNamespace();
                             if (!ns.equals(TardisRefined.MODID) && !ns.equals(TardisRooms.MODID)) return true;
                         }
@@ -127,10 +130,10 @@ public final class RoomGrowth {
         if (found.isEmpty()) { msg(player, TRoomsText.MSG_INVALID); return; }
         Node node = found.get();
         if (Lattice.isForbidden(level, node.targetX(), node.targetZ(), node.floorY())) { msg(player, TRoomsText.MSG_FORBIDDEN); return; }
-        if (PieceCatalog.options(node, leonus.tardis_rooms.room.custom.CustomRooms.INSTANCE.infos()).stream().noneMatch(o -> o.id().equals(pieceId))) { msg(player, TRoomsText.MSG_UNKNOWN_PIECE); return; }
+        if (PieceCatalog.options(node, CustomRooms.INSTANCE.infos()).stream().noneMatch(o -> o.id().equals(pieceId))) { msg(player, TRoomsText.MSG_UNKNOWN_PIECE); return; }
         Optional<PieceCatalog.Plan> plan = PieceCatalog.plan(pieceId, node);
         if (plan.isEmpty()) {
-            var custom = leonus.tardis_rooms.room.custom.CustomRooms.INSTANCE.get(pieceId);
+            var custom = CustomRooms.INSTANCE.get(pieceId);
             msg(player, custom.isEmpty() ? TRoomsText.MSG_OFF_GRID
                     : custom.get().def().rotatable() || custom.get().def().entrance().side() == node.side().getOpposite()
                     ? TRoomsText.MSG_CUSTOM_NO_HEIGHT : TRoomsText.MSG_CUSTOM_DIRECTION);
@@ -212,7 +215,7 @@ public final class RoomGrowth {
                         for (int z = oz; z < oz + Lattice.MODULE; z++) {
                             mp.set(x, y, z);
                             BlockState s = level.getBlockState(mp);
-                            if (s != stone && !s.is(net.minecraft.world.level.block.Blocks.BEDROCK)) {
+                            if (s != stone && !s.is(Blocks.BEDROCK)) {
                                 if (s.hasBlockEntity()) level.removeBlockEntity(mp); // без высыпания содержимого
                                 // Весь объём всё равно становится камнем: соседям внутри обновлять форму незачем.
                                 level.setBlock(mp, stone, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
@@ -220,9 +223,9 @@ public final class RoomGrowth {
                         }
             }
         }
-        ModuleRegistry.get(level).removePiece(piece);
-        // Проходы соседей, вёдшие в помещение, снова становятся узлами роста.
         ModuleRegistry reg = ModuleRegistry.get(level);
+        reg.removePiece(piece);
+        // Проходы соседей, вёдшие в помещение, снова становятся узлами роста.
         for (Lattice.Edge e : edges) {
             Direction back = e.side().getOpposite();
             // Ниша в стене соседа на месте прохода — не проход, узел туда не ставим.
