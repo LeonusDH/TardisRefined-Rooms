@@ -7,6 +7,9 @@ import java.util.List;
 
 
 public final class TardisRoomsConfig {
+    /** Документация на GitHub — ссылки в комментариях конфигов. */
+    private static final String DOCS = "https://github.com/LeonusDH/TardisRefined-Rooms/blob/main/docs/";
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue DISABLE_PROCEDURAL_ROOMS;
     public static final ModConfigSpec.BooleanValue DEBUG;
@@ -21,54 +24,59 @@ public final class TardisRoomsConfig {
     public static final ModConfigSpec.DoubleValue DOOR_LEVER_CLOSED_ANGLE;
 
     static {
+        // Комментарии конфигов — по-английски: файл пишется один раз на сервере, перевести его под язык игрока нельзя.
+        // По-русски то же описано в docs/configuration.ru.md и docs/block-entries.ru.md.
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
+        // Второй comment() подряд заменил бы первый — ссылка на описание всех параметров идёт в комментарий первого.
         DISABLE_PROCEDURAL_ROOMS = b
-                .comment("Не генерировать процедурные ARS-комнаты и коридоры вокруг интерьера TARDIS.",
-                        "Консольная комната, Око Гармонии и центральный хаб коридоров остаются.",
-                        "Влияет только на ещё не сгенерированные чанки.")
+                .comment("All options: " + DOCS + "configuration.md",
+                        "",
+                        "Don't generate Tardis Refined's procedural ARS rooms and corridors around the TARDIS interior.",
+                        "The console room, the Eye of Harmony and the central corridor hub stay.",
+                        "Affects only chunks that haven't been generated yet.")
                 .define("disableProceduralRooms", true);
         SIMPLIFY_HUB = b
-                .comment("Упростить хаб TR: оставить центр со шлюзом, смотровую Ока и два коротких перехода к узлам роста,",
-                        "а остальные коридоры и комнаты хаба убрать — на их месте растут свои помещения.",
-                        "Делается один раз на ТАРДИС при входе. Если в хабе что-то стоит (сундуки, механизмы, рамки)",
-                        "или хаб не совпадает с шаблонами TR, хаб не трогается.")
+                .comment("Simplify the Tardis Refined hub: keep the airlock centre, the Eye of Harmony viewing chamber and two short",
+                        "passages to growth nodes, and remove the rest of the hub's corridors and rooms to make room for your own.",
+                        "Done once per TARDIS, when a player enters it. If something stands in the hub (chests, machines, item frames)",
+                        "or the hub doesn't match the Tardis Refined templates, the hub is left as it is.")
                 .define("simplifyHub", true);
         DEBUG = b
-                .comment("Отладка: писать в лог подробности работы аддона — кто что пристроил, заменил или удалил,",
-                        "почему действие отклонено, граф связности при удалении и замене, расстановку узлов в хабе.",
-                        "Выключено — в лог попадает только строка о загрузке мода.")
+                .comment("Debug: log details of what the addon does: who grew, replaced or removed what, why an action was refused,",
+                        "the connectivity graph when removing or replacing, where nodes were placed in the hub.",
+                        "Off: only the line about the mod loading goes to the log.")
                 .define("debug", false);
-        b.comment("Совместимость с другими модами. Если мода нет, пункт ни на что не влияет.").push("compat");
-        COMPAT_MEKANISM = b.comment("Mekanism: передача химикатов через интерфейс ТАРДИС.").define("mekanism", true);
-        COMPAT_AE2 = b.comment("Applied Energistics 2: сеть ME через интерфейс ТАРДИС и карта памяти для ID.").define("ae2", true);
-        COMPAT_JADE = b.comment("Jade: состояние интерфейса ТАРДИС в подсказке.").define("jade", true);
+        b.comment("Compatibility with other mods. An option does nothing if that mod isn't installed.").push("compat");
+        COMPAT_MEKANISM = b.comment("Mekanism: chemicals through the TARDIS Interface.").define("mekanism", true);
+        COMPAT_AE2 = b.comment("Applied Energistics 2: ME networks through the TARDIS Interface and the Memory Card for IDs.").define("ae2", true);
+        COMPAT_JADE = b.comment("Jade: TARDIS Interface status in the tooltip.").define("jade", true);
         b.pop();
         SPEC = b.build();
 
         ModConfigSpec.Builder c = new ModConfigSpec.Builder();
         DOOR_LEVER_CLOSED_ANGLE = c
-                .comment("Консоль Factory: на сколько градусов поворачивается рычаг двери, когда дверь закрыта.",
-                        "Если рычаг уходит не в ту сторону, поменяй знак. 0 отключает анимацию.")
+                .comment("Factory console: how many degrees the door lever turns when the door is closed.",
+                        "If the lever turns the wrong way, change the sign. 0 turns the animation off.")
                 .defineInRange("doorLeverClosedAngle", 60.0, -180.0, 180.0);
         CLIENT_SPEC = c.build();
 
         ModConfigSpec.Builder r = new ModConfigSpec.Builder();
         REMOVABLE_BLOCKS = r
-                .comment("Блоки, которые не мешают убрать или заменить помещение ТАРДИС и уходят вместе с ним, что бы в них ни было.",
+                .comment("Blocks that never keep a TARDIS room from being removed or replaced and go with it, whatever is in them.",
                         "",
-                        "Записи:",
-                        "  \"minecraft:lectern\"            — блок",
-                        "  \"#minecraft:banners\"           — блоки с тегом",
-                        "  \"mekanism:*_cable\", \"*:*_sign\" — id, где * — любой текст (без пространства имён — minecraft)",
-                        "  \"@mekanism\"                    — все блоки мода (альтернативно: \"mekanism:*\")",
+                        "Entries:",
+                        "  \"minecraft:lectern\"            - a block",
+                        "  \"#minecraft:banners\"           - blocks with the tag",
+                        "  \"mekanism:*_cable\", \"*:*_sign\" - block ids where * is any text (without a namespace: minecraft)",
+                        "  \"@mekanism\"                    - every block of the mod (alternatively: \"mekanism:*\")",
                         "  \"minecraft:player_head{profile:{name:\\\"MHF_Question\\\"}}\", \"#minecraft:candles[lit=false]\"",
-                        "                                  — как в /execute if block: свойства и данные (данные — частично)",
+                        "                                  - as in /execute if block: block states and data (data matches partially)",
                         "",
-                        "ВНИМАНИЕ: всё, что лежит в этих блоках, пропадает вместе с помещением. Не добавляйте блоки, в которых игроки",
-                        "хранят вещи; с \"@мод\" будьте особенно осторожны — у модов техники почти каждый блок что-то хранит.",
-                        "Интерфейс ТАРДИС мешает всегда. Неправильные записи пропускаются с предупреждением в логе.",
-                        "Изменения подхватываются сами, перезапуск не нужен. Помещения из датапаков отмечают такие блоки у себя сами",
-                        "(поле removable в JSON помещения). Подробнее: docs/block-entries.ru.md в репозитории аддона.")
+                        "WARNING: anything in these blocks is lost together with the room. Don't add blocks where players keep things;",
+                        "be especially careful with \"@mod\": in tech mods almost every block holds something.",
+                        "TARDIS Interfaces always count. Wrong entries are skipped with a warning in the log.",
+                        "Changes are picked up without a restart. Datapack rooms mark such blocks for themselves (the removable field",
+                        "of the room JSON). More: " + DOCS + "block-entries.md")
                 .defineListAllowEmpty("blocks", RemovableBlocks.DEFAULT, () -> "", o -> o instanceof String s && !s.isBlank());
         REMOVABLE_SPEC = r.build();
     }
