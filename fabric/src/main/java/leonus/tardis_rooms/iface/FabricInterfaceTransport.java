@@ -33,7 +33,7 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
     }
 
     /** Предметы: хранилище с пересылкой. */
-    static final class ItemsPart implements KindPart {
+    static final class ItemsPart implements KindPart, LinkedTotals {
         final ForwardingStorage<ItemVariant> storage;
 
         ItemsPart(InterfaceBlockEntity be, TransferKind kind) {
@@ -42,6 +42,9 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
 
         @Override
         public void moveFace(Direction face, boolean pull) { storage.moveFace(face, pull, ITEMS_PER_OP); }
+
+        @Override
+        public long[] linkedTotals() { return storage.linkedTotals(); }
     }
 
     /** Жидкости: хранилище с пересылкой. */
