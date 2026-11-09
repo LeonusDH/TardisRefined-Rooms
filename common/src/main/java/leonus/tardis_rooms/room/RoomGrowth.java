@@ -91,8 +91,10 @@ public final class RoomGrowth {
         ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(core);
         if (piece == null) return;
         List<BlockPos> blockers = blockers(level, piece);
-        if (blockers.isEmpty()) msg(player, TRoomsText.MSG_NOTHING_BLOCKS);
-        else BlockerHighlight.show(player, core, blockers, inChat);
+        if (blockers.isEmpty()) {
+            msg(player, TRoomsText.MSG_NOTHING_BLOCKS);
+            BlockerHighlight.clear(player);
+        } else BlockerHighlight.show(player, core, blockers, inChat);
     }
 
     /** Блок-сущности, которые мешают удалить или заменить помещение (см. {@link RoomBlockEntities}); пусто — не мешают. */

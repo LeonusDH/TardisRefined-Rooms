@@ -12,6 +12,7 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -42,8 +43,8 @@ public final class BlockerHighlight {
     /** Больше рамок не рисуем: найти первые и так хватит, а пакет и экран не резиновые. */
     public static final int MAX_BLOCKS = 32;
 
-    /** Мешающий предмет: блок, по которому он назван, и рамка вокруг него (с половинами). */
-    public record Target(BlockPos pos, AABB box) {}
+    /** Мешающий предмет: блок, по которому он назван, его блоки (одна или две половины) и рамка вокруг них. */
+    public record Target(BlockPos pos, List<BlockPos> parts, AABB box) {}
 
     /**
      * Сообщить игроку, что мешает удалить помещение с блоком управления {@code core}, и обвести ближайшие к нему
@@ -69,11 +70,20 @@ public final class BlockerHighlight {
         }
         // В чат: координаты нужны, пока ищешь блок.
         player.displayClientMessage(msg, !inChat);
-        Platform.sendToPlayer(player, new HighlightPayload(near.stream().map(Target::box).toList(), SECONDS));
+        // Клиенту — сами блоки, а не рамки: рамки он собирает заново каждый кадр по тому, что стоит в мире сейчас.
+        Platform.sendToPlayer(player, new HighlightPayload(near.stream().flatMap(t -> t.parts().stream()).toList(), SECONDS));
     }
 
-    /** Мешающие блоки → предметы: половины двойного сундука или кровати — один предмет с общей рамкой. */
-    public static List<Target> group(ServerLevel level, List<BlockPos> blockers) {
+    /** Снять у игрока прежние рамки (мешать перестало). */
+    public static void clear(ServerPlayer player) {
+        Platform.sendToPlayer(player, new HighlightPayload(List.of(), 0));
+    }
+
+    /**
+     * Мешающие блоки → предметы: половины двойного сундука или кровати — один предмет с общей рамкой.
+     * И на сервере, и на клиенте (клиент так пересобирает рамки каждый кадр).
+     */
+    public static List<Target> group(BlockGetter level, List<BlockPos> blockers) {
         Set<BlockPos> done = new HashSet<>();
         List<Target> out = new ArrayList<>();
         for (BlockPos p : blockers) {
@@ -83,9 +93,10 @@ public final class BlockerHighlight {
             BlockPos other = otherHalf(s, p);
             if (other != null && level.getBlockState(other).is(s.getBlock())) {
                 done.add(other);
-                box = box.minmax(box(level, other));
+                out.add(new Target(p, List.of(p, other), box.minmax(box(level, other))));
+            } else {
+                out.add(new Target(p, List.of(p), box));
             }
-            out.add(new Target(p, box));
         }
         return out;
     }
@@ -100,7 +111,7 @@ public final class BlockerHighlight {
     }
 
     /** Рамка блока — по его форме (сундук чуть меньше полного куба); без формы — полный куб. */
-    private static AABB box(ServerLevel level, BlockPos p) {
+    private static AABB box(BlockGetter level, BlockPos p) {
         VoxelShape shape = level.getBlockState(p).getShape(level, p);
         return shape.isEmpty() ? new AABB(p) : shape.bounds().move(p);
     }

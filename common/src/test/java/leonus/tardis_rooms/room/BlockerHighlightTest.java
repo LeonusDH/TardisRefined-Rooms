@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class BlockerHighlightTest {
     private static BlockerHighlight.Target at(int x) {
         BlockPos p = new BlockPos(x, 0, 0);
-        return new BlockerHighlight.Target(p, new AABB(p));
+        return new BlockerHighlight.Target(p, List.of(p), new AABB(p));
     }
 
     @Test
