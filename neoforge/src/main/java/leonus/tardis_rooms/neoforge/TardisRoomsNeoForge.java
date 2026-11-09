@@ -10,6 +10,7 @@ import leonus.tardis_rooms.iface.tardis.TardisInterfaces;
 import leonus.tardis_rooms.network.CustomRoomsPayload;
 import leonus.tardis_rooms.network.FitRequestPayload;
 import leonus.tardis_rooms.network.FitResultPayload;
+import leonus.tardis_rooms.network.HighlightPayload;
 import leonus.tardis_rooms.network.GrowRoomPayload;
 import leonus.tardis_rooms.network.InterfacePayload;
 import leonus.tardis_rooms.network.ManagePayloads;
@@ -106,6 +107,8 @@ public final class TardisRoomsNeoForge {
                 .playToServer(ManagePayloads.Request.TYPE, ManagePayloads.Request.STREAM_CODEC, server(ManagePayloads.Request::handle))
                 .playToClient(ManagePayloads.Info.TYPE, ManagePayloads.Info.STREAM_CODEC, client(ManagePayloads.Info::handle))
                 .playToServer(ManagePayloads.Remove.TYPE, ManagePayloads.Remove.STREAM_CODEC, server(ManagePayloads.Remove::handle))
+                .playToServer(ManagePayloads.ShowBlockers.TYPE, ManagePayloads.ShowBlockers.STREAM_CODEC, server(ManagePayloads.ShowBlockers::handle))
+                .playToClient(HighlightPayload.TYPE, HighlightPayload.STREAM_CODEC, client(HighlightPayload::handle))
                 .playToServer(ManagePayloads.Rename.TYPE, ManagePayloads.Rename.STREAM_CODEC, server(ManagePayloads.Rename::handle))
                 .playToServer(MapPayloads.Request.TYPE, MapPayloads.Request.STREAM_CODEC, server(MapPayloads.Request::handle))
                 .playToClient(MapPayloads.Info.TYPE, MapPayloads.Info.STREAM_CODEC, client(MapPayloads.Info::handle))

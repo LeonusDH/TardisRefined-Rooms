@@ -103,6 +103,15 @@ public class RoomManageScreen extends RoomMonitorScreen {
                 ? TRoomsText.SCREEN_REMOVE_TOOLTIP.text().withStyle(ChatFormatting.BLUE)
                 : Component.translatable(info.problem()).withStyle(ChatFormatting.RED));
         list.children().add(remove);
+        if (TRoomsText.MSG_HAS_CONTAINERS.key().equals(info.problem())) {
+            SelectionListEntry show = new SelectionListEntry(TRoomsText.SCREEN_SHOW_BLOCKERS.text(), e -> {
+                click();
+                Platform.sendToServer(new ManagePayloads.ShowBlockers(core));
+                Minecraft.getInstance().setScreen(null); // закрыть, чтобы рамки было видно
+            }, listLeft());
+            tip(show, TRoomsText.SCREEN_SHOW_BLOCKERS_TOOLTIP.text().withStyle(ChatFormatting.BLUE));
+            list.children().add(show);
+        }
         return list;
     }
 

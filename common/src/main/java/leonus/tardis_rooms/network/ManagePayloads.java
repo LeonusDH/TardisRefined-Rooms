@@ -66,6 +66,19 @@ public final class ManagePayloads {
         }
     }
 
+    /** Клиент → сервер: показать, что мешает удалить помещение (сообщение и подсветка). */
+    public record ShowBlockers(BlockPos core) implements CustomPacketPayload {
+        public static final Type<ShowBlockers> TYPE = new Type<>(rl("manage_show_blockers"));
+        public static final StreamCodec<RegistryFriendlyByteBuf, ShowBlockers> STREAM_CODEC =
+                StreamCodec.composite(BlockPos.STREAM_CODEC, ShowBlockers::core, ShowBlockers::new);
+        @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+        /** Сервер, главный поток. */
+        public static void handle(ShowBlockers r, ServerPlayer player) {
+            RoomGrowth.showBlockers(player, r.core());
+        }
+    }
+
     /** Клиент → сервер: переименовать помещение (пустая строка — убрать название). В ответ — новые сведения. */
     public record Rename(BlockPos core, String name) implements CustomPacketPayload {
         public static final Type<Rename> TYPE = new Type<>(rl("manage_rename"));
