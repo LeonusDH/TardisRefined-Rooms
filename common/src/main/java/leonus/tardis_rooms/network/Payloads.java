@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  */
 public final class Payloads {
     /** Версия протокола: у сервера и клиента должна совпадать. */
-    public static final String VERSION = "9";
+    public static final String VERSION = "10";
 
     /** Пакет: {@code toServer} — с обработчиком на сервере, иначе — на клиенте. */
     public record Entry<T extends Payload>(Payload.Type<T> type, Class<T> cls, StreamCodec<FriendlyByteBuf, T> codec,
@@ -36,6 +36,8 @@ public final class Payloads {
             server(ManagePayloads.Request.TYPE, ManagePayloads.Request.class, ManagePayloads.Request.STREAM_CODEC, ManagePayloads.Request::handle),
             client(ManagePayloads.Info.TYPE, ManagePayloads.Info.class, ManagePayloads.Info.STREAM_CODEC, ManagePayloads.Info::handle),
             server(ManagePayloads.Remove.TYPE, ManagePayloads.Remove.class, ManagePayloads.Remove.STREAM_CODEC, ManagePayloads.Remove::handle),
+            server(ManagePayloads.ShowBlockers.TYPE, ManagePayloads.ShowBlockers.class, ManagePayloads.ShowBlockers.STREAM_CODEC, ManagePayloads.ShowBlockers::handle),
+            client(HighlightPayload.TYPE, HighlightPayload.class, HighlightPayload.STREAM_CODEC, HighlightPayload::handle),
             server(ManagePayloads.Rename.TYPE, ManagePayloads.Rename.class, ManagePayloads.Rename.STREAM_CODEC, ManagePayloads.Rename::handle),
             server(MapPayloads.Request.TYPE, MapPayloads.Request.class, MapPayloads.Request.STREAM_CODEC, MapPayloads.Request::handle),
             client(MapPayloads.Info.TYPE, MapPayloads.Info.class, MapPayloads.Info.STREAM_CODEC, MapPayloads.Info::handle),

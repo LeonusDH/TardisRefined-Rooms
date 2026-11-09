@@ -32,11 +32,18 @@ public final class ByteBufCodecs {
 
     /** {@code codec.apply(ByteBufCodecs.list())} — список таких значений. */
     public static <B extends FriendlyByteBuf, V> Function<StreamCodec<B, V>, StreamCodec<B, List<V>>> list() {
+        return list(Integer.MAX_VALUE);
+    }
+
+    /** То же, но не длиннее {@code max} (длиннее — ошибка при записи и чтении, как в игре на 1.21). */
+    public static <B extends FriendlyByteBuf, V> Function<StreamCodec<B, V>, StreamCodec<B, List<V>>> list(int max) {
         return c -> StreamCodec.of((buf, list) -> {
+            if (list.size() > max) throw new IllegalArgumentException("List too long: " + list.size() + " > " + max);
             buf.writeVarInt(list.size());
             for (V v : list) c.encode(buf, v);
         }, buf -> {
             int n = buf.readVarInt();
+            if (n > max) throw new IllegalArgumentException("List too long: " + n + " > " + max);
             List<V> out = new ArrayList<>(n);
             for (int i = 0; i < n; i++) out.add(c.decode(buf));
             return out;

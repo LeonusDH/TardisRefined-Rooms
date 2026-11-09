@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.kind.KindPart;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
@@ -117,7 +118,11 @@ public class InterfaceBlockEntity extends BlockEntity {
         ServerLevel tl = sl.getServer().getLevel(tardis);
         if (tl == null) return false;
         int id = InterfaceIds.get(tl).allocate(tl);
-        if (id == 0) return false;
+        if (id == 0) {
+            TardisRooms.LOGGER.warn("TARDIS {} has no free interface IDs left", tardis.location());
+            return false;
+        }
+        TardisRooms.debug("Interface at {}: new ID {} in {}", worldPosition.toShortString(), InterfaceData.hex(id), tardis.location());
         setData(data.withId(id, Optional.of(tardis.location())));
         return true;
     }
@@ -166,8 +171,11 @@ public class InterfaceBlockEntity extends BlockEntity {
         transport.remove();
     }
 
-    /** Интерфейс убирают из мира (сломан, заменён) — до того, как блок-сущность уберётся (см. {@link InterfaceBlock}). */
-    void removedFromWorld() {
+    /**
+     * Интерфейс убирают из мира (сломан, заменён, снесён вместе с помещением) — до того, как блок-сущность уберётся
+     * (см. {@link InterfaceBlock}): части видов успевают сообщить связанным, пока связь ещё есть.
+     */
+    public void removedFromWorld() {
         for (KindPart p : parts) if (p != null) p.remove();
     }
 
@@ -260,6 +268,10 @@ public class InterfaceBlockEntity extends BlockEntity {
             else if (data.tardis().isPresent() && !data.tardis().get().equals(t.location())) st = Status.WRONG_TARDIS;
         }
         boolean changedState = st != status || !Objects.equals(t, tardis);
+        if (changedState) {
+            TardisRooms.debug("Interface at {} in {}: {} -> {}{}", worldPosition.toShortString(), level.dimension().location(), status, st,
+                    t != null ? " (TARDIS " + t.location() + ", ID " + InterfaceData.hex(data.id()) + ")" : "");
+        }
         status = st;
         tardis = t;
         InterfaceNetwork.Key key = linkKey();

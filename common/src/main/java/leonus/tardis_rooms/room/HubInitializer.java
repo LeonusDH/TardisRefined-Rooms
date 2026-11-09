@@ -77,8 +77,15 @@ public final class HubInitializer {
         // Хаб другой версии TR (или перестроенный игроком) по координатам из шаблонов не трогаем.
         List<HubPiece> pieces = data.layout == LAYOUT_TR ? loadPieces(level) : List.of();
         boolean known = !pieces.isEmpty() && matchesTemplates(level, pieces);
-        if (data.layout == LAYOUT_TR && !known) TardisRooms.debug("Hub of {} differs from TR templates — left as is", key.location());
-        if (rebuild && known && rebuildSmall(level, pieces)) data.layout = LAYOUT_SMALL;
+        if (data.layout == LAYOUT_TR && !known) {
+            // Не ошибка, но объясняет, почему хаб не упрощён и узлы встали не так: в обычный лог.
+            TardisRooms.LOGGER.info("Hub of {} differs from the Tardis Refined templates (another TR version or rebuilt by hand) — left as is",
+                    key.location());
+        }
+        if (rebuild && known && rebuildSmall(level, pieces)) {
+            data.layout = LAYOUT_SMALL;
+            TardisRooms.LOGGER.info("Hub of {} simplified", key.location());
+        }
         int carved = data.layout == LAYOUT_TR && !data.prepared && known ? carveGaps(level, pieces) : 0;
         int[] placed = sealExits(level);
         data.prepared = true;
@@ -290,7 +297,7 @@ public final class HubInitializer {
     private static boolean rebuildSmall(ServerLevel level, List<HubPiece> pieces) {
         // Уже пристроенные помещения держатся за выходы хаба TR — убрать их коридоры значит отрезать помещения.
         if (!ModuleRegistry.get(level).pieces().isEmpty()) {
-            TardisRooms.debug("Hub of {}: rooms are already built — hub not simplified", level.dimension().location());
+            TardisRooms.LOGGER.info("Hub of {}: rooms are already built — hub not simplified", level.dimension().location());
             return false;
         }
         int lo = Lattice.HUB_FLOOR, hi = Lattice.FLOOR_UPPER - 1;
@@ -303,7 +310,7 @@ public final class HubInitializer {
         checked.add(WEST_ADAPTER); // перезапишется копией — там тоже не должно быть чужого
         for (Box b : checked) {
             if (inUse(level, b, lo, hi, template)) {
-                TardisRooms.debug("Hub of {}: something was left at {} — hub not simplified", level.dimension().location(), b);
+                TardisRooms.LOGGER.info("Hub of {}: something was left at {} — hub not simplified", level.dimension().location(), b);
                 return false;
             }
         }

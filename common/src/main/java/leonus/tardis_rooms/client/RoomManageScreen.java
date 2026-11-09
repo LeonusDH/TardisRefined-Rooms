@@ -11,12 +11,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 import whocraft.tardis_refined.client.screen.components.GenericMonitorSelectionList;
 import whocraft.tardis_refined.client.screen.components.SelectionListEntry;
 import whocraft.tardis_refined.registry.TRSoundRegistry;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /** Экран блока управления: что это за помещение, заменить или удалить. */
 public class RoomManageScreen extends RoomMonitorScreen {
@@ -95,14 +100,26 @@ public class RoomManageScreen extends RoomMonitorScreen {
         }, listLeft());
         tip(replace, TRoomsText.SCREEN_REPLACE_TOOLTIP.text().withStyle(ChatFormatting.BLUE));
         list.children().add(replace);
+        // Мешают только вещи внутри — удалить можно, но через окно подтверждения с отсчётом.
+        boolean force = !info.canRemove() && !info.blockers().isEmpty();
         SelectionListEntry remove = new SelectionListEntry(TRoomsText.SCREEN_REMOVE.text(), e -> {
             click();
-            switchScreenToRight(new RoomConfirmScreen(this));
-        }, listLeft(), info.canRemove());
-        tip(remove, info.canRemove()
-                ? TRoomsText.SCREEN_REMOVE_TOOLTIP.text().withStyle(ChatFormatting.BLUE)
+            switchScreenToRight(force ? new RoomForceScreen(this) : new RoomConfirmScreen(this));
+        }, listLeft(), info.canRemove() || force);
+        tip(remove, info.canRemove() ? TRoomsText.SCREEN_REMOVE_TOOLTIP.text().withStyle(ChatFormatting.BLUE)
+                : force ? Component.translatable(info.problem()).withStyle(ChatFormatting.RED).append("\n")
+                        .append(TRoomsText.SCREEN_REMOVE_FORCE_TOOLTIP.text().withStyle(ChatFormatting.GOLD))
                 : Component.translatable(info.problem()).withStyle(ChatFormatting.RED));
         list.children().add(remove);
+        if (TRoomsText.MSG_HAS_CONTAINERS.key().equals(info.problem())) {
+            SelectionListEntry show = new SelectionListEntry(TRoomsText.SCREEN_SHOW_BLOCKERS.text(), e -> {
+                click();
+                Platform.sendToServer(new ManagePayloads.ShowBlockers(core, false));
+                Minecraft.getInstance().setScreen(null); // закрыть, чтобы рамки было видно
+            }, listLeft());
+            tip(show, TRoomsText.SCREEN_SHOW_BLOCKERS_TOOLTIP.text().withStyle(ChatFormatting.BLUE));
+            list.children().add(show);
+        }
         return list;
     }
 
@@ -185,10 +202,92 @@ public class RoomManageScreen extends RoomMonitorScreen {
             list.children().add(new SelectionListEntry(TRoomsText.SCREEN_REMOVE_WARNING.text().withStyle(ChatFormatting.GOLD), e -> {}, listLeft(), false));
             SelectionListEntry yes = new SelectionListEntry(TRoomsText.SCREEN_REMOVE_YES.text().withStyle(ChatFormatting.RED), e -> {
                 click();
-                Platform.sendToServer(new ManagePayloads.Remove(parent.core));
+                Platform.sendToServer(new ManagePayloads.Remove(parent.core, false));
                 Minecraft.getInstance().setScreen(null);
             }, listLeft());
             tip(yes, TRoomsText.SCREEN_REMOVE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED));
+            list.children().add(yes);
+            list.children().add(new SelectionListEntry(TRoomsText.SCREEN_REMOVE_NO.text(), e -> {
+                click();
+                switchScreenToLeft(parent);
+            }, listLeft()));
+            return list;
+        }
+    }
+
+    /**
+     * Удаление вместе с тем, что мешает: сколько вещей и каких, предупреждение и кнопка, которая становится нажимаемой
+     * через {@value #WAIT_SECONDS} с. Пока окно открыто, мешающие блоки обведены. Отсчёт проверяет и сервер.
+     */
+    static class RoomForceScreen extends RoomMonitorScreen {
+        static final int WAIT_SECONDS = 10;
+        /** Видов вещей в списке, остальные — одной строкой «и ещё». */
+        private static final int KINDS_SHOWN = 4;
+        private final RoomManageScreen parent;
+        private final long openedAt = System.currentTimeMillis();
+        private int shownLeft = -1;
+        private boolean armed;
+
+        RoomForceScreen(RoomManageScreen parent) {
+            super(TRoomsText.SCREEN_FORCE_TITLE.text(), parent.nodePos, parent.node);
+            this.parent = parent;
+            this.previewNow = parent.previewNow;
+        }
+
+        @Override
+        protected void init() {
+            super.init();
+            monitorButtons(null, () -> switchScreenToLeft(parent));
+            if (!armed) { // init зовётся и при каждом обновлении списка — сервер просим один раз
+                armed = true;
+                Platform.sendToServer(new ManagePayloads.ShowBlockers(parent.core, true));
+            }
+        }
+
+        private int secondsLeft() {
+            long left = WAIT_SECONDS * 1000L - (System.currentTimeMillis() - openedAt);
+            return left <= 0 ? 0 : (int) ((left + 999) / 1000);
+        }
+
+        @Override
+        public void tick() {
+            super.tick();
+            if (secondsLeft() != shownLeft) rebuildWidgets(); // отсчёт на кнопке
+        }
+
+        @Override
+        public ObjectSelectionList<SelectionListEntry> createSelectionList() {
+            GenericMonitorSelectionList<SelectionListEntry> list = newList();
+            Map<ResourceLocation, Integer> kinds = parent.info.blockers();
+            int total = kinds.values().stream().mapToInt(Integer::intValue).sum();
+            SelectionListEntry count = new SelectionListEntry(TRoomsText.SCREEN_FORCE_COUNT.text(total).withStyle(ChatFormatting.GOLD), e -> {}, listLeft(), false);
+            tip(count, Component.translatable(parent.info.problem()).withStyle(ChatFormatting.RED));
+            list.children().add(count);
+            // Виды вещей — по убыванию числа, при равенстве — по id (порядок не прыгает).
+            List<Map.Entry<ResourceLocation, Integer>> sorted = new ArrayList<>(kinds.entrySet());
+            sorted.sort(Map.Entry.<ResourceLocation, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()));
+            for (int i = 0; i < Math.min(KINDS_SHOWN, sorted.size()); i++) {
+                var k = sorted.get(i);
+                Component text = Component.empty().append(BuiltInRegistries.BLOCK.get(k.getKey()).getName()).append(" \u00d7" + k.getValue());
+                SelectionListEntry line = new SelectionListEntry(text.copy().withStyle(ChatFormatting.GRAY), e -> {}, listLeft(), false);
+                tip(line, text);
+                list.children().add(line);
+            }
+            if (sorted.size() > KINDS_SHOWN) {
+                list.children().add(new SelectionListEntry(TRoomsText.SCREEN_FORCE_MORE.text(sorted.size() - KINDS_SHOWN).withStyle(ChatFormatting.GRAY), e -> {}, listLeft(), false));
+            }
+            SelectionListEntry warn = new SelectionListEntry(TRoomsText.SCREEN_FORCE_WARNING.text().withStyle(ChatFormatting.RED), e -> {}, listLeft(), false);
+            tip(warn, TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED));
+            list.children().add(warn);
+            shownLeft = secondsLeft();
+            boolean ready = shownLeft == 0;
+            SelectionListEntry yes = new SelectionListEntry((ready ? TRoomsText.SCREEN_FORCE_YES.text()
+                    : TRoomsText.SCREEN_FORCE_YES_WAIT.text(shownLeft)).withStyle(ChatFormatting.RED), e -> {
+                click();
+                Platform.sendToServer(new ManagePayloads.Remove(parent.core, true));
+                Minecraft.getInstance().setScreen(null);
+            }, listLeft(), ready);
+            tip(yes, TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED));
             list.children().add(yes);
             list.children().add(new SelectionListEntry(TRoomsText.SCREEN_REMOVE_NO.text(), e -> {
                 click();

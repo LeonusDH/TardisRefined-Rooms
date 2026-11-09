@@ -9,7 +9,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Соседи интерфейса одного вида: по кэшу загрузчика на сторону (NeoForge — BlockCapabilityCache, Fabric — BlockApiCache).
+ * Соседи интерфейса одного вида: по кэшу загрузчика на сторону (Forge — свой ForgeInterfaceTransport.CapCache, Fabric — BlockApiCache).
  * Кэш создаётся при первом обращении, только на сервере, и обновляется сам, когда соседа ставят, ломают или меняют.
  * Платформа даёт только, как кэш создать ({@link Factory}) и как спросить у него соседа ({@link Query}).
  */
@@ -40,7 +40,7 @@ public final class SideCaches<T, C> implements LinkedStorages.Sides<T> {
     @Override
     public @Nullable T at(Direction side) {
         if (be.isRemoved()) {
-            // Убранному блоку соседи не нужны (NeoForge к тому же снимает такие кэши с учёта); вернётся в мир — создадим заново.
+            // Убранному блоку соседи не нужны; вернётся в мир — создадим заново.
             caches.clear();
             return null;
         }

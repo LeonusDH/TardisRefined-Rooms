@@ -2,6 +2,7 @@ package leonus.tardis_rooms.forge.gametest;
 
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.gametest.InterfaceGameTests;
+import leonus.tardis_rooms.gametest.RoomGameTests;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -9,7 +10,7 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Регистрация общих игровых тестов на Forge (класс находится по {@link GameTestHolder} только при включённых тестах).
- * Сами тесты — в {@link InterfaceGameTests}. В готовый мод не входит.
+ * Сами тесты — в {@link InterfaceGameTests} и {@link RoomGameTests}. В готовый мод не входит.
  *
  * <p>Без {@code fluidsPull}: на Forge 1.20.1 у ванильного котла нет обработчика жидкостей (его добавил только NeoForge),
  * а других ванильных хранилищ жидкости нет. Жидкости проверяет тот же тест на Fabric.
@@ -57,4 +58,39 @@ public final class ForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void redstoneRelinked(GameTestHelper h) { InterfaceGameTests.redstoneRelinked(h); }
+
+    // ---------- помещения: что мешает удалению ----------
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomTemplateUntouched(GameTestHelper h) { RoomGameTests.templateUntouched(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomTemplateChanged(GameTestHelper h) { RoomGameTests.templateChanged(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomAddedAfterGrowth(GameTestHelper h) { RoomGameTests.addedAfterGrowth(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomReplacedBlock(GameTestHelper h) { RoomGameTests.replacedBlock(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomInterfaceBlocks(GameTestHelper h) { RoomGameTests.interfaceBlocks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomOldRoomByContents(GameTestHelper h) { RoomGameTests.oldRoomByContents(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomFingerprintSurvivesReload(GameTestHelper h) { RoomGameTests.fingerprintSurvivesReload(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomDoubleChestIsOneTarget(GameTestHelper h) { RoomGameTests.doubleChestIsOneTarget(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomRemovableConfigIgnored(GameTestHelper h) { RoomGameTests.removableConfigIgnored(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomRemovableMarkedIgnored(GameTestHelper h) { RoomGameTests.removableMarkedIgnored(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomRemovableDescriptions(GameTestHelper h) { RoomGameTests.removableDescriptions(h); }
 }

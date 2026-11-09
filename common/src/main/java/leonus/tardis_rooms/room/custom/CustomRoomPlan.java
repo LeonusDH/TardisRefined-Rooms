@@ -70,6 +70,21 @@ public final class CustomRoomPlan {
                 .orElse(null);
         int[] coreSpot = core != null ? new int[]{core.getX(), core.getZ()} : null;
 
+        // Отмеченные блоки — в мир так же, как блок управления; попавшие в отражённую полосу у прохода — туда,
+        // куда их перенесёт отражение.
+        Set<BlockPos> removable = new HashSet<>();
+        for (CustomRoom.Mark mark : def.marks()) {
+            if (mark.floor() < 0 || mark.floor() >= floors.size()) continue;
+            BlockPos w = StructureTemplate.transform(mark.pos(), Mirror.NONE, rot, BlockPos.ZERO).offset(dx, floors.get(mark.floor()), dz);
+            int height = room.templates().get(mark.floor()).getSize().getY();
+            for (CustomRoom.Exit e : all) {
+                if (e.floor() != mark.floor() || !flipped(e, rot, dx, dz)) continue;
+                long m = moduleAt(e.x(), e.z(), rot, dx, dz);
+                w = mirroredInDoorway(w, Lattice.keyX(m), Lattice.keyZ(m), rot.rotate(e.side()), floors.get(mark.floor()), height);
+            }
+            removable.add(w);
+        }
+
         StructurePlaceSettings settings = new StructurePlaceSettings().setRotation(rot);
         return Optional.of(new PieceCatalog.Plan(footprint, exits, level -> {
             for (int i = 0; i < floors.size(); i++) {
@@ -82,7 +97,7 @@ public final class CustomRoomPlan {
                     mirrorDoorway(level, Lattice.keyX(m), Lattice.keyZ(m), rot.rotate(e.side()), floors.get(i), height);
                 }
             }
-        }, coreSpot, null, core));
+        }, coreSpot, null, core, Set.copyOf(removable), def.patterns()));
     }
 
     // ---------- проход после поворота ----------
@@ -142,6 +157,17 @@ public final class CustomRoomPlan {
                     }
                 }
             }
+    }
+
+    /** Куда отражение полосы у прохода ({@link #mirrorDoorway}) переносит блок {@code p}; не в полосе — на месте. */
+    static BlockPos mirroredInDoorway(BlockPos p, int mx, int mz, Direction side, int floorY, int height) {
+        Direction inward = side.getOpposite();
+        for (int dy = 0; dy < height; dy++)
+            for (int depth = 0; depth < DOORWAY_DEPTH; depth++)
+                for (int a = DOORWAY_MIN; a <= DOORWAY_MAX; a++)
+                    if (Lattice.openingPos(mx, mz, side, floorY, a, dy).relative(inward, depth).equals(p))
+                        return Lattice.openingPos(mx, mz, side, floorY, DOORWAY_MIN + DOORWAY_MAX - a, dy).relative(inward, depth);
+        return p;
     }
 
     /** Поворот, который переводит сторону {@code from} шаблона в сторону {@code to} мира. */

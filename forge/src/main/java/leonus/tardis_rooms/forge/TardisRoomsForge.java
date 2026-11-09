@@ -45,6 +45,10 @@ public final class TardisRoomsForge {
         }
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, TardisRoomsConfig.SPEC, TardisRooms.COMMON_CONFIG);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, TardisRoomsConfig.CLIENT_SPEC, TardisRooms.CLIENT_CONFIG);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, TardisRoomsConfig.REMOVABLE_SPEC, TardisRooms.REMOVABLE_CONFIG);
+        TardisRooms.compat("Mekanism", "mekanism", TardisRoomsConfig::compatMekanism);
+        TardisRooms.compat("Applied Energistics 2", "ae2", TardisRoomsConfig::compatAE2);
+        TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
         registerEntries(modBus);
         ForgeNetwork.register();
         ForgeEvents.register(MinecraftForge.EVENT_BUS);

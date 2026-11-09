@@ -45,6 +45,11 @@ public final class TardisRoomsFabric implements ModInitializer {
         }
         ForgeConfigRegistry.INSTANCE.register(TardisRooms.MODID, ModConfig.Type.COMMON, TardisRoomsConfig.SPEC, TardisRooms.COMMON_CONFIG);
         ForgeConfigRegistry.INSTANCE.register(TardisRooms.MODID, ModConfig.Type.CLIENT, TardisRoomsConfig.CLIENT_SPEC, TardisRooms.CLIENT_CONFIG);
+        ForgeConfigRegistry.INSTANCE.register(TardisRooms.MODID, ModConfig.Type.COMMON, TardisRoomsConfig.REMOVABLE_SPEC, TardisRooms.REMOVABLE_CONFIG);
+        TardisRooms.compat("Applied Energistics 2", "ae2", TardisRoomsConfig::compatAE2);
+        TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
+        // Энергия на Fabric — только через Team Reborn Energy; своей настройки нет, совместимость всегда включена.
+        TardisRooms.compat("Team Reborn Energy", "team_reborn_energy", () -> true);
         registerEntries();
         registerStorages();
         registerPayloads();

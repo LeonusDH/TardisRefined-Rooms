@@ -85,6 +85,8 @@ public final class AE2Compat {
                 be.data().tardis().ifPresent(t -> data.putString(CARD_TARDIS_KEY, t.toString()));
                 card.setMemoryCardContents(stack, TRoomsBlocks.INTERFACE.get().getDescriptionId(), data);
                 card.notifyUser(player, MemoryCardMessages.SETTINGS_SAVED);
+                TardisRooms.debug("{}: memory card copied ID {} from the interface at {}", TardisRooms.who(player),
+                        InterfaceData.hex(be.id()), be.getBlockPos().toShortString());
             } else {
                 CompoundTag data = card.getData(stack);
                 short freq = data.getShort(CARD_FREQ_KEY);
@@ -93,6 +95,8 @@ public final class AE2Compat {
                     return InteractionResult.SUCCESS;
                 }
                 Optional<ResourceLocation> owner = data.contains(CARD_TARDIS_KEY) ? Optional.ofNullable(ResourceLocation.tryParse(data.getString(CARD_TARDIS_KEY))) : Optional.empty();
+                TardisRooms.debug("{}: memory card pasted ID {} into the interface at {}", TardisRooms.who(player),
+                        InterfaceData.hex(freq & 0xFFFF), be.getBlockPos().toShortString());
                 be.pasteId(freq & 0xFFFF, owner);
                 card.notifyUser(player, MemoryCardMessages.SETTINGS_LOADED);
             }
@@ -222,7 +226,11 @@ public final class AE2Compat {
             for (Iterator<Map.Entry<InterfaceBlockEntity, IGridConnection>> it = conns.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<InterfaceBlockEntity, IGridConnection> e = it.next();
                 if (wanted.contains(e.getKey()) && !e.getKey().isRemoved()) continue;
-                try { e.getValue().destroy(); } catch (Exception ignored) {}
+                try {
+                    e.getValue().destroy();
+                } catch (Exception ex) {
+                    TardisRooms.debug("ME link {} -> {} could not be removed: {}", be.getBlockPos(), e.getKey().getBlockPos(), ex.toString());
+                }
                 it.remove();
             }
         }

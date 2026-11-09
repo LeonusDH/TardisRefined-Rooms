@@ -1,9 +1,11 @@
 package leonus.tardis_rooms.fabric;
 
+import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
+import leonus.tardis_rooms.room.ForceRemoval;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
@@ -55,9 +57,11 @@ final class FabricEvents {
             if (be instanceof InterfaceBlockEntity ibe) ibe.onChunkUnloaded();
         });
         ServerTickEvents.END_SERVER_TICK.register(HubInitializer::onServerTick);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> TardisRooms.onServerStarted());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             HubInitializer.onServerStopped();
             InterfaceNetwork.clear();
+            ForceRemoval.clear();
         });
     }
 

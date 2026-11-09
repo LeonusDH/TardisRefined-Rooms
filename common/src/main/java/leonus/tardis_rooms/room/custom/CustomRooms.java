@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.mixin.StructureTemplateAccessor;
+import leonus.tardis_rooms.room.BlockMatcher;
 import leonus.tardis_rooms.room.Lattice;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -100,6 +101,9 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
                 continue;
             }
             out.put(id, room);
+            CustomRoom d = room.def();
+            TardisRooms.debug("Datapack room {}: {}×{} modules, {} level(s), {} exit(s), group {}, rotatable {}, {} removable place(s), {} removable description(s)",
+                    id, room.width(), room.depth(), d.floors(), d.exits().size() + 1, d.group(), d.rotatable(), d.marks().size(), d.patterns().size());
         }
         List<CustomRoomInfo> list = new ArrayList<>();
         for (Loaded l : out.values()) list.add(CustomRoomInfo.of(l));
@@ -150,6 +154,22 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
             if (p.getX() < 0 || p.getZ() < 0 || p.getX() >= size.getX() || p.getZ() >= size.getZ() || p.getY() < 0 || p.getY() >= templates.get(0).getSize().getY())
                 problems.add("control_block " + p.toShortString() + " is outside the bottom floor's structure");
         });
+        for (String pattern : def.patterns()) {
+            try {
+                BlockMatcher.check(pattern);
+            } catch (IllegalArgumentException e) {
+                problems.add("removable \"" + pattern + "\": " + e.getMessage());
+            }
+        }
+        for (CustomRoom.Mark m : def.marks()) {
+            BlockPos p = m.pos();
+            if (m.floor() < 0 || m.floor() >= templates.size()) {
+                problems.add("removable " + p.toShortString() + ": no floor " + m.floor());
+            } else if (p.getX() < 0 || p.getZ() < 0 || p.getX() >= size.getX() || p.getZ() >= size.getZ() || p.getY() < 0
+                    || p.getY() >= templates.get(m.floor()).getSize().getY()) {
+                problems.add("removable " + p.toShortString() + " is outside the structure of floor " + m.floor());
+            }
+        }
         return problems.isEmpty() ? new Loaded(id, def, w, d, List.copyOf(templates)) : null;
     }
 

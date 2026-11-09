@@ -1,9 +1,11 @@
 package leonus.tardis_rooms.forge;
 
+import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.command.TRoomsCommands;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
+import leonus.tardis_rooms.room.ForceRemoval;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import leonus.tardis_rooms.room.custom.CustomRooms;
@@ -15,6 +17,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 
@@ -33,9 +36,11 @@ final class ForgeEvents {
         bus.addListener((RegisterCommandsEvent e) -> TRoomsCommands.register(e.getDispatcher()));
         bus.addListener((EntityJoinLevelEvent e) -> HubInitializer.onEntityJoin(e.getLevel(), e.getEntity()));
         bus.addListener((TickEvent.ServerTickEvent e) -> { if (e.phase == TickEvent.Phase.END) HubInitializer.onServerTick(e.getServer()); });
+        bus.addListener((ServerStartedEvent e) -> TardisRooms.onServerStarted());
         bus.addListener((ServerStoppedEvent e) -> {
             HubInitializer.onServerStopped();
             InterfaceNetwork.clear();
+            ForceRemoval.clear();
         });
     }
 
