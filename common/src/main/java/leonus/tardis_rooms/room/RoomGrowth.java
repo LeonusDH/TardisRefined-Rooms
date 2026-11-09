@@ -4,12 +4,10 @@ import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
-import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,11 +16,8 @@ import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.vehicle.VehicleEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
-import whocraft.tardis_refined.TardisRefined;
 import whocraft.tardis_refined.registry.TRBlockRegistry;
 
 import java.util.HashMap;
@@ -78,35 +73,13 @@ public final class RoomGrowth {
     /** Почему нельзя удалить (ключ перевода) или null, если можно. */
     public static TRoomsText removalProblem(ServerLevel level, ModuleRegistry.Piece piece) {
         if (!Connectivity.canRemove(level, piece)) return TRoomsText.MSG_CUTS_OFF;
-        if (hasForeignBlockEntities(level, piece)) return TRoomsText.MSG_HAS_CONTAINERS;
+        if (!blockers(level, piece).isEmpty()) return TRoomsText.MSG_HAS_CONTAINERS;
         return null;
     }
 
-    /**
-     * Есть ли внутри чужие блок-сущности (сундуки и т.п.); блоки TR и наши служебные не считаются.
-     * Интерфейс ТАРДИС считается: игрок его поставил, молча замуровывать его вместе с настройками нельзя.
-     */
-    private static boolean hasForeignBlockEntities(ServerLevel level, ModuleRegistry.Piece piece) {
-        for (Map.Entry<Integer, Set<Long>> e : piece.footprint.entrySet()) {
-            int floor = e.getKey();
-            for (long m : e.getValue()) {
-                int ox = Lattice.origin(Lattice.keyX(m)), oz = Lattice.origin(Lattice.keyZ(m));
-                for (int cx = ox >> 4; cx <= (ox + Lattice.MODULE - 1) >> 4; cx++) {
-                    for (int cz = oz >> 4; cz <= (oz + Lattice.MODULE - 1) >> 4; cz++) {
-                        LevelChunk chunk = level.getChunk(cx, cz);
-                        for (BlockEntity be : chunk.getBlockEntities().values()) {
-                            BlockPos p = be.getBlockPos();
-                            if (p.getX() < ox || p.getX() >= ox + Lattice.MODULE || p.getZ() < oz || p.getZ() >= oz + Lattice.MODULE) continue;
-                            if (p.getY() < floor || p.getY() >= floor + Lattice.BAND) continue;
-                            if (be instanceof InterfaceBlockEntity) return true;
-                            String ns = BuiltInRegistries.BLOCK.getKey(be.getBlockState().getBlock()).getNamespace();
-                            if (!ns.equals(TardisRefined.MODID) && !ns.equals(TardisRooms.MODID)) return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+    /** Блок-сущности, которые мешают удалить или заменить помещение (см. {@link RoomBlockEntities}); пусто — не мешают. */
+    public static List<BlockPos> blockers(ServerLevel level, ModuleRegistry.Piece piece) {
+        return RoomBlockEntities.blockers(level, RoomBlockEntities.boxes(piece.footprint), piece.template);
     }
 
     // ---------- рост ----------
@@ -142,7 +115,7 @@ public final class RoomGrowth {
         if (!isFree(level, plan.get(), new HashMap<>(), replacing)) { msg(player, TRoomsText.MSG_OCCUPIED); return; }
         if (replacing != null) {
             if (!Connectivity.canReplace(level, replacing, plan.get())) { msg(player, TRoomsText.MSG_CUTS_OFF_REPLACE); return; }
-            if (hasForeignBlockEntities(level, replacing)) { msg(player, TRoomsText.MSG_HAS_CONTAINERS); return; }
+            if (!blockers(level, replacing).isEmpty()) { msg(player, TRoomsText.MSG_HAS_CONTAINERS); return; }
             if (TardisRoomsConfig.debug()) TardisRooms.debug("Replacing #{}; graph: {}", replacing.id, Connectivity.describe(level));
             demolish(level, replacing);
         }
@@ -150,7 +123,9 @@ public final class RoomGrowth {
         plan.get().build().accept(level);
         Lattice.clearPanel(level, node.mx(), node.mz(), node.side(), node.floorY());
         BlockPos core = placeCore(level, plan.get());
-        reg.addPiece(pieceId, node, plan.get().footprint(), core);
+        // Отпечатки — сразу после постройки: всё, что в помещении сейчас, — его шаблон.
+        Map<Long, Integer> template = RoomBlockEntities.fingerprint(level, RoomBlockEntities.boxes(plan.get().footprint()));
+        reg.addPiece(pieceId, node, plan.get().footprint(), core, template);
         for (Map.Entry<Integer, Set<Long>> e : plan.get().footprint().entrySet()) Lattice.refresh(level, e.getValue(), e.getKey());
         TardisRooms.debug("{} {} {} from module {},{} {} floor {} in {}", player.getGameProfile().getName(),
                 replacing != null ? "replaced with" : "grew", pieceId, node.mx(), node.mz(), node.side(), node.floorY(), level.dimension().location());

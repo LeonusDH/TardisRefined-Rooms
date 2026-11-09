@@ -11,7 +11,7 @@ An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Mine
 - The interior sits on a fixed grid of modules across five floors: the hub floor, three below it and one above.
 - **Room Growth Nodes** sit in the passages. Right-click one with the sonic screwdriver to open a catalogue of rooms and corridors. Pick one and the TARDIS grows it behind the wall. Growing is free.
 - The catalogue shows a top-down plan of each option and a **floor map** of what's already taken: built rooms, the hub, zones where nothing can be built, and where the new space would go.
-- Every room has a **Room Control Block**. Use the screwdriver on it to replace or remove the room. A room is never removed while it still has containers or machines inside, or if other rooms connect through it.
+- Every room has a **Room Control Block**. Use the screwdriver on it to replace or remove the room. A room is never removed while it still has your things inside (containers or machines you placed or filled), or if other rooms connect through it. Blocks that came with the room itself, such as an empty lectern in a datapack room, don't count as long as nobody has touched them.
 - Where a passage leads nowhere, a **Passage Seal** closes it. When a neighbouring space is free, the seal becomes a new growth node.
 - Datapacks can add their own rooms, and any built room can be exported as one. See [Custom rooms from datapacks](#custom-rooms-from-datapacks).
 

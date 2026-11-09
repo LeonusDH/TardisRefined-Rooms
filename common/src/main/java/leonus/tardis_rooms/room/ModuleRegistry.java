@@ -33,6 +33,11 @@ public final class ModuleRegistry extends SavedData {
         public BlockPos core;
         /** Название, данное игроком; null — без названия (показывается тип помещения). */
         public String customName;
+        /**
+         * Отпечатки блок-сущностей шаблона, снятые при росте ({@link RoomBlockEntities#fingerprint}): место → отпечаток.
+         * null — помещение выращено до появления отпечатков (для него запасное правило).
+         */
+        public Map<Long, Integer> template;
 
         Piece(int id, ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core) {
             this.id = id; this.pieceId = pieceId; this.node = node; this.footprint = footprint; this.core = core;
@@ -89,8 +94,9 @@ public final class ModuleRegistry extends SavedData {
         return null;
     }
 
-    public Piece addPiece(ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core) {
+    public Piece addPiece(ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core, Map<Long, Integer> template) {
         Piece p = new Piece(nextId++, pieceId, node, copy(footprint), core);
+        p.template = new HashMap<>(template);
         pieces.put(p.id, p);
         p.footprint.forEach((floor, mods) -> {
             for (long m : mods) owners.computeIfAbsent(floor, x -> new HashMap<>()).put(m, p.id);
@@ -142,6 +148,13 @@ public final class ModuleRegistry extends SavedData {
             BlockPos core = NbtUtils.readBlockPos(t, "core").orElse(null);
             Piece p = new Piece(t.getInt("id"), id, node, fp, core);
             if (t.contains("name", Tag.TAG_STRING)) p.customName = t.getString("name");
+            if (t.contains("template", Tag.TAG_COMPOUND)) {
+                CompoundTag tt = t.getCompound("template");
+                long[] at = tt.getLongArray("pos");
+                int[] hash = tt.getIntArray("hash");
+                p.template = new HashMap<>();
+                for (int k = 0; k < Math.min(at.length, hash.length); k++) p.template.put(at[k], hash[k]);
+            }
             r.pieces.put(p.id, p);
             fp.forEach((floor, mods) -> { for (long m : mods) r.owners.computeIfAbsent(floor, x -> new HashMap<>()).put(m, p.id); });
             r.nextId = Math.max(r.nextId, p.id + 1);
@@ -166,6 +179,17 @@ public final class ModuleRegistry extends SavedData {
             t.put("footprint", ft);
             if (p.core != null) t.put("core", NbtUtils.writeBlockPos(p.core));
             if (p.customName != null) t.putString("name", p.customName);
+            // Пустой список тоже пишется: «у шаблона нет блок-сущностей» — не то же, что «отпечатков не снимали».
+            if (p.template != null) {
+                CompoundTag tt = new CompoundTag();
+                long[] at = new long[p.template.size()];
+                int[] hash = new int[at.length];
+                int i = 0;
+                for (Map.Entry<Long, Integer> e : p.template.entrySet()) { at[i] = e.getKey(); hash[i++] = e.getValue(); }
+                tt.putLongArray("pos", at);
+                tt.putIntArray("hash", hash);
+                t.put("template", tt);
+            }
             list.add(t);
         }
         tag.put("pieces", list);

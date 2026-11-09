@@ -2,6 +2,7 @@ package leonus.tardis_rooms.neoforge.gametest;
 
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.gametest.InterfaceGameTests;
+import leonus.tardis_rooms.gametest.RoomGameTests;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -9,7 +10,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Регистрация общих игровых тестов на NeoForge (класс находится по {@link GameTestHolder} только при включённых тестах).
- * Сами тесты — в {@link InterfaceGameTests}. В готовый мод не входит.
+ * Сами тесты — в {@link InterfaceGameTests} и {@link RoomGameTests}. В готовый мод не входит.
  */
 @GameTestHolder(TardisRooms.MODID)
 @PrefixGameTestTemplate(false)
@@ -57,4 +58,27 @@ public final class NeoForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void redstoneRelinked(GameTestHelper h) { InterfaceGameTests.redstoneRelinked(h); }
+
+    // ---------- помещения: что мешает удалению ----------
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomTemplateUntouched(GameTestHelper h) { RoomGameTests.templateUntouched(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomTemplateChanged(GameTestHelper h) { RoomGameTests.templateChanged(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomAddedAfterGrowth(GameTestHelper h) { RoomGameTests.addedAfterGrowth(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomReplacedBlock(GameTestHelper h) { RoomGameTests.replacedBlock(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomInterfaceBlocks(GameTestHelper h) { RoomGameTests.interfaceBlocks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomOldRoomByContents(GameTestHelper h) { RoomGameTests.oldRoomByContents(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomFingerprintSurvivesReload(GameTestHelper h) { RoomGameTests.fingerprintSurvivesReload(h); }
 }
