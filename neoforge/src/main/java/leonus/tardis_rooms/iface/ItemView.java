@@ -16,7 +16,7 @@ import java.util.List;
  * Предметы через интерфейс. Слоты: при входе — один «приёмный» слот (всегда пуст, всё сразу уходит дальше),
  * при выходе — слоты всех хранилищ рядом с интерфейсами со входом (из них можно забирать).
  */
-final class ItemView implements IItemHandler, KindPart, LinkedTotals {
+final class ItemView implements IItemHandler, KindPart {
     private final InterfaceBlockEntity be;
     private final TransferKind kind;
     /** Свои соседи по предметам — их берут связанные интерфейсы. */
@@ -33,24 +33,6 @@ final class ItemView implements IItemHandler, KindPart, LinkedTotals {
 
     /** Для возможности блока: null — вид выключен (трубы не подключатся). */
     IItemHandler capability() { return be.enabled(kind) ? this : null; }
-
-    /** Сколько предметов в хранилищах у связанных интерфейсов и сколько в них места. */
-    @Override
-    public long[] linkedTotals() {
-        return linked.totals(ItemView::count, ItemView::room);
-    }
-
-    private static long count(IItemHandler h) {
-        long n = 0;
-        for (int i = 0; i < h.getSlots(); i++) n += h.getStackInSlot(i).getCount();
-        return n;
-    }
-
-    private static long room(IItemHandler h) {
-        long n = 0;
-        for (int i = 0; i < h.getSlots(); i++) n += h.getSlotLimit(i);
-        return n;
-    }
 
     /**
      * Одна стопка за раз. «Вставлять» берёт прямо из хранилищ у связанных входов (а не через слоты интерфейса —

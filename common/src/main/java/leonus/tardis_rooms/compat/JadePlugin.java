@@ -20,7 +20,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.BlockAccessor;
@@ -49,7 +48,6 @@ public class JadePlugin implements IWailaPlugin {
     public void register(IWailaCommonRegistration registration) {
         registration.registerBlockDataProvider(InterfaceInfo.INSTANCE, InterfaceBlockEntity.class);
         registration.registerEnergyStorage(InterfaceEnergy.INSTANCE, InterfaceBlockEntity.class);
-        registration.registerItemStorage(InterfaceItems.INSTANCE, InterfaceBlockEntity.class);
     }
 
     @Override
@@ -142,28 +140,6 @@ public class JadePlugin implements IWailaPlugin {
         public @Nullable List<ViewGroup<CompoundTag>> getGroups(Accessor<?> accessor) {
             if (accessor.getTarget() instanceof InterfaceBlockEntity be
                     && be.part(BuiltinKinds.energy()) instanceof LinkedTotals t && t.linkedTotals()[1] > 0) return null;
-            return List.of();
-        }
-    }
-
-    /**
-     * Предметы в подсказке. На Fabric хранилища Transfer API без слотов, и Jade, не найдя в них предметов, навсегда
-     * оставлял «Сбор предметов…». Здесь он спрашивается раньше встроенного показа: у связанных интерфейсов ни одного
-     * предмета — пустой ответ, строки нет; есть — null, и Jade показывает их как обычно. На NeoForge видимо ничего
-     * не меняется: пустые хранилища Jade и так не показывает.
-     */
-    public enum InterfaceItems implements IServerExtensionProvider<ItemStack> {
-        INSTANCE;
-
-        private static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "interface_items");
-
-        @Override
-        public ResourceLocation getUid() { return UID; }
-
-        @Override
-        public @Nullable List<ViewGroup<ItemStack>> getGroups(Accessor<?> accessor) {
-            if (accessor.getTarget() instanceof InterfaceBlockEntity be
-                    && be.part(BuiltinKinds.items()) instanceof LinkedTotals t && t.linkedTotals()[0] > 0) return null;
             return List.of();
         }
     }
