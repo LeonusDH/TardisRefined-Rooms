@@ -65,6 +65,9 @@ public final class TardisRoomsNeoForge {
         modBus.addListener(TardisRoomsNeoForge::addToCreativeTabs);
         modBus.addListener(TardisRoomsNeoForge::registerPayloads);
         modBus.addListener(leonus.tardis_rooms.lang.TRoomsLangProvider::gather);
+        TardisRooms.compat("Mekanism", "mekanism", TardisRoomsConfig::compatMekanism);
+        TardisRooms.compat("Applied Energistics 2", "ae2", TardisRoomsConfig::compatAE2);
+        TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
         TardisRooms.LOGGER.info("TARDIS Refined: Rooms loaded");
     }
 

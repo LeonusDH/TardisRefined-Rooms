@@ -31,9 +31,9 @@ Entries are written as described in [Block entries](block-entries.md). Anything 
 
 ## Logs
 
-- **`latest.log`, always:** a summary when the server starts (interface kinds, main options); rooms grown, replaced and removed (who, what, where); a room removed together with what was in the way, with the list of lost blocks; the hub simplified or left as it is and why; datapack rooms loaded; warnings and errors.
-- **Details, at DEBUG level, always** (on NeoForge they go to `logs/debug.log`): every player action with rooms, interfaces, the screwdriver, wrenches and the Memory Card; why a request was refused, including silent refusals (too far, no permission); interface status changes and new IDs; what keeps a room from being removed; what was remembered when a room grew; skipped entries.
-- With `debug = true`, the details also go to `latest.log`, marked `[debug]`, together with the connectivity graph when a room is removed or replaced.
+- **`latest.log`, always:** a summary when the server starts: interface kinds, main options, and each compatibility that is on, either working or with its mod not installed (compatibilities switched off in the config aren't mentioned); rooms grown, replaced and removed (who, what, where); a room removed together with what was in the way, with the list of lost blocks; the hub simplified or left as it is and why; datapack rooms loaded; warnings and errors.
+- **Details, at DEBUG level, always.** NeoForge keeps them in `logs/debug.log`; Fabric by default doesn't keep DEBUG lines at all, so there they are only seen with `debug = true`. The details are: every player action with rooms, interfaces, the screwdriver, wrenches and the Memory Card; why a request was refused, including silent refusals (too far, no permission); interface status changes and new IDs; what keeps a room from being removed; what was remembered when a room grew; skipped entries.
+- With `debug = true`, the details also go to `latest.log`, marked `[debug]`, together with the connectivity graph when a room is removed or replaced. That's the log people usually send, and on Fabric the only one.
 
 ## Client: `config/tardis_rooms/client.toml`
 

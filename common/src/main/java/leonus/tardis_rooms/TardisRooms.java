@@ -2,8 +2,13 @@ package leonus.tardis_rooms;
 
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
+import leonus.tardis_rooms.platform.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BooleanSupplier;
 
 /** Общее для всех платформ: ID мода и лог. Точки входа — в модулях платформ (neoforge/TardisRoomsNeoForge). */
 public final class TardisRooms {
@@ -35,8 +40,24 @@ public final class TardisRooms {
         return TardisRoomsConfig.debug() || LOGGER.isDebugEnabled();
     }
 
-    /** Сервер запущен: сводка настроек и видов передачи — с чем работает аддон в этой игре. */
+    /** Совместимость с другим модом: название для лога, id мода и включена ли она в настройках. */
+    private record Compat(String name, String modId, BooleanSupplier enabled) {}
+
+    private static final List<Compat> COMPATS = new ArrayList<>();
+
+    /** Платформа сообщает, с какими модами у неё есть совместимость (для сводки при запуске). */
+    public static void compat(String name, String modId, BooleanSupplier enabled) {
+        COMPATS.add(new Compat(name, modId, enabled));
+    }
+
+    /** Сервер запущен: сводка настроек, видов передачи и совместимостей — с чем работает аддон в этой игре. */
     public static void onServerStarted() {
+        // Выключенная в настройках совместимость не упоминается; включённая — работает или её мода нет.
+        for (Compat c : COMPATS) {
+            if (!c.enabled().getAsBoolean()) continue;
+            if (Platform.isModLoaded(c.modId())) LOGGER.info("TARDIS Refined: Rooms: {} compatibility enabled", c.name());
+            else LOGGER.info("TARDIS Refined: Rooms: {} compatibility is on, but {} is not installed", c.name(), c.name());
+        }
         StringBuilder kinds = new StringBuilder();
         for (TransferKind k : TransferKinds.all()) {
             if (!kinds.isEmpty()) kinds.append(", ");

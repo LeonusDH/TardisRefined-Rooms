@@ -67,6 +67,9 @@ public final class TardisRoomsFabric implements ModInitializer {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new FabricReloadListener(CustomRooms.ID, CustomRooms.INSTANCE));
         ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS.register((player, joined) -> CustomRooms.sync(player));
         CommandRegistrationCallback.EVENT.register((dispatcher, context, environment) -> TRoomsCommands.register(dispatcher));
+        TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
+        // Энергия на Fabric — только через Team Reborn Energy; своей настройки нет, совместимость всегда включена.
+        TardisRooms.compat("Team Reborn Energy", "team_reborn_energy", () -> true);
         TardisRooms.LOGGER.info("TARDIS Refined: Rooms loaded");
     }
 

@@ -44,8 +44,9 @@ public final class TardisRoomsConfig {
         DEBUG = b
                 .comment("Debug: also write the addon's details to the main log (latest.log): players' actions with rooms, interfaces",
                         "and the screwdriver, why an action was refused, interface status changes, the connectivity graph when removing",
-                        "or replacing. The details are always logged at DEBUG level (on NeoForge: logs/debug.log); rooms grown, replaced",
-                        "or removed and other changes to the world always go to latest.log.")
+                        "or replacing. The details are always logged at DEBUG level, but only some loaders keep such lines: NeoForge writes",
+                        "them to logs/debug.log, Fabric by default doesn't keep them at all. Rooms grown, replaced or removed and other",
+                        "changes to the world always go to latest.log.")
                 .define("debug", false);
         b.comment("Compatibility with other mods. An option does nothing if that mod isn't installed.").push("compat");
         COMPAT_MEKANISM = b.comment("Mekanism: chemicals through the TARDIS Interface.").define("mekanism", true);
