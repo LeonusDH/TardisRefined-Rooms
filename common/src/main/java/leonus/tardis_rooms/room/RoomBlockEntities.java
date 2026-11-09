@@ -4,6 +4,7 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
@@ -100,9 +101,17 @@ public final class RoomBlockEntities {
         return false;
     }
 
-    /** Отпечаток: блок и данные блок-сущности (как в сохранении, без места). */
+    /**
+     * Поля, которые блок меняет сам, без игрока, — в отпечаток не входят. Страница кафедры при загрузке пересчитывается
+     * (у пустой книги прыгает между 0 и −1), перезарядка воронки идёт сама. Это не содержимое.
+     */
+    private static final List<String> VOLATILE = List.of("Page", "TransferCooldown");
+
+    /** Отпечаток: блок и данные блок-сущности (как в сохранении, без места и без {@link #VOLATILE}). */
     private static int hash(ServerLevel level, BlockEntity be) {
-        return Objects.hash(blockId(be), be.saveWithoutMetadata(level.registryAccess()));
+        CompoundTag data = be.saveWithoutMetadata(level.registryAccess());
+        for (String k : VOLATILE) data.remove(k);
+        return Objects.hash(blockId(be), data);
     }
 
     private static ResourceLocation blockId(BlockEntity be) {

@@ -30,7 +30,8 @@ public final class RoomGameTests {
     private RoomGameTests() {}
 
     private static List<BoundingBox> box(GameTestHelper h) {
-        return List.of(BoundingBox.fromCorners(h.absolutePos(new BlockPos(0, 0, 0)), h.absolutePos(new BlockPos(4, 3, 3))));
+        // С (1,1,1): в (0,0,0) стоит служебный блок самого игрового теста.
+        return List.of(BoundingBox.fromCorners(h.absolutePos(new BlockPos(1, 1, 1)), h.absolutePos(new BlockPos(4, 3, 3))));
     }
 
     /** Сундук и пустая кафедра — как в шаблоне помещения. */
