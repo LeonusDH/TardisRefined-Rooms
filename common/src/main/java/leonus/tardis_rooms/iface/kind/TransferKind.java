@@ -61,6 +61,9 @@ public final class TransferKind {
     public @Nullable Component tooltip() { return tooltip == null ? null : tooltip.get(); }
 
     /** Часть вида для интерфейса, или null — своей части у вида нет. */
+    /** Есть ли у вида часть в этой игре (на этом загрузчике, с этими модами). Нет — интерфейс его не передаёт. */
+    public boolean hasParts() { return parts != null; }
+
     public @Nullable KindPart createPart(InterfaceBlockEntity be) {
         return parts == null ? null : parts.create(be, this);
     }

@@ -40,7 +40,7 @@ public final class TardisRooms {
         StringBuilder kinds = new StringBuilder();
         for (TransferKind k : TransferKinds.all()) {
             if (!kinds.isEmpty()) kinds.append(", ");
-            kinds.append(k.id().getPath()).append(k.available() ? "" : " (off)");
+            kinds.append(k.id().getPath()).append(!k.hasParts() ? " (not supported here)" : k.available() ? "" : " (off)");
         }
         LOGGER.info("TARDIS Refined: Rooms: interface kinds: {}; procedural rooms off: {}, simplify hub: {}, debug: {}, "
                         + "removable_with_room entries: {}",
