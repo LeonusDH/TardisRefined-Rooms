@@ -3,6 +3,7 @@ package leonus.tardis_rooms.neoforge;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
+import leonus.tardis_rooms.room.ForceRemoval;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import leonus.tardis_rooms.room.custom.CustomRooms;
@@ -33,6 +34,7 @@ final class NeoForgeEvents {
         bus.addListener((ServerStoppedEvent e) -> {
             HubInitializer.onServerStopped();
             InterfaceNetwork.clear();
+            ForceRemoval.clear();
         });
     }
 

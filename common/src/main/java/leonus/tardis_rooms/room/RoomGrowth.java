@@ -4,6 +4,7 @@ import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
+import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.minecraft.core.BlockPos;
@@ -70,13 +71,6 @@ public final class RoomGrowth {
         return true;
     }
 
-    /** Почему нельзя удалить (ключ перевода) или null, если можно. */
-    public static TRoomsText removalProblem(ServerLevel level, ModuleRegistry.Piece piece) {
-        if (!Connectivity.canRemove(level, piece)) return TRoomsText.MSG_CUTS_OFF;
-        if (!blockers(level, piece).isEmpty()) return TRoomsText.MSG_HAS_CONTAINERS;
-        return null;
-    }
-
     /** Дальше этого (в блоках) от блока управления показ по кнопке в чате не работает. */
     private static final int SHOW_RANGE = 64;
 
@@ -86,10 +80,16 @@ public final class RoomGrowth {
      * {@value #SHOW_RANGE} блоков. Ничего не мешает — так и сказать.
      */
     public static void showBlockers(ServerPlayer player, BlockPos core, boolean inChat) {
+        showBlockers(player, core, inChat, false);
+    }
+
+    /** То же; {@code arm} — открыто окно подтверждения «удалить вместе с ними»: пошёл отсчёт ({@link ForceRemoval}). */
+    public static void showBlockers(ServerPlayer player, BlockPos core, boolean inChat, boolean arm) {
         if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
         if (player.distanceToSqr(core.getCenter()) > SHOW_RANGE * SHOW_RANGE) return;
         ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(core);
         if (piece == null) return;
+        if (arm) ForceRemoval.arm(player.getUUID(), level.dimension(), core, System.currentTimeMillis());
         List<BlockPos> blockers = blockers(level, piece);
         if (blockers.isEmpty()) {
             msg(player, TRoomsText.MSG_NOTHING_BLOCKS);
@@ -153,8 +153,11 @@ public final class RoomGrowth {
         msg(player, replacing != null ? TRoomsText.MSG_REPLACED : TRoomsText.MSG_GROWN);
     }
 
-    /** Удаление по запросу игрока с блока управления. */
-    public static void tryRemove(ServerPlayer player, BlockPos core) {
+    /**
+     * Удаление по запросу игрока с блока управления. {@code force} — из окна подтверждения: удалить вместе с тем,
+     * что мешает (сервер сам проверяет, что окно было открыто достаточно долго, см. {@link ForceRemoval}).
+     */
+    public static void tryRemove(ServerPlayer player, BlockPos core, boolean force) {
         if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
         if (!Screwdriver.held(player)) { msg(player, TRoomsText.MSG_NEED_SCREWDRIVER); return; }
         if (player.distanceToSqr(core.getCenter()) > 64) return;
@@ -167,9 +170,12 @@ public final class RoomGrowth {
         }
         List<BlockPos> blockers = blockers(level, piece);
         if (!blockers.isEmpty()) {
-            BlockerHighlight.show(player, core, blockers, true);
-            TardisRooms.debug("{}: removal of #{} refused: {} blocks in the way", player.getGameProfile().getName(), piece.id, blockers.size());
-            return;
+            if (!force || !ForceRemoval.take(player.getUUID(), level.dimension(), core, System.currentTimeMillis())) {
+                BlockerHighlight.show(player, core, blockers, true);
+                TardisRooms.debug("{}: removal of #{} refused: {} blocks in the way", player.getGameProfile().getName(), piece.id, blockers.size());
+                return;
+            }
+            TardisRooms.debug("{}: removing #{} together with {} blocks in the way", player.getGameProfile().getName(), piece.id, blockers.size());
         }
         if (TardisRoomsConfig.debug()) TardisRooms.debug("Removing #{}; graph: {}", piece.id, Connectivity.describe(level));
         demolish(level, piece);
@@ -216,7 +222,11 @@ public final class RoomGrowth {
                             mp.set(x, y, z);
                             BlockState s = level.getBlockState(mp);
                             if (s != stone && !s.is(Blocks.BEDROCK)) {
-                                if (s.hasBlockEntity()) level.removeBlockEntity(mp); // без высыпания содержимого
+                                if (s.hasBlockEntity()) {
+                                    // Интерфейс — как при поломке: связанные сразу пересчитывают связь и сигнал без него.
+                                    if (level.getBlockEntity(mp) instanceof InterfaceBlockEntity ibe) ibe.removedFromWorld();
+                                    level.removeBlockEntity(mp); // без высыпания содержимого
+                                }
                                 // Весь объём всё равно становится камнем: соседям внутри обновлять форму незачем.
                                 level.setBlock(mp, stone, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
                             }

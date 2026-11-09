@@ -4,6 +4,7 @@ import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
+import leonus.tardis_rooms.room.ForceRemoval;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
@@ -58,6 +59,7 @@ final class FabricEvents {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             HubInitializer.onServerStopped();
             InterfaceNetwork.clear();
+            ForceRemoval.clear();
         });
     }
 

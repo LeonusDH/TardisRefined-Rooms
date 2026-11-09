@@ -163,8 +163,11 @@ public class InterfaceBlockEntity extends BlockEntity {
         leave();
     }
 
-    /** Интерфейс убирают из мира (сломан, заменён) — до того, как блок-сущность уберётся (см. {@link InterfaceBlock}). */
-    void removedFromWorld() {
+    /**
+     * Интерфейс убирают из мира (сломан, заменён, снесён вместе с помещением) — до того, как блок-сущность уберётся
+     * (см. {@link InterfaceBlock}): части видов успевают сообщить связанным, пока связь ещё есть.
+     */
+    public void removedFromWorld() {
         for (KindPart p : parts) if (p != null) p.remove();
     }
 

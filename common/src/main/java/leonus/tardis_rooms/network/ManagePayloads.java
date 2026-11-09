@@ -1,11 +1,16 @@
 package leonus.tardis_rooms.network;
 
+import io.netty.buffer.ByteBuf;
 import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.lang.TRoomsText;
+import leonus.tardis_rooms.room.BlockerHighlight;
+import leonus.tardis_rooms.room.Connectivity;
 import leonus.tardis_rooms.room.Lattice;
 import leonus.tardis_rooms.room.ModuleRegistry;
 import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -14,6 +19,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import leonus.tardis_rooms.platform.Platform;
+
+import java.util.List;
 
 /** Пакеты блока управления: запрос сведений, ответ, удаление. */
 public final class ManagePayloads {
@@ -32,19 +39,44 @@ public final class ManagePayloads {
             if (!Lattice.isTardisLevel(level) || player.distanceToSqr(r.core().getCenter()) > 64) return;
             ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(r.core());
             if (piece == null) return;
-            leonus.tardis_rooms.lang.TRoomsText problem = RoomGrowth.removalProblem(level, piece);
+            // Почему нельзя удалить. Мешают только вещи внутри — можно удалить вместе с ними (окно подтверждения):
+            // тогда и какие это вещи (по блоку на вещь).
+            TRoomsText problem = null;
+            List<ResourceLocation> blockers = List.of();
+            if (!Connectivity.canRemove(level, piece)) {
+                problem = TRoomsText.MSG_CUTS_OFF;
+            } else {
+                blockers = BlockerHighlight.group(level, RoomGrowth.blockers(level, piece)).stream()
+                        .map(t -> BuiltInRegistries.BLOCK.getKey(level.getBlockState(t.pos()).getBlock())).limit(256).toList();
+                if (!blockers.isEmpty()) problem = TRoomsText.MSG_HAS_CONTAINERS;
+            }
             BlockPos nodePos = Lattice.nodePos(piece.node.mx(), piece.node.mz(), piece.node.side(), piece.node.floorY());
             Platform.sendToPlayer(player, new Info(r.core(), piece.pieceId, piece.customName == null ? "" : piece.customName,
-                    nodePos, problem == null, problem == null ? "" : problem.key()));
+                    nodePos, problem == null, problem == null ? "" : problem.key(), blockers));
         }
     }
 
-    /** Сервер → клиент: сведения о помещении; {@code customName} пусто — названия нет. */
-    public record Info(BlockPos core, ResourceLocation pieceId, String customName, BlockPos nodePos, boolean canRemove, String problem) implements CustomPacketPayload {
+    /**
+     * Сервер → клиент: сведения о помещении; {@code customName} пусто — названия нет. {@code blockers} — блоки вещей,
+     * которые мешают удалить (по одному на вещь); не пусто — можно удалить вместе с ними через окно подтверждения.
+     */
+    public record Info(BlockPos core, ResourceLocation pieceId, String customName, BlockPos nodePos, boolean canRemove, String problem,
+                       List<ResourceLocation> blockers) implements CustomPacketPayload {
         public static final Type<Info> TYPE = new Type<>(rl("manage_info"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Info> STREAM_CODEC = StreamCodec.composite(
-                BlockPos.STREAM_CODEC, Info::core, ResourceLocation.STREAM_CODEC, Info::pieceId, ByteBufCodecs.STRING_UTF8, Info::customName,
-                BlockPos.STREAM_CODEC, Info::nodePos, ByteBufCodecs.BOOL, Info::canRemove, ByteBufCodecs.STRING_UTF8, Info::problem, Info::new);
+        private static final StreamCodec<ByteBuf, List<ResourceLocation>> IDS = ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list(256));
+        // Полей семь, а StreamCodec.composite в 1.21.1 берёт не больше шести — пишем по порядку сами.
+        public static final StreamCodec<RegistryFriendlyByteBuf, Info> STREAM_CODEC = StreamCodec.of(
+                (buf, i) -> {
+                    BlockPos.STREAM_CODEC.encode(buf, i.core());
+                    ResourceLocation.STREAM_CODEC.encode(buf, i.pieceId());
+                    ByteBufCodecs.STRING_UTF8.encode(buf, i.customName());
+                    BlockPos.STREAM_CODEC.encode(buf, i.nodePos());
+                    ByteBufCodecs.BOOL.encode(buf, i.canRemove());
+                    ByteBufCodecs.STRING_UTF8.encode(buf, i.problem());
+                    IDS.encode(buf, i.blockers());
+                },
+                buf -> new Info(BlockPos.STREAM_CODEC.decode(buf), ResourceLocation.STREAM_CODEC.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf),
+                        BlockPos.STREAM_CODEC.decode(buf), ByteBufCodecs.BOOL.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf), IDS.decode(buf)));
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
         /** Клиент, главный поток. */
@@ -53,29 +85,32 @@ public final class ManagePayloads {
         }
     }
 
-    /** Клиент → сервер: удалить помещение. */
-    public record Remove(BlockPos core) implements CustomPacketPayload {
+    /** Клиент → сервер: удалить помещение; {@code force} — вместе с тем, что мешает (из окна подтверждения). */
+    public record Remove(BlockPos core, boolean force) implements CustomPacketPayload {
         public static final Type<Remove> TYPE = new Type<>(rl("manage_remove"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Remove> STREAM_CODEC =
-                StreamCodec.composite(BlockPos.STREAM_CODEC, Remove::core, Remove::new);
+                StreamCodec.composite(BlockPos.STREAM_CODEC, Remove::core, ByteBufCodecs.BOOL, Remove::force, Remove::new);
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
         /** Сервер, главный поток. */
         public static void handle(Remove r, ServerPlayer player) {
-            RoomGrowth.tryRemove(player, r.core());
+            RoomGrowth.tryRemove(player, r.core(), r.force());
         }
     }
 
-    /** Клиент → сервер: показать, что мешает удалить помещение (сообщение и подсветка). */
-    public record ShowBlockers(BlockPos core) implements CustomPacketPayload {
+    /**
+     * Клиент → сервер: показать, что мешает удалить помещение (сообщение и подсветка). {@code confirm} — открыто окно
+     * подтверждения «удалить вместе с ними»: сообщение над хотбаром, и пошёл отсчёт.
+     */
+    public record ShowBlockers(BlockPos core, boolean confirm) implements CustomPacketPayload {
         public static final Type<ShowBlockers> TYPE = new Type<>(rl("manage_show_blockers"));
         public static final StreamCodec<RegistryFriendlyByteBuf, ShowBlockers> STREAM_CODEC =
-                StreamCodec.composite(BlockPos.STREAM_CODEC, ShowBlockers::core, ShowBlockers::new);
+                StreamCodec.composite(BlockPos.STREAM_CODEC, ShowBlockers::core, ByteBufCodecs.BOOL, ShowBlockers::confirm, ShowBlockers::new);
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
         /** Сервер, главный поток. */
         public static void handle(ShowBlockers r, ServerPlayer player) {
-            RoomGrowth.showBlockers(player, r.core(), true);
+            RoomGrowth.showBlockers(player, r.core(), !r.confirm(), r.confirm());
         }
     }
 
