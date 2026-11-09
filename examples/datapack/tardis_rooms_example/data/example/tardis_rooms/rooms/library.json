@@ -19,5 +19,13 @@
     11,
     1,
     15
+  ],
+  "removable": [
+    [
+      11,
+      2,
+      11
+    ],
+    "minecraft:player_head{profile:{name:\"MHF_Question\"}}"
   ]
 }
