@@ -24,6 +24,8 @@ public enum TRoomsText {
     // ---------- Messages (action bar) ----------
     MSG_BLOCKED_BY("message.tardis_rooms.blocked_by", "In the way: %s at %s, %s, %s"),
     MSG_BLOCKED_BY_MORE("message.tardis_rooms.blocked_by_more", "In the way: %s at %s, %s, %s and %s more"),
+    MSG_BLOCKED_BY_AGAIN("message.tardis_rooms.blocked_by.again", "Click to outline again"),
+    MSG_NOTHING_BLOCKS("message.tardis_rooms.nothing_blocks", "Nothing inside is in the way any more"),
     MSG_CUTS_OFF("message.tardis_rooms.cuts_off", "Not possible: other spaces connect through this one"),
     MSG_CUTS_OFF_REPLACE("message.tardis_rooms.cuts_off_replace", "Not possible: the replacement would cut other spaces off"),
     MSG_FORBIDDEN("message.tardis_rooms.forbidden", "The TARDIS cannot grow here"),
@@ -117,7 +119,7 @@ public enum TRoomsText {
     SCREEN_REMOVE_WARNING("screen.tardis_rooms.remove_warning", "Everything inside will vanish"),
     SCREEN_REMOVE_WARNING_TOOLTIP("screen.tardis_rooms.remove_warning.tooltip", "Blocks inside will be erased for good"),
     SCREEN_REMOVE_YES("screen.tardis_rooms.remove_yes", "Yes, remove"),
-    SCREEN_SHOW_BLOCKERS("screen.tardis_rooms.show_blockers", "Show what's in the way"),
+    SCREEN_SHOW_BLOCKERS("screen.tardis_rooms.show_blockers", "What's in the way?"),
     SCREEN_SHOW_BLOCKERS_TOOLTIP("screen.tardis_rooms.show_blockers.tooltip", "Outline the blocks that keep this space from being removed, for 15 seconds, and name the nearest one"),
     SCREEN_REPLACE("screen.tardis_rooms.replace", "Replace…"),
     SCREEN_REPLACE_TOOLTIP("screen.tardis_rooms.replace.tooltip", "Put a different space here"),

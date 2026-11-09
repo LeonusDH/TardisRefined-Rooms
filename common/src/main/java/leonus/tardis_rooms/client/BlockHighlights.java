@@ -10,9 +10,9 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -21,31 +21,31 @@ import org.joml.Quaternionf;
 import java.util.List;
 
 /**
- * Клиент: мигающие красные рамки вокруг блоков поверх стен — что мешает удалить помещение (как подсветка беспроводного
- * соединителя в ExtendedAE). Рамки — 12 линий вокруг блока, без проверки глубины; мигают раз в полсекунды и пропадают
+ * Клиент: мигающие красные рамки вокруг мешающих блоков поверх стен — что мешает удалить помещение (как подсветка беспроводного
+ * соединителя в ExtendedAE). Рамка — 12 линий вокруг коробки (блок или блок из двух половин), без проверки глубины; мигают раз в полсекунды и пропадают
  * сами. Платформа только вызывает {@link #render} из своего события отрисовки мира.
  */
 public final class BlockHighlights {
-    private static List<BlockPos> blocks = List.of();
+    private static List<AABB> boxes = List.of();
     private static ResourceKey<Level> dimension;
     private static long until;
 
-    /** Показать рамки вокруг {@code list} (новый показ заменяет прежний). */
-    public static void show(List<BlockPos> list, int seconds) {
+    /** Показать рамки {@code list} (новый показ заменяет прежний). */
+    public static void show(List<AABB> list, int seconds) {
         var level = Minecraft.getInstance().level;
         if (level == null) return;
-        blocks = List.copyOf(list);
+        boxes = List.copyOf(list);
         dimension = level.dimension();
         until = System.currentTimeMillis() + seconds * 1000L;
     }
 
     /** Нарисовать рамки. Вызывать после отрисовки мира (частиц), до интерфейса. */
     public static void render(Camera camera) {
-        if (blocks.isEmpty()) return;
+        if (boxes.isEmpty()) return;
         long now = System.currentTimeMillis();
         var level = Minecraft.getInstance().level;
         if (now > until || level == null || !level.dimension().equals(dimension)) {
-            blocks = List.of();
+            boxes = List.of();
             return;
         }
         if ((now / 500) % 2 == 1 || !camera.isInitialized()) return; // мигание
@@ -56,9 +56,9 @@ public final class BlockHighlights {
                 .translate((float) -cam.x, (float) -cam.y, (float) -cam.z);
         BufferBuilder buf = Tesselator.getInstance().begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
         float e = 0.002f; // чуть больше блока, чтобы рамка не сливалась с его гранями
-        for (BlockPos p : blocks) {
-            float x0 = p.getX() - e, y0 = p.getY() - e, z0 = p.getZ() - e;
-            float x1 = p.getX() + 1 + e, y1 = p.getY() + 1 + e, z1 = p.getZ() + 1 + e;
+        for (AABB box : boxes) {
+            float x0 = (float) box.minX - e, y0 = (float) box.minY - e, z0 = (float) box.minZ - e;
+            float x1 = (float) box.maxX + e, y1 = (float) box.maxY + e, z1 = (float) box.maxZ + e;
             for (float a : new float[]{y0, y1}) for (float b : new float[]{z0, z1}) line(buf, m, x0, a, b, x1, a, b);
             for (float a : new float[]{x0, x1}) for (float b : new float[]{z0, z1}) line(buf, m, a, y0, b, a, y1, b);
             for (float a : new float[]{x0, x1}) for (float b : new float[]{y0, y1}) line(buf, m, a, b, z0, a, b, z1);

@@ -77,4 +77,7 @@ public final class FabricGameTests {
 
     @GameTest(template = TEMPLATE)
     public static void roomFingerprintSurvivesReload(GameTestHelper h) { RoomGameTests.fingerprintSurvivesReload(h); }
+
+    @GameTest(template = TEMPLATE)
+    public static void roomDoubleChestIsOneTarget(GameTestHelper h) { RoomGameTests.doubleChestIsOneTarget(h); }
 }

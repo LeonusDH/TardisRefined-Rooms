@@ -75,7 +75,7 @@ public final class ManagePayloads {
 
         /** Сервер, главный поток. */
         public static void handle(ShowBlockers r, ServerPlayer player) {
-            RoomGrowth.showBlockers(player, r.core());
+            RoomGrowth.showBlockers(player, r.core(), true);
         }
     }
 

@@ -81,4 +81,7 @@ public final class NeoForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void roomFingerprintSurvivesReload(GameTestHelper h) { RoomGameTests.fingerprintSurvivesReload(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomDoubleChestIsOneTarget(GameTestHelper h) { RoomGameTests.doubleChestIsOneTarget(h); }
 }

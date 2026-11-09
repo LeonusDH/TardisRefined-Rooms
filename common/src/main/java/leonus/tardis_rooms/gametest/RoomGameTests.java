@@ -1,8 +1,10 @@
 package leonus.tardis_rooms.gametest;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.room.BlockerHighlight;
 import leonus.tardis_rooms.room.RoomBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -10,6 +12,9 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -125,6 +130,21 @@ public final class RoomGameTests {
             level.setBlockEntity(copy);
         }
         expect(h, blockers(h, template));
+        h.succeed();
+    }
+
+    /** Двойной сундук — один предмет с общей рамкой на два блока; одиночный рядом — отдельный. */
+    public static void doubleChestIsOneTarget(GameTestHelper h) {
+        BlockState left = Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, Direction.NORTH).setValue(ChestBlock.TYPE, ChestType.LEFT);
+        BlockState right = Blocks.CHEST.defaultBlockState().setValue(ChestBlock.FACING, Direction.NORTH).setValue(ChestBlock.TYPE, ChestType.RIGHT);
+        h.setBlock(CHEST, left);    // левая половина (смотрит на север) — пара к востоку
+        h.setBlock(LECTERN, right); // (2,1,1)
+        h.setBlock(new BlockPos(1, 1, 3), Blocks.CHEST);
+        List<BlockPos> all = List.of(h.absolutePos(CHEST), h.absolutePos(LECTERN), h.absolutePos(new BlockPos(1, 1, 3)));
+        List<BlockerHighlight.Target> t = BlockerHighlight.group(h.getLevel(), all);
+        h.assertTrue(t.size() == 2, "предметов " + t.size() + ", ожидалось 2");
+        double width = Math.max(t.get(0).box().getXsize(), t.get(1).box().getXsize());
+        h.assertTrue(width > 1.5, "рамка двойного сундука шириной " + width);
         h.succeed();
     }
 }

@@ -77,12 +77,22 @@ public final class RoomGrowth {
         return null;
     }
 
-    /** Показать игроку, что мешает удалить помещение (кнопка в меню блока управления). */
-    public static void showBlockers(ServerPlayer player, BlockPos core) {
+    /** Дальше этого (в блоках) от блока управления показ по кнопке в чате не работает. */
+    private static final int SHOW_RANGE = 64;
+
+    /**
+     * Показать игроку, что мешает удалить помещение: кнопка в меню блока управления ({@code inChat} — сообщение
+     * в чат) или нажатие на сообщение в чате (повтор — над хотбаром). Игрок может уже отойти искать: до
+     * {@value #SHOW_RANGE} блоков. Ничего не мешает — так и сказать.
+     */
+    public static void showBlockers(ServerPlayer player, BlockPos core, boolean inChat) {
         if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
-        if (player.distanceToSqr(core.getCenter()) > 64) return;
+        if (player.distanceToSqr(core.getCenter()) > SHOW_RANGE * SHOW_RANGE) return;
         ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(core);
-        if (piece != null) BlockerHighlight.show(player, blockers(level, piece));
+        if (piece == null) return;
+        List<BlockPos> blockers = blockers(level, piece);
+        if (blockers.isEmpty()) msg(player, TRoomsText.MSG_NOTHING_BLOCKS);
+        else BlockerHighlight.show(player, core, blockers, inChat);
     }
 
     /** Блок-сущности, которые мешают удалить или заменить помещение (см. {@link RoomBlockEntities}); пусто — не мешают. */
@@ -124,7 +134,7 @@ public final class RoomGrowth {
         if (replacing != null) {
             if (!Connectivity.canReplace(level, replacing, plan.get())) { msg(player, TRoomsText.MSG_CUTS_OFF_REPLACE); return; }
             List<BlockPos> blockers = blockers(level, replacing);
-            if (!blockers.isEmpty()) { BlockerHighlight.show(player, blockers); return; }
+            if (!blockers.isEmpty()) { BlockerHighlight.show(player, replacing.core, blockers, true); return; }
             if (TardisRoomsConfig.debug()) TardisRooms.debug("Replacing #{}; graph: {}", replacing.id, Connectivity.describe(level));
             demolish(level, replacing);
         }
@@ -155,7 +165,7 @@ public final class RoomGrowth {
         }
         List<BlockPos> blockers = blockers(level, piece);
         if (!blockers.isEmpty()) {
-            BlockerHighlight.show(player, blockers);
+            BlockerHighlight.show(player, core, blockers, true);
             TardisRooms.debug("{}: removal of #{} refused: {} blocks in the way", player.getGameProfile().getName(), piece.id, blockers.size());
             return;
         }
