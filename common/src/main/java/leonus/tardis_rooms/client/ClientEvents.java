@@ -1,6 +1,6 @@
 package leonus.tardis_rooms.client;
 
-import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.Screwdriver;
 import leonus.tardis_rooms.network.ScrewdriverModePayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -15,7 +15,7 @@ public final class ClientEvents {
     public static boolean onScroll(double deltaY) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null || Minecraft.getInstance().screen != null) return false;
-        if (!player.isShiftKeyDown() || !InterfaceTools.isScrewdriver(player.getMainHandItem())) return false;
+        if (!player.isShiftKeyDown() || !Screwdriver.is(player.getMainHandItem())) return false;
         if (deltaY == 0) return false;
         Platform.sendToServer(new ScrewdriverModePayload(deltaY > 0 ? 1 : -1));
         return true;

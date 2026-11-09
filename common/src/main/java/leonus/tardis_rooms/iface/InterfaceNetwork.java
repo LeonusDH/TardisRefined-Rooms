@@ -3,6 +3,7 @@ package leonus.tardis_rooms.iface;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,14 +22,22 @@ public final class InterfaceNetwork {
     /** Глубина вложенной передачи: передача из интерфейса в соседа не должна снова войти в сеть. */
     static int depth;
 
+    /**
+     * Растёт при каждом изменении связей или настроек любого интерфейса. Запомненные на тик списки хранилищ
+     * ({@link LinkedStorages}) сверяются с ним: убранный интерфейс или выключенная грань перестают действовать сразу,
+     * а не со следующего тика.
+     */
+    static int version;
+
     static void join(Key key, InterfaceBlockEntity be) {
         LINKS.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(be);
+        version++;
     }
 
     static void leave(Key key, InterfaceBlockEntity be) {
         Set<InterfaceBlockEntity> s = LINKS.get(key);
         if (s == null) return;
-        s.remove(be);
+        if (s.remove(be)) version++;
         if (s.isEmpty()) LINKS.remove(key);
     }
 
@@ -38,7 +47,7 @@ public final class InterfaceNetwork {
         if (key == null) return List.of();
         Set<InterfaceBlockEntity> s = LINKS.get(key);
         if (s == null) return List.of();
-        List<InterfaceBlockEntity> out = new java.util.ArrayList<>(s.size());
+        List<InterfaceBlockEntity> out = new ArrayList<>(s.size());
         for (InterfaceBlockEntity b : s) if (b != self && !b.isRemoved()) out.add(b);
         return out;
     }

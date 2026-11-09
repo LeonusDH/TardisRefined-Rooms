@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.iface;
 
 import com.google.common.math.LongMath;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -17,7 +18,8 @@ import java.util.function.ToLongFunction;
 /**
  * Хранилища одного вида у соседей связанных интерфейсов — общее для всех платформ. Каждый интерфейс сам помнит своих
  * соседей ({@link Sides}, обычно {@link SideCaches}), а здесь обходятся связанные интерфейсы и отбираются нужные стороны.
- * Списки запоминаются на тик: трубы спрашивают помногу раз (на каждый слот или бак), а соседи за тик не меняются.
+ * Списки запоминаются на тик: трубы спрашивают помногу раз (на каждый слот или бак), а соседи за тик не меняются;
+ * если за тик сменились связи или настройки интерфейсов ({@link InterfaceNetwork#version}), списки собираются заново.
  */
 public final class LinkedStorages<T> {
     /** Какие соседи нужны. */
@@ -37,16 +39,17 @@ public final class LinkedStorages<T> {
     }
 
     private final InterfaceBlockEntity be;
-    private final TransferType type;
+    private final TransferKind type;
     private final Function<InterfaceBlockEntity, Sides<T>> sidesOf;
     private final Map<Pick, List<T>> memo = new EnumMap<>(Pick.class);
     private long memoTick = Long.MIN_VALUE;
+    private int memoVersion;
 
     /**
      * @param type    вид передачи: связанные интерфейсы, у которых он выключен, пропускаются
      * @param sidesOf соседи этого вида у связанного интерфейса (null — вид у него сейчас недоступен)
      */
-    public LinkedStorages(InterfaceBlockEntity be, TransferType type, Function<InterfaceBlockEntity, Sides<T>> sidesOf) {
+    public LinkedStorages(InterfaceBlockEntity be, TransferKind type, Function<InterfaceBlockEntity, Sides<T>> sidesOf) {
         this.be = be;
         this.type = type;
         this.sidesOf = sidesOf;
@@ -57,9 +60,10 @@ public final class LinkedStorages<T> {
         Level level = be.getLevel();
         if (level == null || !be.isConnected()) return List.of();
         long now = level.getGameTime();
-        if (now != memoTick) {
+        if (now != memoTick || memoVersion != InterfaceNetwork.version) {
             memo.clear();
             memoTick = now;
+            memoVersion = InterfaceNetwork.version;
         }
         List<T> l = memo.get(pick);
         if (l == null) {

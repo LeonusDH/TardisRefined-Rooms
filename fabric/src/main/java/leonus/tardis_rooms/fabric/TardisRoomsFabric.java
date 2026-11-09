@@ -6,6 +6,7 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.command.TRoomsCommands;
 import leonus.tardis_rooms.iface.FabricInterfaceTransport;
+import leonus.tardis_rooms.iface.tardis.TardisInterfaces;
 import leonus.tardis_rooms.network.Payload;
 import leonus.tardis_rooms.network.Payloads;
 import leonus.tardis_rooms.platform.Platform;
@@ -36,6 +37,7 @@ import java.nio.file.Files;
 public final class TardisRoomsFabric implements ModInitializer {
     @Override
     public void onInitialize() {
+        TardisInterfaces.bootstrap(FabricInterfaceTransport::parts); // до всего остального
         try {
             Files.createDirectories(Platform.configDir().resolve(TardisRooms.MODID));
         } catch (IOException e) {
@@ -70,8 +72,8 @@ public final class TardisRoomsFabric implements ModInitializer {
     private static void registerStorages() {
         var type = TRoomsBlocks.INTERFACE_BE.get();
         // С выключенной стороны трубы интерфейса не видят.
-        ItemStorage.SIDED.registerForBlockEntity((be, side) -> be.open(side) ? FabricInterfaceTransport.of(be).items() : null, type);
-        FluidStorage.SIDED.registerForBlockEntity((be, side) -> be.open(side) ? FabricInterfaceTransport.of(be).fluids() : null, type);
+        ItemStorage.SIDED.registerForBlockEntity(FabricInterfaceTransport::items, type);
+        FluidStorage.SIDED.registerForBlockEntity(FabricInterfaceTransport::fluids, type);
         FabricInterfaceTransport.registerEnergy();
         leonus.tardis_rooms.iface.AE2Compat.register();
     }

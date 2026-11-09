@@ -54,9 +54,7 @@ public class RoomManageScreen extends RoomMonitorScreen {
     @Override
     protected void init() {
         super.init();
-        this.setEvents(null, this::onClose);
-        int vPos = (height - monitorHeight) / 2;
-        addCancelButton(width / 2 + 5, height - vPos - 25);
+        monitorButtons(null, this::onClose);
         if (info != null) {
             sideButton(leftColumn(), columnTop(), ICON_MAP, TRoomsText.MAP.text(), TRoomsText.MAP_MANAGE_TOOLTIP.text(), () -> {
                 click();
@@ -128,11 +126,8 @@ public class RoomManageScreen extends RoomMonitorScreen {
         @Override
         protected void init() {
             super.init();
-            this.setEvents(this::submit, () -> switchScreenToLeft(parent));
-            int vPos = (height - monitorHeight) / 2;
-            addSubmitButton(width / 2 + 25, height - vPos - 25);
-            addCancelButton(width / 2 + 5, height - vPos - 25);
-            box = new net.minecraft.client.gui.components.EditBox(font, listLeft(), vPos + 40, LIST_WIDTH, 16, TRoomsText.SCREEN_RENAME_TITLE.text());
+            monitorButtons(this::submit, () -> switchScreenToLeft(parent));
+            box = new net.minecraft.client.gui.components.EditBox(font, listLeft(), (height - monitorHeight) / 2 + 40, LIST_WIDTH, 16, TRoomsText.SCREEN_RENAME_TITLE.text());
             box.setMaxLength(leonus.tardis_rooms.room.ModuleRegistry.MAX_NAME);
             box.setValue(value);
             box.setHint(parent.type.copy().withStyle(ChatFormatting.DARK_GRAY));
@@ -181,9 +176,7 @@ public class RoomManageScreen extends RoomMonitorScreen {
         @Override
         protected void init() {
             super.init();
-            this.setEvents(null, () -> switchScreenToLeft(parent));
-            int vPos = (height - monitorHeight) / 2;
-            addCancelButton(width / 2 + 5, height - vPos - 25);
+            monitorButtons(null, () -> switchScreenToLeft(parent));
         }
 
         @Override

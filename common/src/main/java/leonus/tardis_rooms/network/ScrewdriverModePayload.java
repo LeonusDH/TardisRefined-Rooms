@@ -1,7 +1,7 @@
 package leonus.tardis_rooms.network;
 
 import leonus.tardis_rooms.TardisRooms;
-import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.network.codec.ByteBufCodecs;
 import leonus.tardis_rooms.network.codec.StreamCodec;
 import net.minecraft.network.FriendlyByteBuf;
@@ -19,6 +19,6 @@ public record ScrewdriverModePayload(int step) implements Payload {
 
     /** Сервер, главный поток. */
     public static void handle(ScrewdriverModePayload p, ServerPlayer player) {
-        InterfaceTools.cycleMode(player, p.step());
+        ScrewdriverTools.cycleMode(player, p.step());
     }
 }

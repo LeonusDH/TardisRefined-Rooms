@@ -3,11 +3,13 @@ package leonus.tardis_rooms.iface;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
@@ -18,7 +20,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
-import whocraft.tardis_refined.common.items.ScrewdriverItem;
 
 /**
  * Интерфейс ТАРДИС: ставится в любом помещении ТАРДИС, а вне её — только вплотную к оболочке
@@ -57,9 +58,9 @@ public class InterfaceBlock extends BaseEntityBlock {
 
     @Override
     @SuppressWarnings("deprecation")
-    public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.core.Direction direction) {
+    public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
         // direction — от соседа к интерфейсу; своя сторона к соседу — противоположная.
-        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be && be.open(direction.getOpposite()) ? be.redstoneOut() : 0;
+        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.signal(direction.getOpposite()) : 0;
     }
 
     @Override
@@ -69,14 +70,14 @@ public class InterfaceBlock extends BaseEntityBlock {
         if (!level.isClientSide() && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) be.neighborChanged();
     }
 
-    /** Убрали интерфейс — связанные пересчитывают свой сигнал без него. */
+    /** Интерфейс убирают (не выгрузка чанка): видам — хук «убран», пока он ещё связан (связанные пересчитывают без него). */
     @Override
     @SuppressWarnings("deprecation")
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean moving) {
-        java.util.List<InterfaceBlockEntity> peers = !level.isClientSide() && !state.is(newState.getBlock())
-                && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.linked() : java.util.List.of();
+        if (!level.isClientSide() && !state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
+            be.removedFromWorld();
+        }
         super.onRemove(state, level, pos, newState, moving);
-        for (InterfaceBlockEntity p : peers) p.updateRedstoneOutput();
     }
 
     @Override
@@ -93,10 +94,11 @@ public class InterfaceBlock extends BaseEntityBlock {
     @SuppressWarnings("deprecation")
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         ItemStack stack = player.getItemInHand(hand);
-        if (InterfacePlatform.isMemoryCard(stack) && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
-            return InterfacePlatform.useMemoryCard(stack, be, player);
+        if (level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) {
+            InteractionResult r = be.useItem(stack, player);
+            if (r != null) return r;
         }
-        if (stack.getItem() instanceof ScrewdriverItem) {
+        if (InterfaceHost.isConfigurator(stack)) {
             if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);
             return InteractionResult.sidedSuccess(level.isClientSide());
         }

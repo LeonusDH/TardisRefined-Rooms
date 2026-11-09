@@ -4,9 +4,6 @@ import leonus.tardis_rooms.iface.AE2Compat;
 import leonus.tardis_rooms.iface.FabricInterfaceTransport;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceTransport;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 
 /**
  * Реализация {@link leonus.tardis_rooms.iface.InterfacePlatform} для Fabric.
@@ -14,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class InterfacePlatformImpl {
     public static InterfaceTransport createTransport(InterfaceBlockEntity be) {
-        return new FabricInterfaceTransport(be);
+        return new FabricInterfaceTransport();
     }
 
     public static boolean chemicalsAvailable() {
@@ -23,14 +20,6 @@ public final class InterfacePlatformImpl {
 
     public static boolean meAvailable() {
         return AE2Compat.enabled();
-    }
-
-    public static boolean isMemoryCard(ItemStack stack) {
-        return AE2Compat.isMemoryCard(stack);
-    }
-
-    public static InteractionResult useMemoryCard(ItemStack stack, InterfaceBlockEntity be, Player player) {
-        return AE2Compat.useMemoryCard(stack, be, player);
     }
 
     private InterfacePlatformImpl() {}

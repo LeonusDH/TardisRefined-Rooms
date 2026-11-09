@@ -24,6 +24,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.RenderShape;
@@ -42,11 +44,11 @@ import java.util.List;
  */
 public class InterfaceSidesScreen extends Screen {
     private static final int PANEL_W = 220, PANEL_H = 192, VIEW = 150;
-    private static final net.minecraft.resources.ResourceLocation ICON_BACK =
-            new net.minecraft.resources.ResourceLocation(whocraft.tardis_refined.TardisRefined.MODID, "back");
-    private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_ON = RoomMonitorScreen.sprite("iface/neighbours_on");
-    private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_OFF = RoomMonitorScreen.sprite("iface/neighbours_off");
-    private static final net.minecraft.resources.ResourceLocation ICON_RESET = RoomMonitorScreen.sprite("iface/reset_view");
+    private static final ResourceLocation ICON_BACK =
+            new ResourceLocation(whocraft.tardis_refined.TardisRefined.MODID, "back");
+    private static final ResourceLocation ICON_NEIGHBOURS_ON = RoomMonitorScreen.sprite("iface/neighbours_on");
+    private static final ResourceLocation ICON_NEIGHBOURS_OFF = RoomMonitorScreen.sprite("iface/neighbours_off");
+    private static final ResourceLocation ICON_RESET = RoomMonitorScreen.sprite("iface/reset_view");
     private static final int GOLD = 0xFFB28610, AQUA = 0xFF3FA7B8, RED = 0xFFB0413E;
 
     private final Screen parent;
@@ -72,7 +74,7 @@ public class InterfaceSidesScreen extends Screen {
 
     private InterfaceData data() {
         var l = Minecraft.getInstance().level;
-        return l != null && l.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.data() : InterfaceData.DEFAULT;
+        return l != null && l.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.data() : InterfaceData.defaults();
     }
 
     @Override
@@ -89,13 +91,8 @@ public class InterfaceSidesScreen extends Screen {
                 () -> { yaw = startYaw; pitch = 25f; });
     }
 
-    private int icon(int x, int y, net.minecraft.resources.ResourceLocation sprite, net.minecraft.network.chat.MutableComponent title,
-                     net.minecraft.network.chat.MutableComponent hint, Runnable onPress) {
-        var b = new IconButton(20, sprite, title, btn -> onPress.run());
-        b.setPosition(x, y);
-        b.setTooltip(net.minecraft.client.gui.components.Tooltip.create(title.copy().withStyle(ChatFormatting.GOLD)
-                .append("\n").append(hint.withStyle(ChatFormatting.GRAY))));
-        addRenderableWidget(b);
+    private int icon(int x, int y, ResourceLocation sprite, MutableComponent title, MutableComponent hint, Runnable onPress) {
+        addRenderableWidget(RoomMonitorScreen.iconButton(x, y, sprite, title, hint, onPress));
         return y + 22;
     }
 
@@ -232,7 +229,7 @@ public class InterfaceSidesScreen extends Screen {
         FaceMode m = data().face(hovered);
         List<FormattedCharSequence> lines = new ArrayList<>();
         lines.add(InterfaceTools.faceName(hovered).text().append(": ")
-                .append(InterfaceTools.faceModeName(m).text().withStyle(color(m))).getVisualOrderText());
+                .append(InterfaceTools.faceModeText(m)).getVisualOrderText());
         var l = Minecraft.getInstance().level;
         if (l != null) {
             BlockState ns = l.getBlockState(pos.relative(hovered));
@@ -248,15 +245,6 @@ public class InterfaceSidesScreen extends Screen {
         g.fill(x, y + 1, x + 7, y + 8, color);
         g.drawString(font, text, x + 10, y, 0xFFCCCCCC, false);
         return x + 10 + font.width(text);
-    }
-
-    private static ChatFormatting color(FaceMode m) {
-        return switch (m) {
-            case DEFAULT -> ChatFormatting.GRAY;
-            case PUSH -> ChatFormatting.GOLD;
-            case PULL -> ChatFormatting.AQUA;
-            case DISABLED -> ChatFormatting.RED;
-        };
     }
 
     private void renderBlocks(GuiGraphics g, InterfaceData data) {

@@ -43,5 +43,13 @@ public final class ByteBufCodecs {
         });
     }
 
+    /** {@code codec.apply(ByteBufCodecs::optional)} — значение, которого может не быть. */
+    public static <B extends FriendlyByteBuf, V> StreamCodec<B, Optional<V>> optional(StreamCodec<B, V> c) {
+        return StreamCodec.of((buf, o) -> {
+            buf.writeBoolean(o.isPresent());
+            o.ifPresent(v -> c.encode(buf, v));
+        }, buf -> buf.readBoolean() ? Optional.of(c.decode(buf)) : Optional.empty());
+    }
+
     private ByteBufCodecs() {}
 }

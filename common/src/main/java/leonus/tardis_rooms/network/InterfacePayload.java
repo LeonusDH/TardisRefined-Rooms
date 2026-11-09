@@ -1,21 +1,26 @@
 package leonus.tardis_rooms.network;
 
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
-import leonus.tardis_rooms.iface.InterfaceTools;
-import leonus.tardis_rooms.iface.TransferType;
+import leonus.tardis_rooms.iface.InterfaceHost;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
+import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.codec.ByteBufCodecs;
 import leonus.tardis_rooms.network.codec.StreamCodec;
-import leonus.tardis_rooms.room.RoomGrowth;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Клиент → сервер: действие с интерфейсом (из меню или Shift+ЛКМ отвёрткой). */
-public record InterfacePayload(BlockPos pos, int action, int value) implements Payload {
+import java.util.Optional;
+
+/** Клиент → сервер: действие с интерфейсом (из меню или Shift+ЛКМ отвёрткой). {@code kind} — вид передачи для TOGGLE. */
+public record InterfacePayload(BlockPos pos, int action, int value, Optional<ResourceLocation> kind) implements Payload {
     public static final int FLOW = 0, TOGGLE = 1, GENERATE = 2, CLEAR = 3, PASTE = 4, FACE = 5;
 
     public static final Type<InterfacePayload> TYPE = new Type<>(new ResourceLocation(TardisRooms.MODID, "interface_action"));
@@ -23,36 +28,43 @@ public record InterfacePayload(BlockPos pos, int action, int value) implements P
             ByteBufCodecs.BLOCK_POS, InterfacePayload::pos,
             ByteBufCodecs.VAR_INT, InterfacePayload::action,
             ByteBufCodecs.VAR_INT, InterfacePayload::value,
+            ByteBufCodecs.RESOURCE_LOCATION.apply(ByteBufCodecs::optional), InterfacePayload::kind,
             InterfacePayload::new);
+
+    public InterfacePayload(BlockPos pos, int action, int value) { this(pos, action, value, Optional.empty()); }
+
+    /** Включить или выключить вид передачи. */
+    public static InterfacePayload toggle(BlockPos pos, TransferKind t) { return new InterfacePayload(pos, TOGGLE, 0, Optional.of(t.id())); }
 
     @Override
     public Type<? extends Payload> type() { return TYPE; }
 
     /** Сервер, главный поток. */
     public static void handle(InterfacePayload p, ServerPlayer player) {
-        if (!RoomGrowth.holdsScrewdriver(player)) return;
+        if (!InterfaceHost.holdsConfigurator(player)) return;
         if (player.distanceToSqr(p.pos().getCenter()) > 64) return;
         if (!player.mayBuild() || !player.level().mayInteract(player, p.pos())) return;
         if (!(player.level().getBlockEntity(p.pos()) instanceof InterfaceBlockEntity be)) return;
         switch (p.action()) {
             case FLOW -> be.setFlow(Flow.of(p.value()));
             case TOGGLE -> {
-                if (p.value() >= 0 && p.value() < TransferType.values().length) be.toggle(TransferType.values()[p.value()]);
+                TransferKind t = p.kind().map(TransferKinds::byId).orElse(null);
+                if (t != null) be.toggle(t);
             }
             case GENERATE -> {
                 if (!be.generateId()) player.displayClientMessage(TRoomsText.MSG_INTERFACE_NO_TARDIS.text(), true);
             }
             case CLEAR -> be.clearId();
-            case PASTE -> InterfaceTools.paste(player, be);
+            case PASTE -> ScrewdriverTools.paste(player, be);
             case FACE -> {
                 // value = операция × 6 + сторона; операция: 0 — следующий режим, 1 — предыдущий, 2 — по умолчанию.
                 if (p.value() >= 0 && p.value() < 18) {
-                    net.minecraft.core.Direction d = net.minecraft.core.Direction.from3DDataValue(p.value() % 6);
-                    leonus.tardis_rooms.iface.FaceMode cur = be.face(d);
+                    Direction d = Direction.from3DDataValue(p.value() % 6);
+                    FaceMode cur = be.face(d);
                     be.setFace(d, switch (p.value() / 6) {
                         case 0 -> cur.next();
                         case 1 -> cur.prev();
-                        default -> leonus.tardis_rooms.iface.FaceMode.DEFAULT;
+                        default -> FaceMode.DEFAULT;
                     });
                 }
             }

@@ -1,18 +1,31 @@
 package leonus.tardis_rooms.compat;
 
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.TardisRoomsConfig;
+import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlock;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
+import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.iface.LinkedTotals;
 import leonus.tardis_rooms.iface.Status;
-import leonus.tardis_rooms.iface.TransferType;
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
@@ -22,6 +35,12 @@ import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
 import snownee.jade.api.config.IPluginConfig;
+import snownee.jade.api.view.IServerExtensionProvider;
+import snownee.jade.api.view.ViewGroup;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Jade: состояние интерфейса ТАРДИС (подключён / нет ID / нет оболочки / конфликт сети), ID, направление. Грузится только с Jade:
@@ -32,6 +51,7 @@ public class JadePlugin implements IWailaPlugin {
     @Override
     public void register(IWailaCommonRegistration registration) {
         registration.registerBlockDataProvider(InterfaceInfo.INSTANCE, InterfaceBlockEntity.class);
+        registration.registerEnergyStorage(InterfaceEnergy.INSTANCE, InterfaceBlockEntity.class);
     }
 
     @Override
@@ -50,74 +70,76 @@ public class JadePlugin implements IWailaPlugin {
         /** Ключи с префиксом: данные с сервера у всех плагинов Jade лежат в одном теге, а «id» и «status» там могут быть заняты. */
         @Override
         public void appendServerData(CompoundTag tag, BlockAccessor accessor) {
-            if (!leonus.tardis_rooms.TardisRoomsConfig.compatJade() || !(accessor.getBlockEntity() instanceof InterfaceBlockEntity be)) return;
+            if (!TardisRoomsConfig.compatJade() || !(accessor.getBlockEntity() instanceof InterfaceBlockEntity be)) return;
             tag.putByte("tardis_rooms_status", (byte) be.status().ordinal());
             tag.putInt("tardis_rooms_id", be.id());
             tag.putInt("tardis_rooms_peers", be.peerCount());
             tag.putByte("tardis_rooms_flow", (byte) be.flow().ordinal());
-            tag.putInt("tardis_rooms_types", be.data().types());
+            // Виды — по id: номера видов у сервера и клиента могут не совпасть.
+            ListTag kinds = new ListTag();
+            for (ResourceLocation k : be.data().kinds()) kinds.add(StringTag.valueOf(k.toString()));
+            tag.put("tardis_rooms_kinds", kinds);
             tag.putInt("tardis_rooms_faces", be.data().faces());
         }
 
         @Override
         public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-            if (!leonus.tardis_rooms.TardisRoomsConfig.compatJade()) return;
+            if (!TardisRoomsConfig.compatJade()) return;
             CompoundTag d = accessor.getServerData();
             if (!d.contains("tardis_rooms_status")) return;
             Status st = Status.of(d.getByte("tardis_rooms_status"));
             tooltip.add(st.text());
             int id = d.getInt("tardis_rooms_id");
-            if (id != 0) tooltip.add(TRoomsText.IFACE_ID.text(Component.literal(InterfaceData.hex(id)).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.GRAY));
+            if (id != 0) tooltip.add(TRoomsText.IFACE_ID.text(InterfaceTools.idText(id)).withStyle(ChatFormatting.GRAY));
             // Режимы сторон — собственная настройка интерфейса: видны и без связи.
             int faceBits = d.getInt("tardis_rooms_faces");
             MutableComponent faces = Component.empty();
             boolean first = true;
-            for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-                leonus.tardis_rooms.iface.FaceMode m = InterfaceData.face(faceBits, dir);
-                if (m == leonus.tardis_rooms.iface.FaceMode.DEFAULT) continue;
+            for (Direction dir : Direction.values()) {
+                FaceMode m = InterfaceData.face(faceBits, dir);
+                if (m == FaceMode.DEFAULT) continue;
                 if (!first) faces.append(", ");
-                faces.append(leonus.tardis_rooms.iface.InterfaceTools.faceName(dir).text()).append(": ")
-                        .append(leonus.tardis_rooms.iface.InterfaceTools.faceModeName(m).text()
-                                .withStyle(switch (m) {
-                                    case PUSH -> ChatFormatting.GOLD;
-                                    case PULL -> ChatFormatting.AQUA;
-                                    default -> ChatFormatting.RED;
-                                }));
+                faces.append(InterfaceTools.faceName(dir).text()).append(": ").append(InterfaceTools.faceModeText(m));
                 first = false;
             }
             if (!first) tooltip.add(TRoomsText.JADE_INTERFACE_FACES.text(faces).withStyle(ChatFormatting.GRAY));
             if (st != Status.CONNECTED) return;
             tooltip.add(TRoomsText.IFACE_PEERS.text(d.getInt("tardis_rooms_peers")).withStyle(ChatFormatting.GRAY));
-            tooltip.add(TRoomsText.IFACE_FLOW.text(flow(Flow.of(d.getByte("tardis_rooms_flow")))).withStyle(ChatFormatting.GRAY));
-            int types = d.getInt("tardis_rooms_types");
+            tooltip.add(TRoomsText.IFACE_FLOW.text(InterfaceTools.flowName(Flow.of(d.getByte("tardis_rooms_flow"))).text()).withStyle(ChatFormatting.GRAY));
+            Set<String> kinds = new HashSet<>();
+            for (Tag k : d.getList("tardis_rooms_kinds", Tag.TAG_STRING)) kinds.add(k.getAsString());
             MutableComponent on = Component.empty();
             first = true;
-            for (TransferType t : TransferType.values()) {
-                if (!t.available() || (types & t.bit()) == 0) continue;
+            for (TransferKind t : TransferKinds.all()) {
+                if (!t.available() || !kinds.contains(t.id().toString())) continue;
                 if (!first) on.append(", ");
-                on.append(name(t));
+                on.append(t.name());
                 first = false;
             }
             if (!first) tooltip.add(on.withStyle(ChatFormatting.DARK_GRAY));
         }
+    }
 
-        private static MutableComponent name(TransferType t) {
-            return (switch (t) {
-                case ENERGY -> TRoomsText.IFACE_ENERGY;
-                case ITEMS -> TRoomsText.IFACE_ITEMS;
-                case FLUIDS -> TRoomsText.IFACE_FLUIDS;
-                case CHEMICALS -> TRoomsText.IFACE_CHEMICALS;
-                case ME -> TRoomsText.IFACE_ME;
-                case REDSTONE -> TRoomsText.IFACE_REDSTONE;
-            }).text();
-        }
+    /**
+     * Полоса энергии в подсказке. Без настоящих хранилищ у связанных интерфейсов интерфейс называет кабелям условную
+     * ёмкость (иначе часть кабелей к нему не подключается), и встроенный показ Jade рисовал бы «0 / 2,1 G». Здесь Jade
+     * спрашивает раньше встроенного показа: нет настоящей ёмкости — пустой ответ, полосы нет; есть — null, и Jade
+     * показывает как обычно (настоящие цифры). То, что видят кабели, не меняется.
+     */
+    public enum InterfaceEnergy implements IServerExtensionProvider<InterfaceBlockEntity, CompoundTag> {
+        INSTANCE;
 
-        private static Component flow(Flow f) {
-            return (switch (f) {
-                case IN -> TRoomsText.IFACE_FLOW_IN;
-                case OUT -> TRoomsText.IFACE_FLOW_OUT;
-                case BOTH -> TRoomsText.IFACE_FLOW_BOTH;
-            }).text();
+        private static final ResourceLocation UID = new ResourceLocation(TardisRooms.MODID, "interface_energy");
+
+        @Override
+        public ResourceLocation getUid() { return UID; }
+
+        @Override
+        public @Nullable List<ViewGroup<CompoundTag>> getGroups(ServerPlayer player, ServerLevel world, InterfaceBlockEntity be, boolean showDetails) {
+            // Совместимость с Jade выключена в настройках — не вмешиваемся, показ как у Jade без аддона.
+            if (!TardisRoomsConfig.compatJade()) return null;
+            if (be.part(BuiltinKinds.energy()) instanceof LinkedTotals t && t.linkedTotals()[1] > 0) return null;
+            return List.of();
         }
     }
 }

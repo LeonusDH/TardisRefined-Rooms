@@ -1,5 +1,8 @@
 package leonus.tardis_rooms.iface;
 
+import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import net.fabricmc.fabric.api.lookup.v1.block.BlockApiCache;
 import net.fabricmc.fabric.api.lookup.v1.block.BlockApiLookup;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
@@ -8,47 +11,60 @@ import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
-import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Передача через интерфейс на Fabric — Transfer API (предметы, жидкости) и Team Reborn Energy (энергия, если установлен).
- * Хранилища интерфейса ({@link ForwardingStorage}, {@link FabricEnergy}) — то, что видят трубы; поданное в них сразу уходит
- * соседям связанных интерфейсов.
+ * Виды передачи — части ({@link ItemsPart}, {@link FluidsPart}, энергия в {@link FabricEnergy}); их хранилища
+ * ({@link ForwardingStorage}) — то, что видят трубы: поданное сразу уходит соседям связанных интерфейсов.
  */
 public final class FabricInterfaceTransport implements InterfaceTransport {
-    /** За одну операцию грани: до стопки предметов и до 16 вёдер жидкости (как на Forge). */
+    /** За одну операцию грани: до стопки предметов и до 16 вёдер жидкости (как на NeoForge). */
     static final long ITEMS_PER_OP = 64, FLUID_PER_OP = FluidConstants.BUCKET * 16;
 
-    final InterfaceBlockEntity be;
-    private final ForwardingStorage<ItemVariant> items;
-    private final ForwardingStorage<FluidVariant> fluids;
-    private Object energy;
-
-    public FabricInterfaceTransport(InterfaceBlockEntity be) {
-        this.be = be;
-        this.items = new ForwardingStorage<>(this, TransferType.ITEMS, ItemStorage.SIDED, t -> t.items);
-        this.fluids = new ForwardingStorage<>(this, TransferType.FLUIDS, FluidStorage.SIDED, t -> t.fluids);
+    /** Части встроенных видов на Fabric по id вида (для {@link BuiltinKinds#plugin}); null — у вида здесь нет части. */
+    public static TransferKind.PartFactory parts(ResourceLocation id) {
+        if (id.equals(BuiltinKinds.ENERGY)) return FabricEnergy.LOADED ? FabricEnergy::newPart : null;
+        if (id.equals(BuiltinKinds.ITEMS)) return ItemsPart::new;
+        if (id.equals(BuiltinKinds.FLUIDS)) return FluidsPart::new;
+        if (id.equals(BuiltinKinds.ME)) return AE2Compat.LOADED ? AE2Compat::newPart : null;
+        return null;
     }
 
-    public static FabricInterfaceTransport of(InterfaceBlockEntity be) {
-        return (FabricInterfaceTransport) be.transport();
+    /** Предметы: хранилище с пересылкой. */
+    static final class ItemsPart implements KindPart {
+        final ForwardingStorage<ItemVariant> storage;
+
+        ItemsPart(InterfaceBlockEntity be, TransferKind kind) {
+            storage = new ForwardingStorage<>(be, kind, ItemStorage.SIDED, peer -> peer.part(kind) instanceof ItemsPart p ? p.storage.sides : null);
+        }
+
+        @Override
+        public void moveFace(Direction face, boolean pull) { storage.moveFace(face, pull, ITEMS_PER_OP); }
     }
 
-    // ---------- для поиска хранилищ (BlockApiLookup) ----------
+    /** Жидкости: хранилище с пересылкой. */
+    static final class FluidsPart implements KindPart {
+        final ForwardingStorage<FluidVariant> storage;
 
-    /** Хранилища интерфейса: null — вид передачи выключен (трубы не будут подключаться). */
-    public Storage<ItemVariant> items() { return be.enabled(TransferType.ITEMS) ? items : null; }
+        FluidsPart(InterfaceBlockEntity be, TransferKind kind) {
+            storage = new ForwardingStorage<>(be, kind, FluidStorage.SIDED, peer -> peer.part(kind) instanceof FluidsPart p ? p.storage.sides : null);
+        }
 
-    public Storage<FluidVariant> fluids() { return be.enabled(TransferType.FLUIDS) ? fluids : null; }
+        @Override
+        public void moveFace(Direction face, boolean pull) { storage.moveFace(face, pull, FLUID_PER_OP); }
+    }
 
-    /** Энергия (Team Reborn Energy) или null — выключена или мода нет. */
-    public Object energy() {
-        if (!FabricEnergy.LOADED || !be.enabled(TransferType.ENERGY)) return null;
-        if (energy == null) energy = FabricEnergy.view(this);
-        return energy;
+    // ---------- для поиска хранилищ (BlockApiLookup): null — сторона или вид выключены (трубы не подключатся) ----------
+
+    public static @Nullable Storage<ItemVariant> items(InterfaceBlockEntity be, @Nullable Direction side) {
+        return be.open(side) && be.part(BuiltinKinds.items()) instanceof ItemsPart p ? p.storage.storage() : null;
+    }
+
+    public static @Nullable Storage<FluidVariant> fluids(InterfaceBlockEntity be, @Nullable Direction side) {
+        return be.open(side) && be.part(BuiltinKinds.fluids()) instanceof FluidsPart p ? p.storage.storage() : null;
     }
 
     /** Энергия интерфейса для кабелей — если установлен Team Reborn Energy. */
@@ -60,39 +76,7 @@ public final class FabricInterfaceTransport implements InterfaceTransport {
     @Override
     public void invalidate() {}
 
-    @Override
-    public void tick() {
-        AE2Compat.update(be);
-    }
-
-    @Override
-    public void remove() {
-        AE2Compat.destroy(be);
-    }
-
-    // ---------- грани «вставлять» / «забирать» ----------
-
-    @Override
-    public void moveFace(BlockPos np, Direction side, boolean pull) {
-        Direction face = side.getOpposite(); // своя сторона, к которой примыкает сосед
-        if (be.enabled(TransferType.ENERGY) && FabricEnergy.LOADED) FabricEnergy.moveFace(this, face, pull);
-        if (be.enabled(TransferType.ITEMS)) {
-            Storage<ItemVariant> h = items.sides.at(face);
-            if (h != null) move(h, items, pull, ITEMS_PER_OP);
-        }
-        if (be.enabled(TransferType.FLUIDS)) {
-            Storage<FluidVariant> h = fluids.sides.at(face);
-            if (h != null) move(h, fluids, pull, FLUID_PER_OP);
-        }
-    }
-
-    /** «Забирать» — из соседа в своё хранилище (то есть дальше к выходам), «вставлять» — из своего (от входов) в соседа. */
-    private static <T> void move(Storage<T> neighbour, Storage<T> mine, boolean pull, long max) {
-        if (pull) StorageUtil.move(neighbour, mine, v -> true, max, null);
-        else StorageUtil.move(mine, neighbour, v -> true, max, null);
-    }
-
-    // ---------- соседи связанных интерфейсов ----------
+    // ---------- соседи ----------
 
     /** Соседи блока по {@code lookup}: по BlockApiCache на сторону. */
     static <T> LinkedStorages.Sides<T> sides(InterfaceBlockEntity be, BlockApiLookup<T, Direction> lookup) {

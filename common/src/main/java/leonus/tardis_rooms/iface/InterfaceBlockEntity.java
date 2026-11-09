@@ -1,9 +1,13 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.platform.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.protocol.Packet;
@@ -13,6 +17,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -20,9 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
-import whocraft.tardis_refined.common.blockentity.shell.ShellBaseBlockEntity;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,7 +38,7 @@ import java.util.Optional;
 public class InterfaceBlockEntity extends BlockEntity {
     private static final int CHECK_INTERVAL = 20;
 
-    private InterfaceData data = InterfaceData.DEFAULT;
+    private InterfaceData data = InterfaceData.defaults();
     private Status status = Status.NO_SHELL;
     /** ТАРДИС, в которой (или у оболочки которой) стоит интерфейс. */
     private ResourceKey<Level> tardis;
@@ -45,13 +48,14 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     /** Передача ресурсов — своя у каждого загрузчика. */
     private final InterfaceTransport transport = InterfacePlatform.createTransport(this);
-    /** Узел сети ME (с AE2), иначе null. */
-    Object me;
-    /** Редстоун: сигнал, принятый от соседей (вход), и сигнал, который интерфейс выдаёт (выход). */
-    private int redstoneIn, redstoneOut;
+    /** Части видов передачи по номеру вида ({@link TransferKind#index()}); null — у вида нет части. */
+    private final KindPart[] parts;
 
     public InterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(TRoomsBlocks.INTERFACE_BE.get(), pos, state);
+        List<TransferKind> kinds = TransferKinds.all();
+        parts = new KindPart[kinds.size()];
+        for (TransferKind k : kinds) parts[k.index()] = k.createPart(this);
     }
 
     // ---------- настройки ----------
@@ -62,7 +66,10 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     public Flow flow() { return data.flowMode(); }
 
-    public boolean enabled(TransferType t) { return t.available() && data.enabled(t); }
+    public boolean enabled(TransferKind t) { return t.available() && data.enabled(t); }
+
+    /** Часть вида в этом интерфейсе, или null — у вида нет части. */
+    public @Nullable KindPart part(TransferKind t) { return parts[t.index()]; }
 
     public Status status() { return status; }
 
@@ -72,38 +79,28 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     public boolean isConnected() { return status == Status.CONNECTED; }
 
+    /** Общее для видов передачи у загрузчика (на Forge — LazyOptional для труб). */
     public InterfaceTransport transport() { return transport; }
 
     InterfaceNetwork.Key linkKey() { return isConnected() && tardis != null ? new InterfaceNetwork.Key(tardis, data.id()) : null; }
 
     void setData(InterfaceData d) {
         if (d.equals(data)) return;
-        Iterable<InterfaceBlockEntity> before = linked();
         data = d;
-        if (level != null && !level.isClientSide()) {
-            refresh();
-            for (InterfaceBlockEntity p : before) p.updateRedstoneOutput();
-        }
-        changed();
+        // refresh() сам сообщает об изменении, если сменилось состояние связи; второй раз — незачем.
+        if (level == null || level.isClientSide() || !refresh()) changed();
     }
 
     public void setFlow(Flow f) { setData(data.withFlow(f)); }
 
     public FaceMode face(Direction d) { return data.face(d); }
 
-    public void setFace(Direction d, FaceMode m) {
-        setData(data.withFace(d, m));
-        // Выключенная сторона не принимает и не выдаёт редстоун: перечитать вход и сообщить соседям про выход.
-        if (level != null && !level.isClientSide()) {
-            updateRedstoneInput();
-            level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
-        }
-    }
+    public void setFace(Direction d, FaceMode m) { setData(data.withFace(d, m)); }
 
     /** Сторона открыта для соседа (не выключена); {@code null} — без стороны (сам блок), открыто. */
     public boolean open(@Nullable Direction side) { return side == null || face(side) != FaceMode.DISABLED; }
 
-    public void toggle(TransferType t) { if (t.available()) setData(data.toggle(t)); }
+    public void toggle(TransferKind t) { if (t.available()) setData(data.toggle(t)); }
 
     public void clearId() { setData(data.withId(0, Optional.empty())); }
 
@@ -132,7 +129,9 @@ public class InterfaceBlockEntity extends BlockEntity {
     private void changed() {
         setChanged();
         if (level != null && !level.isClientSide()) {
+            InterfaceNetwork.version++;
             transport.invalidate();
+            for (KindPart p : parts) if (p != null) p.invalidate();
             BlockState s = getBlockState();
             level.sendBlockUpdated(worldPosition, s, s, Block.UPDATE_CLIENTS);
         }
@@ -160,10 +159,41 @@ public class InterfaceBlockEntity extends BlockEntity {
         transport.remove();
     }
 
-    /** Чанк выгружен. Без {@code @Override} — по той же причине, что и {@link #onLoad()}. */
+    /** Чанк выгружается. Без {@code @Override} — по той же причине, что и {@link #onLoad()}. */
     public void onChunkUnloaded() {
+        for (KindPart p : parts) if (p != null) p.unload();
         leave();
         transport.remove();
+    }
+
+    /** Интерфейс убирают из мира (сломан, заменён) — до того, как блок-сущность уберётся (см. {@link InterfaceBlock}). */
+    void removedFromWorld() {
+        for (KindPart p : parts) if (p != null) p.remove();
+    }
+
+    /** Соседний блок изменился (сервер). */
+    void neighborChanged() {
+        transport.neighborChanged();
+        for (KindPart p : parts) if (p != null) p.neighborChanged();
+    }
+
+    /** Редстоун-сигнал со своей стороны {@code side}: наибольший среди частей; с выключенной стороны — 0. */
+    public int signal(Direction side) {
+        if (!open(side)) return 0;
+        int out = 0;
+        for (KindPart p : parts) if (p != null) out = Math.max(out, p.signal(side));
+        return out;
+    }
+
+    /** Предмет в руке игрока — видам, которым он нужен (карта памяти AE2 и т. п.); null — ни одному. */
+    @Nullable InteractionResult useItem(ItemStack stack, Player player) {
+        for (TransferKind k : TransferKinds.all()) {
+            KindPart p = parts[k.index()];
+            if (p == null || !k.available()) continue;
+            InteractionResult r = p.useItem(stack, player);
+            if (r != null) return r;
+        }
+        return null;
     }
 
     private void leave() {
@@ -172,13 +202,14 @@ public class InterfaceBlockEntity extends BlockEntity {
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, InterfaceBlockEntity be) {
-        boolean periodic = (level.getGameTime() + pos.asLong()) % CHECK_INTERVAL == 0;
-        if (be.loadPending || periodic) {
+        // Сдвиг на позицию — чтобы интерфейсы не проверялись все в один и тот же тик.
+        long t = level.getGameTime() + pos.asLong();
+        if (be.loadPending || t % CHECK_INTERVAL == 0) {
             be.loadPending = false;
             be.refresh();
+            for (KindPart p : be.parts) if (p != null) p.tick();
         }
-        if (periodic) be.transport.tick();
-        if (be.data.faces() != 0 && (level.getGameTime() + pos.asLong()) % FACE_INTERVAL == 0) be.tickFaces();
+        if (be.data.faces() != 0 && t % FACE_INTERVAL == 0) be.tickFaces();
     }
 
     // ---------- грани «вставлять» / «забирать» ----------
@@ -198,7 +229,10 @@ public class InterfaceBlockEntity extends BlockEntity {
             if (!(pull ? flow().in : flow().out)) continue;
             BlockPos np = worldPosition.relative(d);
             if (!level.isLoaded(np) || level.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-            transport.moveFace(np, d.getOpposite(), pull);
+            for (TransferKind k : TransferKinds.all()) {
+                KindPart p = parts[k.index()];
+                if (p != null && enabled(k)) p.moveFace(d, pull);
+            }
         }
     }
 
@@ -213,8 +247,8 @@ public class InterfaceBlockEntity extends BlockEntity {
         if (!player.getInventory().add(stack)) player.drop(stack, false);
     }
 
-    /** Пересчитывает, к какой ТАРДИС подключён интерфейс и с кем связан. */
-    void refresh() {
+    /** Пересчитывает, к какой области подключён интерфейс и с кем связан. true — что-то сменилось, об этом уже сообщено. */
+    boolean refresh() {
         ResourceKey<Level> t = null;
         Status st;
         List<ResourceKey<Level>> found = LinkScope.of(level, worldPosition);
@@ -235,75 +269,10 @@ public class InterfaceBlockEntity extends BlockEntity {
             joinedKey = key;
         }
         int p = key != null ? InterfaceNetwork.peers(this).size() : 0;
-        if (changedState || p != peers) {
-            peers = p;
-            changed();
-        }
-        updateRedstoneInput();
-        updateRedstoneOutput();
-    }
-
-    // ---------- редстоун ----------
-
-    /**
-     * Сигнал передаётся от интерфейсов со входом к интерфейсам с выходом. «Вход и выход» для редстоуна — только вход:
-     * иначе интерфейс ловил бы свой же сигнал через провод и защёлкивался навсегда.
-     */
-    private boolean redstoneReads() { return isConnected() && enabled(TransferType.REDSTONE) && flow().in; }
-
-    private boolean redstoneEmits() { return isConnected() && enabled(TransferType.REDSTONE) && flow() == Flow.OUT; }
-
-    public int redstoneOut() { return redstoneOut; }
-
-    /** Соседний блок изменился (сервер). */
-    void neighborChanged() {
-        transport.neighborChanged();
-        updateRedstoneInput();
-    }
-
-    /** Сосед изменился (или настройки): перечитать входящий сигнал и, если он другой, сообщить связанным. */
-    public void updateRedstoneInput() {
-        if (level == null || level.isClientSide()) return;
-        int v = 0;
-        if (redstoneReads()) {
-            // Сигнал соседнего интерфейса не считаем: интерфейс с выходом рядом с интерфейсом со входом
-            // той же сети иначе защёлкнул бы сигнал навсегда.
-            for (Direction d : Direction.values()) {
-                BlockPos np = worldPosition.relative(d);
-                if (!open(d) || level.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-                v = Math.max(v, level.getSignal(np, d));
-                if (v >= 15) break;
-            }
-        }
-        if (v == redstoneIn) return;
-        redstoneIn = v;
-        for (InterfaceBlockEntity p : linked()) p.updateRedstoneOutput();
-    }
-
-    /** Выдаваемый сигнал — наибольший среди связанных интерфейсов со входом. */
-    public void updateRedstoneOutput() {
-        if (level == null || level.isClientSide()) return;
-        int out = 0;
-        if (redstoneEmits()) {
-            for (InterfaceBlockEntity p : linked()) {
-                if (p.redstoneReads()) out = Math.max(out, p.redstoneIn);
-            }
-        }
-        if (out == redstoneOut) return;
-        redstoneOut = out;
-        level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
-    }
-
-    /** Разные ТАРДИС, чьи оболочки стоят вплотную к блоку (куб 3×3×3 и на блок ниже — оболочка высотой 2). */
-    public static List<ResourceKey<Level>> nearbyTardises(Level level, BlockPos pos) {
-        List<ResourceKey<Level>> out = new ArrayList<>();
-        for (BlockPos p : BlockPos.betweenClosed(pos.offset(-1, -2, -1), pos.offset(1, 1, 1))) {
-            if (level.getBlockEntity(p) instanceof ShellBaseBlockEntity shell) {
-                ResourceKey<Level> id = shell.getTardisId();
-                if (id != null && !out.contains(id)) out.add(id);
-            }
-        }
-        return out;
+        if (!changedState && p == peers) return false;
+        peers = p;
+        changed();
+        return true;
     }
 
     /** Связанные интерфейсы (сервер). */
@@ -313,9 +282,11 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     // ---------- передача ----------
 
-    boolean canIn(TransferType t) { return isConnected() && enabled(t) && flow().in; }
+    /** Принимает ли интерфейс этот вид (вход): подключён, вид включён, направление — со входом. */
+    public boolean canIn(TransferKind t) { return isConnected() && enabled(t) && flow().in; }
 
-    boolean canOut(TransferType t) { return isConnected() && enabled(t) && flow().out; }
+    /** Отдаёт ли интерфейс этот вид (выход). */
+    public boolean canOut(TransferKind t) { return isConnected() && enabled(t) && flow().out; }
 
     // ---------- сохранение и перенос с предметом ----------
 
@@ -331,12 +302,12 @@ public class InterfaceBlockEntity extends BlockEntity {
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
-        if (tag.contains("interface")) data = InterfaceData.CODEC.parse(NbtOps.INSTANCE, tag.get("interface")).result().orElse(InterfaceData.DEFAULT);
+        if (tag.contains("interface")) data = InterfaceData.CODEC.parse(NbtOps.INSTANCE, tag.get("interface")).result().orElse(InterfaceData.defaults());
         // На сервере это пересчитает refresh(); на клиенте — показываем присланное.
         status = Status.of(tag.getByte("status"));
         peers = tag.getInt("peers");
         ResourceLocation t = tag.contains("in_tardis") ? ResourceLocation.tryParse(tag.getString("in_tardis")) : null;
-        if (joinedKey == null) tardis = t == null ? null : ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, t);
+        if (joinedKey == null) tardis = t == null ? null : ResourceKey.create(Registries.DIMENSION, t);
     }
 
     @Override

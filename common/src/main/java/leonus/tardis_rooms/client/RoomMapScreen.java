@@ -75,9 +75,7 @@ public class RoomMapScreen extends RoomMonitorScreen {
     @Override
     protected void init() {
         super.init();
-        this.setEvents(null, () -> switchScreenToLeft(parent));
-        int vPos = (height - monitorHeight) / 2;
-        addCancelButton(width / 2 + 5, height - vPos - 25);
+        monitorButtons(null, () -> switchScreenToLeft(parent));
         sideButton(rightColumn(), columnTop(), sprite("iface/tips"), TRoomsText.MAP_LEGEND.text(), legend(), () -> {});
     }
 
@@ -150,13 +148,10 @@ public class RoomMapScreen extends RoomMonitorScreen {
     @Override
     public void inMonitorRender(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         PoseStack pose = g.pose();
-        int hPos = (width - monitorWidth) / 2, vPos = (height - monitorHeight) / 2, trim = 15;
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        g.blit(backdrop, 5 + width / 2, -50 + height / 2, 110, monitorHeight, 110, 95);
+        drawPanels(g);
+        float scale = panelScale();
         pose.pushPose();
-        pose.translate(hPos + trim - 5, vPos + trim + 5, 0);
-        g.blit(backdrop, -5, -5, 0, monitorHeight, 110, 110);
-        float scale = (monitorHeight - 2 * trim) / (float) PreviewRenderer.SIZE;
+        pose.translate(panelX(), panelY(), 0);
         pose.scale(scale, scale, scale);
         pose.translate(PreviewRenderer.SIZE / 2f, PreviewRenderer.SIZE / 2f, 0);
         pose.mulPose(Axis.ZP.rotationDegrees(PreviewRenderer.rotationFor(entry())));
@@ -166,7 +161,7 @@ public class RoomMapScreen extends RoomMonitorScreen {
         float fade = (float) Math.max(0, (100.0D - this.age * 3.0D) / 100.0D);
         if (info == null || fade > 0) {
             pose.pushPose();
-            pose.translate(hPos + trim - 5, vPos + trim + 5, 0);
+            pose.translate(panelX(), panelY(), 0);
             pose.scale(scale, scale, scale);
             PreviewRenderer.noise(g, info == null ? 0.6f : fade);
             pose.popPose();
@@ -216,10 +211,9 @@ public class RoomMapScreen extends RoomMonitorScreen {
     public void render(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         if (info == null || overList(mouseX, mouseY)) return;
-        int hPos = (width - monitorWidth) / 2, vPos = (height - monitorHeight) / 2, trim = 15;
-        float scale = (monitorHeight - 2 * trim) / (float) PreviewRenderer.SIZE;
-        double lx = (mouseX - (hPos + trim - 5)) / scale - PreviewRenderer.SIZE / 2.0;
-        double ly = (mouseY - (vPos + trim + 5)) / scale - PreviewRenderer.SIZE / 2.0;
+        float scale = panelScale();
+        double lx = (mouseX - panelX()) / scale - PreviewRenderer.SIZE / 2.0;
+        double ly = (mouseY - panelY()) / scale - PreviewRenderer.SIZE / 2.0;
         double a = Math.toRadians(PreviewRenderer.rotationFor(entry()));
         double ux = Math.cos(a) * lx + Math.sin(a) * ly + PreviewRenderer.SIZE / 2.0;
         double uy = -Math.sin(a) * lx + Math.cos(a) * ly + PreviewRenderer.SIZE / 2.0;

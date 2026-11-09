@@ -1,5 +1,7 @@
 package leonus.tardis_rooms.iface;
 
+import leonus.tardis_rooms.iface.kind.KindPart;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.platform.Platform;
 import mekanism.api.Action;
 import mekanism.api.chemical.Chemical;
@@ -40,24 +42,9 @@ public final class MekanismCompat {
         return LOADED && leonus.tardis_rooms.TardisRoomsConfig.compatMekanism();
     }
 
-    static Object newView(InterfaceBlockEntity be, ForgeInterfaceTransport transport) {
-        return enabled() ? Impl.newViews(be, transport) : null;
-    }
-
-    static <T> LazyOptional<T> capability(InterfaceBlockEntity be, ForgeInterfaceTransport transport, Capability<T> cap) {
-        if (!enabled() || !be.enabled(TransferType.CHEMICALS)) return LazyOptional.empty();
-        return Impl.capability(transport, cap);
-    }
-
-    /** Старые LazyOptional химикатов гасим вместе с остальными (их хранит транспорт в виде {@code chemicals}). */
-    static void invalidate(ForgeInterfaceTransport transport) {
-        if (LOADED) Impl.invalidate(transport);
-    }
-
-    /** Грань «вставлять»/«забирать» для химикатов: сосед со своей стороны {@code face}. */
-    static void moveFace(ForgeInterfaceTransport transport, Direction face, boolean pull, int max) {
-        if (!enabled()) return;
-        Impl.moveFace(transport, face, pull, max);
+    /** Часть вида «химикаты» для интерфейса. Только если Mekanism установлен. */
+    static KindPart newPart(InterfaceBlockEntity be, TransferKind kind) {
+        return Impl.newViews(be, kind);
     }
 
     /** Отдельный класс, чтобы типы Mekanism не грузились без него. */
@@ -67,8 +54,8 @@ public final class MekanismCompat {
         static final Capability<IPigmentHandler> PIGMENT = CapabilityManager.get(new CapabilityToken<>() {});
         static final Capability<ISlurryHandler> SLURRY = CapabilityManager.get(new CapabilityToken<>() {});
 
-        /** Виды для четырёх возможностей и их LazyOptional. */
-        static final class Views {
+        /** Часть вида: виды для четырёх возможностей и их LazyOptional. */
+        static final class Views implements KindPart, ForgeInterfaceTransport.CapabilityPart {
             final GasView gas;
             final InfusionView infusion;
             final PigmentView pigment;
@@ -78,53 +65,58 @@ public final class MekanismCompat {
             LazyOptional<IPigmentHandler> pigmentOpt;
             LazyOptional<ISlurryHandler> slurryOpt;
 
-            Views(InterfaceBlockEntity be, ForgeInterfaceTransport t) {
-                gas = new GasView(be);
-                infusion = new InfusionView(be);
-                pigment = new PigmentView(be);
-                slurry = new SlurryView(be);
+            Views(InterfaceBlockEntity be, TransferKind kind) {
+                gas = new GasView(be, kind);
+                infusion = new InfusionView(be, kind);
+                pigment = new PigmentView(be, kind);
+                slurry = new SlurryView(be, kind);
                 reset();
             }
 
-            void reset() {
+            private void reset() {
                 gasOpt = LazyOptional.of(() -> gas);
                 infusionOpt = LazyOptional.of(() -> infusion);
                 pigmentOpt = LazyOptional.of(() -> pigment);
                 slurryOpt = LazyOptional.of(() -> slurry);
             }
 
-            void invalidate() {
+            /** Старые LazyOptional гасим (трубы переподключатся), новые — сразу. */
+            @Override
+            public void invalidate() {
                 gasOpt.invalidate();
                 infusionOpt.invalidate();
                 pigmentOpt.invalidate();
                 slurryOpt.invalidate();
                 reset();
             }
+
+            @Override
+            public void unload() { invalidate(); }
+
+            @Override
+            public void remove() { invalidate(); }
+
+            @Override
+            public <T> LazyOptional<T> capability(Capability<T> cap) {
+                if (cap == GAS) return gasOpt.cast();
+                if (cap == INFUSION) return infusionOpt.cast();
+                if (cap == PIGMENT) return pigmentOpt.cast();
+                if (cap == SLURRY) return slurryOpt.cast();
+                return LazyOptional.empty();
+            }
+
+            @Override
+            public void moveFace(Direction face, boolean pull) {
+                int max = ForgeInterfaceTransport.FLUID_PER_OP;
+                move(gas.sides.at(face), gas, pull, max);
+                move(infusion.sides.at(face), infusion, pull, max);
+                move(pigment.sides.at(face), pigment, pull, max);
+                move(slurry.sides.at(face), slurry, pull, max);
+            }
         }
 
-        static Object newViews(InterfaceBlockEntity be, ForgeInterfaceTransport t) {
-            return new Views(be, t);
-        }
-
-        static <T> LazyOptional<T> capability(ForgeInterfaceTransport t, Capability<T> cap) {
-            if (!(t.chemicals() instanceof Views v)) return LazyOptional.empty();
-            if (cap == GAS) return v.gasOpt.cast();
-            if (cap == INFUSION) return v.infusionOpt.cast();
-            if (cap == PIGMENT) return v.pigmentOpt.cast();
-            if (cap == SLURRY) return v.slurryOpt.cast();
-            return LazyOptional.empty();
-        }
-
-        static void invalidate(ForgeInterfaceTransport t) {
-            if (t.chemicalsIfCreated() instanceof Views v) v.invalidate();
-        }
-
-        static void moveFace(ForgeInterfaceTransport t, Direction face, boolean pull, int max) {
-            if (!(t.chemicals() instanceof Views v)) return;
-            move(v.gas.sides.at(face), v.gas, pull, max);
-            move(v.infusion.sides.at(face), v.infusion, pull, max);
-            move(v.pigment.sides.at(face), v.pigment, pull, max);
-            move(v.slurry.sides.at(face), v.slurry, pull, max);
+        static KindPart newViews(InterfaceBlockEntity be, TransferKind kind) {
+            return new Views(be, kind);
         }
 
         private static <C extends Chemical<C>, S extends ChemicalStack<C>> void move(IChemicalHandler<C, S> h, IChemicalHandler<C, S> mine, boolean pull, long max) {
@@ -148,21 +140,22 @@ public final class MekanismCompat {
      */
     private abstract static class ChemicalView<C extends Chemical<C>, S extends ChemicalStack<C>, H extends IChemicalHandler<C, S>> implements IChemicalHandler<C, S> {
         private final InterfaceBlockEntity be;
+        private final TransferKind kind;
         /** Свои соседи по этой возможности — их берут связанные интерфейсы. */
         final LinkedStorages.Sides<H> sides;
         /** Хранилища этого вида химикатов у соседей связанных интерфейсов. */
         private final LinkedStorages<H> linked;
 
         /** {@code select} — тот же вид химикатов у связанного интерфейса. */
-        ChemicalView(InterfaceBlockEntity be, Capability<H> cap, Function<Impl.Views, ChemicalView<C, S, H>> select) {
+        ChemicalView(InterfaceBlockEntity be, TransferKind kind, Capability<H> cap, Function<Impl.Views, ChemicalView<C, S, H>> select) {
             this.be = be;
+            this.kind = kind;
             this.sides = ForgeInterfaceTransport.sides(be, cap);
-            this.linked = new LinkedStorages<>(be, TransferType.CHEMICALS,
-                    peer -> ForgeInterfaceTransport.of(peer).chemicals() instanceof Impl.Views v ? select.apply(v).sides : null);
+            this.linked = new LinkedStorages<>(be, kind, peer -> peer.part(kind) instanceof Impl.Views v ? select.apply(v).sides : null);
         }
 
         private List<H> sources() {
-            return be.canOut(TransferType.CHEMICALS) ? linked.get(LinkedStorages.Pick.FROM) : List.of();
+            return be.canOut(kind) ? linked.get(LinkedStorages.Pick.FROM) : List.of();
         }
 
         /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
@@ -206,7 +199,7 @@ public final class MekanismCompat {
 
         @Override
         public boolean isValid(int tank, S stack) {
-            return be.canIn(TransferType.CHEMICALS);
+            return be.canIn(kind);
         }
 
         @Override
@@ -217,7 +210,7 @@ public final class MekanismCompat {
         /** Поданное — сразу в хранилища у связанных выходов. */
         @Override
         public S insertChemical(S stack, Action action) {
-            if (stack.isEmpty() || !be.canIn(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return stack;
+            if (stack.isEmpty() || !be.canIn(kind) || InterfaceNetwork.depth > 0) return stack;
             InterfaceNetwork.depth++;
             try {
                 S rest = stack;
@@ -248,7 +241,7 @@ public final class MekanismCompat {
         @Override
         @SuppressWarnings("unchecked")
         public S extractChemical(long amount, Action action) {
-            if (amount <= 0 || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return getEmptyStack();
+            if (amount <= 0 || !be.canOut(kind) || InterfaceNetwork.depth > 0) return getEmptyStack();
             S first = getEmptyStack();
             InterfaceNetwork.depth++;
             try {
@@ -269,7 +262,7 @@ public final class MekanismCompat {
         @Override
         @SuppressWarnings("unchecked")
         public S extractChemical(S stack, Action action) {
-            if (stack.isEmpty() || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return getEmptyStack();
+            if (stack.isEmpty() || !be.canOut(kind) || InterfaceNetwork.depth > 0) return getEmptyStack();
             InterfaceNetwork.depth++;
             try {
                 S out = getEmptyStack();
@@ -290,19 +283,19 @@ public final class MekanismCompat {
     }
 
     private static final class GasView extends ChemicalView<Gas, GasStack, IGasHandler> implements IGasHandler {
-        GasView(InterfaceBlockEntity be) { super(be, Impl.GAS, v -> v.gas); }
+        GasView(InterfaceBlockEntity be, TransferKind kind) { super(be, kind, Impl.GAS, v -> v.gas); }
     }
 
     private static final class InfusionView extends ChemicalView<InfuseType, InfusionStack, IInfusionHandler> implements IInfusionHandler {
-        InfusionView(InterfaceBlockEntity be) { super(be, Impl.INFUSION, v -> v.infusion); }
+        InfusionView(InterfaceBlockEntity be, TransferKind kind) { super(be, kind, Impl.INFUSION, v -> v.infusion); }
     }
 
     private static final class PigmentView extends ChemicalView<Pigment, PigmentStack, IPigmentHandler> implements IPigmentHandler {
-        PigmentView(InterfaceBlockEntity be) { super(be, Impl.PIGMENT, v -> v.pigment); }
+        PigmentView(InterfaceBlockEntity be, TransferKind kind) { super(be, kind, Impl.PIGMENT, v -> v.pigment); }
     }
 
     private static final class SlurryView extends ChemicalView<Slurry, SlurryStack, ISlurryHandler> implements ISlurryHandler {
-        SlurryView(InterfaceBlockEntity be) { super(be, Impl.SLURRY, v -> v.slurry); }
+        SlurryView(InterfaceBlockEntity be, TransferKind kind) { super(be, kind, Impl.SLURRY, v -> v.slurry); }
     }
 
     private MekanismCompat() {}

@@ -1,12 +1,15 @@
 package leonus.tardis_rooms.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceData;
 import leonus.tardis_rooms.iface.InterfaceLink;
+import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.Status;
-import leonus.tardis_rooms.iface.TransferType;
+import leonus.tardis_rooms.iface.kind.TransferKind;
+import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.lang.TRoomsText;
 import leonus.tardis_rooms.network.InterfacePayload;
 import leonus.tardis_rooms.platform.Platform;
@@ -45,7 +48,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
     private static final ResourceLocation ICON_PASTE_OFF = sprite("iface/paste_off");
 
     private final BlockPos pos;
-    private InterfaceData data = InterfaceData.DEFAULT;
+    private InterfaceData data = InterfaceData.defaults();
     private Status status = Status.NO_SHELL;
     private int peers;
     private int heldId;
@@ -80,9 +83,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
     @Override
     protected void init() {
         super.init();
-        this.setEvents(null, this::onClose);
-        int vPos = (height - monitorHeight) / 2;
-        addCancelButton(width / 2 + 5, height - vPos - 25);
+        monitorButtons(null, this::onClose);
 
         // Кнопки справа от рамки монитора — столбиком.
         int rx = rightColumn(), y = columnTop();
@@ -94,13 +95,13 @@ public class InterfaceScreen extends RoomMonitorScreen {
         }
         // «Вписать» — всегда; без ID в отвёртке (или с тем же ID) — серая.
         boolean canPaste = heldId != 0 && heldId != data.id();
-        MutableComponent pasteTitle = heldId != 0 ? TRoomsText.IFACE_ID_PASTE.text(hex(heldId)) : TRoomsText.IFACE_ID_PASTE_NONE.text();
+        MutableComponent pasteTitle = heldId != 0 ? TRoomsText.IFACE_ID_PASTE.text(InterfaceTools.idText(heldId)) : TRoomsText.IFACE_ID_PASTE_NONE.text();
         MutableComponent pasteHint = (heldId == 0 ? TRoomsText.IFACE_ID_PASTE_EMPTY : canPaste ? TRoomsText.IFACE_ID_PASTE_TOOLTIP : TRoomsText.IFACE_ID_PASTE_SAME).text();
         y = sideButton(rx, y, canPaste ? ICON_PASTE : ICON_PASTE_OFF, pasteTitle, pasteHint, () -> send(InterfacePayload.PASTE, 0));
         lastButton.active = canPaste;
         Flow f = data.flowMode();
         ResourceLocation flowIcon = switch (f) { case IN -> ICON_IN; case OUT -> ICON_OUT; case BOTH -> ICON_BOTH; };
-        sideButton(rx, y + 4, flowIcon, TRoomsText.IFACE_FLOW.text(flowName(f).text().withStyle(ChatFormatting.YELLOW)),
+        sideButton(rx, y + 4, flowIcon, TRoomsText.IFACE_FLOW.text(InterfaceTools.flowName(f).text().withStyle(ChatFormatting.YELLOW)),
                 TRoomsText.IFACE_FLOW_TOOLTIP.text(), () -> send(InterfacePayload.FLOW, f.next().ordinal()));
 
         // Подсказки — слева от рамки.
@@ -113,31 +114,12 @@ public class InterfaceScreen extends RoomMonitorScreen {
     }
 
     private void send(int action, int value) {
+        send(new InterfacePayload(pos, action, value));
+    }
+
+    private void send(InterfacePayload p) {
         RoomManageScreen.click();
-        Platform.sendToServer(new InterfacePayload(pos, action, value));
-    }
-
-    private static Component hex(int id) {
-        return Component.literal(InterfaceData.hex(id)).withStyle(ChatFormatting.AQUA);
-    }
-
-    private static TRoomsText typeName(TransferType t) {
-        return switch (t) {
-            case ENERGY -> TRoomsText.IFACE_ENERGY;
-            case ITEMS -> TRoomsText.IFACE_ITEMS;
-            case FLUIDS -> TRoomsText.IFACE_FLUIDS;
-            case CHEMICALS -> TRoomsText.IFACE_CHEMICALS;
-            case ME -> TRoomsText.IFACE_ME;
-            case REDSTONE -> TRoomsText.IFACE_REDSTONE;
-        };
-    }
-
-    static TRoomsText flowName(Flow f) {
-        return switch (f) {
-            case IN -> TRoomsText.IFACE_FLOW_IN;
-            case OUT -> TRoomsText.IFACE_FLOW_OUT;
-            case BOTH -> TRoomsText.IFACE_FLOW_BOTH;
-        };
+        Platform.sendToServer(p);
     }
 
     /** Идентификатор, запомненный отвёрткой в руке, или null. */
@@ -153,18 +135,14 @@ public class InterfaceScreen extends RoomMonitorScreen {
     @Override
     public ObjectSelectionList<SelectionListEntry> createSelectionList() {
         GenericMonitorSelectionList<SelectionListEntry> list = newList();
-        for (TransferType t : TransferType.values()) {
+        for (TransferKind t : TransferKinds.all()) {
             if (!t.available()) continue;
             boolean on = data.enabled(t);
-            Component label = typeName(t).text().append(": ").append((on ? TRoomsText.IFACE_ON : TRoomsText.IFACE_OFF).text()
+            Component label = t.name().copy().append(": ").append((on ? TRoomsText.IFACE_ON : TRoomsText.IFACE_OFF).text()
                     .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY));
-            SelectionListEntry e = new SelectionListEntry(label, x -> send(InterfacePayload.TOGGLE, t.ordinal()), listLeft());
-            TRoomsText tip = switch (t) {
-                case ME -> TRoomsText.IFACE_ME_TOOLTIP;
-                case REDSTONE -> TRoomsText.IFACE_REDSTONE_TOOLTIP;
-                default -> TRoomsText.IFACE_TYPE_TOOLTIP;
-            };
-            tip(e, tip.text().withStyle(ChatFormatting.BLUE));
+            SelectionListEntry e = new SelectionListEntry(label, x -> send(InterfacePayload.toggle(pos, t)), listLeft());
+            Component tip = t.tooltip();
+            if (tip != null) tip(e, tip.copy().withStyle(ChatFormatting.BLUE));
             list.children().add(e);
         }
         return list;
@@ -173,15 +151,11 @@ public class InterfaceScreen extends RoomMonitorScreen {
     /** Слева на мониторе — состояние, ID и сколько интерфейсов связано. */
     @Override
     public void inMonitorRender(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        int hPos = (width - monitorWidth) / 2, vPos = (height - monitorHeight) / 2, trim = 15;
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        g.blit(backdrop, 5 + width / 2, -50 + height / 2, 110, monitorHeight, 110, 95);
-        int x0 = hPos + trim - 5, y0 = vPos + trim + 5;
-        g.blit(backdrop, x0 - 5, y0 - 5, 0, monitorHeight, 110, 110);
-        int x = x0, y = y0, w = 96;
+        drawPanels(g);
+        int x = panelX(), y = panelY(), w = 96;
         y = lines(g, status.text(), x, y, w);
         y += 6;
-        Component idLine = data.id() != 0 ? hex(data.id()) : TRoomsText.IFACE_ID_NONE.text().withStyle(ChatFormatting.DARK_GRAY);
+        Component idLine = data.id() != 0 ? InterfaceTools.idText(data.id()) : TRoomsText.IFACE_ID_NONE.text().withStyle(ChatFormatting.DARK_GRAY);
         // ID крупно, как частота на туннеле P2P.
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
@@ -193,7 +167,7 @@ public class InterfaceScreen extends RoomMonitorScreen {
             y = lines(g, TRoomsText.IFACE_PEERS.text(peers).withStyle(ChatFormatting.GRAY), x, y, w);
             y += 2;
         }
-        lines(g, TRoomsText.IFACE_FLOW.text(flowName(data.flowMode()).text().withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY), x, y, w);
+        lines(g, TRoomsText.IFACE_FLOW.text(InterfaceTools.flowName(data.flowMode()).text().withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GRAY), x, y, w);
     }
 
     private int lines(GuiGraphics g, Component text, int x, int y, int w) {

@@ -4,6 +4,7 @@ import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.iface.ForgeInterfaceTransport;
+import leonus.tardis_rooms.iface.tardis.TardisInterfaces;
 import leonus.tardis_rooms.platform.Platform;
 import leonus.tardis_rooms.registry.RegEntry;
 import net.minecraft.core.Registry;
@@ -35,6 +36,7 @@ public final class TardisRoomsForge {
     // есть не во всех сборках Forge 47 — оставляем старый способ, чтобы аддон работал на любой из них.
     @SuppressWarnings("removal")
     public TardisRoomsForge() {
+        TardisInterfaces.bootstrap(ForgeInterfaceTransport::parts); // до всего остального
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         try {
             Files.createDirectories(Platform.configDir().resolve(TardisRooms.MODID));

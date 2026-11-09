@@ -1,6 +1,6 @@
 package leonus.tardis_rooms.fabric.client;
 
-import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.network.Payload;
 import leonus.tardis_rooms.network.Payloads;
 import net.fabricmc.api.ClientModInitializer;
@@ -12,7 +12,7 @@ public final class TardisRoomsFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         for (Payloads.Entry<?> e : Payloads.ALL) if (!e.toServer()) client(e);
-        ItemTooltipCallback.EVENT.register((stack, flag, lines) -> InterfaceTools.appendTooltip(stack, lines));
+        ItemTooltipCallback.EVENT.register((stack, flag, lines) -> ScrewdriverTools.appendTooltip(stack, lines));
     }
 
     /** Пакет с сервера: обработчик — на главном потоке клиента. */

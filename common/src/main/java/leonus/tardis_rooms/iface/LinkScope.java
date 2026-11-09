@@ -1,6 +1,5 @@
 package leonus.tardis_rooms.iface;
 
-import leonus.tardis_rooms.TardisRooms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -8,31 +7,17 @@ import net.minecraft.world.level.Level;
 import java.util.List;
 
 /**
- * Область связи: к какой ТАРДИС относится место. Интерфейсы одной области с одинаковым ID связаны.
- * В ТАРДИС — сама ТАРДИС, снаружи — ТАРДИС, к оболочке которой интерфейс стоит вплотную (несколько — конфликт).
+ * Область связи: к чему относится место. Интерфейсы одной области с одинаковым ID связаны; идентификаторы выдаёт
+ * измерение области ({@link InterfaceIds}). Область задаёт тот, кто встраивает интерфейс ({@link InterfaceHost}; у этого
+ * аддона — ТАРДИС: {@link leonus.tardis_rooms.iface.tardis.TardisLinkScope}); сам интерфейс о ТАРДИС не знает.
  */
-public final class LinkScope {
-    @FunctionalInterface
-    public interface Finder {
-        /** ТАРДИС, к которым относится место: пусто — ни к одной, больше одной — конфликт. */
-        List<ResourceKey<Level>> tardises(Level level, BlockPos pos);
-    }
+@FunctionalInterface
+public interface LinkScope {
+    /** Области места: пусто — ни одной (интерфейс здесь не работает), больше одной — конфликт. */
+    List<ResourceKey<Level>> scopes(Level level, BlockPos pos);
 
-    private static Finder finder = LinkScope::tardisRefined;
-
-    private LinkScope() {}
-
-    public static List<ResourceKey<Level>> of(Level level, BlockPos pos) {
-        return finder.tardises(level, pos);
-    }
-
-    /** Только для игровых тестов: там нет ТАРДИС, и область задаёт сам тест. */
-    public static void overrideForTests(Finder f) {
-        finder = f;
-    }
-
-    private static List<ResourceKey<Level>> tardisRefined(Level level, BlockPos pos) {
-        if (TardisRooms.isTardisDimension(level)) return List.of(level.dimension());
-        return InterfaceBlockEntity.nearbyTardises(level, pos);
+    /** Области места по текущей области связи игры. */
+    static List<ResourceKey<Level>> of(Level level, BlockPos pos) {
+        return InterfaceHost.current().scope().scopes(level, pos);
     }
 }

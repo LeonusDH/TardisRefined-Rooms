@@ -47,7 +47,7 @@ public final class ItemData {
     }
 
     public static void setInterfaceData(ItemStack s, InterfaceData d) {
-        if (d.equals(InterfaceData.DEFAULT)) return;
+        if (d.equals(InterfaceData.defaults())) return;
         InterfaceData.CODEC.encodeStart(NbtOps.INSTANCE, d).result().ifPresent(t -> s.getOrCreateTagElement("BlockEntityTag").put("interface", t));
     }
 

@@ -3,6 +3,7 @@ package leonus.tardis_rooms.fabric;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
+import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
@@ -23,6 +24,7 @@ final class FabricEvents {
         UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
             if (player.isSpectator()) return InteractionResult.PASS;
             InterfaceTools.UseResult r = InterfaceTools.onUseBlock(player, level, hit, player.getItemInHand(hand));
+            if (!r.handled()) r = ScrewdriverTools.onUseBlock(player, level, hit, player.getItemInHand(hand));
             if (!r.handled()) return InteractionResult.PASS;
             // На Fabric PASS значит «продолжай как обычно» (сработали бы блок и предмет), а нам нужно «стоп»: FAIL.
             return r.result() == InteractionResult.PASS ? InteractionResult.FAIL : r.result();
@@ -31,8 +33,8 @@ final class FabricEvents {
             if (player.isSpectator()) return InteractionResult.PASS;
             // Защищённые блоки (узел, блок управления, заглушка) не даём даже начать ломать.
             if (ProtectedBlock.onAttack(player, level, pos)) return InteractionResult.FAIL;
-            if (!InterfaceTools.onAttackBlock(player, level, pos)) return InteractionResult.PASS;
-            if (level.isClientSide()) InterfaceTools.requestPaste(pos);
+            if (!ScrewdriverTools.onAttackBlock(player, level, pos)) return InteractionResult.PASS;
+            if (level.isClientSide()) ScrewdriverTools.requestPaste(pos);
             return InteractionResult.FAIL; // FAIL: на сервер не уходит «начал ломать»
         });
         // Подстраховка на сервере: защищённый блок не ломается, даже если клиент без мода прислал «сломал».
@@ -40,7 +42,7 @@ final class FabricEvents {
                 !(state.getBlock() instanceof ProtectedBlock pb) || pb.onDestroyedByPlayer(state, level, pos, player, false, level.getFluidState(pos)));
         UseItemCallback.EVENT.register((player, level, hand) -> {
             var stack = player.getItemInHand(hand);
-            if (player.isSpectator() || !InterfaceTools.onUseItem(player, level, stack)) return InteractionResultHolder.pass(stack);
+            if (player.isSpectator() || !ScrewdriverTools.onUseItem(player, level, stack)) return InteractionResultHolder.pass(stack);
             return InteractionResultHolder.success(stack);
         });
 

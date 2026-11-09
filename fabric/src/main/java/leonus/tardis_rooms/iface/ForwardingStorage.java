@@ -1,8 +1,10 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.iface.LinkedStorages.Pick;
+import leonus.tardis_rooms.iface.kind.TransferKind;
 import net.fabricmc.fabric.api.lookup.v1.block.BlockApiLookup;
 import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
+import net.fabricmc.fabric.api.transfer.v1.storage.StorageUtil;
 import net.fabricmc.fabric.api.transfer.v1.storage.StorageView;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
 import net.minecraft.core.Direction;
@@ -18,26 +20,38 @@ import java.util.function.Function;
  * интерфейсов с выходом, а забирают — из хранилищ у связанных интерфейсов со входом. Транзакции ведут сами эти хранилища.
  */
 final class ForwardingStorage<T> implements Storage<T> {
-    private final FabricInterfaceTransport transport;
-    private final TransferType type;
+    private final InterfaceBlockEntity be;
+    private final TransferKind kind;
     /** Свои соседи этого вида — их берут связанные интерфейсы. */
     final LinkedStorages.Sides<Storage<T>> sides;
     /** Хранилища этого вида у соседей связанных интерфейсов. */
     private final LinkedStorages<Storage<T>> linked;
 
-    ForwardingStorage(FabricInterfaceTransport transport, TransferType type, BlockApiLookup<Storage<T>, Direction> lookup,
-                      Function<FabricInterfaceTransport, ForwardingStorage<T>> sameKindOf) {
-        this.transport = transport;
-        this.type = type;
-        this.sides = FabricInterfaceTransport.sides(transport.be, lookup);
-        this.linked = new LinkedStorages<>(transport.be, type, peer -> sameKindOf.apply(FabricInterfaceTransport.of(peer)).sides);
+    /** @param sidesOf свои соседи этого вида у связанного интерфейса (null — вида у него нет) */
+    ForwardingStorage(InterfaceBlockEntity be, TransferKind kind, BlockApiLookup<Storage<T>, Direction> lookup,
+                      Function<InterfaceBlockEntity, LinkedStorages.Sides<Storage<T>>> sidesOf) {
+        this.be = be;
+        this.kind = kind;
+        this.sides = FabricInterfaceTransport.sides(be, lookup);
+        this.linked = new LinkedStorages<>(be, kind, sidesOf);
+    }
+
+    /** Для поиска хранилищ: null — вид выключен (трубы не подключатся). */
+    Storage<T> storage() { return be.enabled(kind) ? this : null; }
+
+    /** Грань: «забирать» — из соседа в себя (то есть дальше к выходам), «вставлять» — из себя (от входов) в соседа. */
+    void moveFace(Direction face, boolean pull, long max) {
+        Storage<T> h = sides.at(face);
+        if (h == null) return;
+        if (pull) StorageUtil.move(h, this, v -> true, max, null);
+        else StorageUtil.move(this, h, v -> true, max, null);
     }
 
     @Override
-    public boolean supportsInsertion() { return transport.be.canIn(type); }
+    public boolean supportsInsertion() { return be.canIn(kind); }
 
     @Override
-    public boolean supportsExtraction() { return transport.be.canOut(type); }
+    public boolean supportsExtraction() { return be.canOut(kind); }
 
     @Override
     public long insert(T resource, long maxAmount, TransactionContext transaction) {
