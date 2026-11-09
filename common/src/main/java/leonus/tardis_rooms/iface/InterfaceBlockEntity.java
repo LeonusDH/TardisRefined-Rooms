@@ -206,15 +206,10 @@ public class InterfaceBlockEntity extends BlockEntity {
     void refresh() {
         ResourceKey<Level> t = null;
         Status st;
-        if (leonus.tardis_rooms.TardisRooms.isTardisDimension(level)) {
-            t = level.dimension();
-            st = Status.CONNECTED;
-        } else {
-            List<ResourceKey<Level>> found = nearbyTardises(level, worldPosition);
-            if (found.isEmpty()) st = Status.NO_SHELL;
-            else if (found.size() > 1) st = Status.CONFLICT;
-            else { t = found.get(0); st = Status.CONNECTED; }
-        }
+        List<ResourceKey<Level>> found = LinkScope.of(level, worldPosition);
+        if (found.isEmpty()) st = Status.NO_SHELL;
+        else if (found.size() > 1) st = Status.CONFLICT;
+        else { t = found.get(0); st = Status.CONNECTED; }
         if (st == Status.CONNECTED) {
             if (data.id() == 0) st = Status.NO_ID;
             else if (data.tardis().isPresent() && !data.tardis().get().equals(t.location())) st = Status.WRONG_TARDIS;

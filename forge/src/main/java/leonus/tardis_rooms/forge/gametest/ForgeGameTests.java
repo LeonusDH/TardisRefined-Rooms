@@ -1,0 +1,48 @@
+package leonus.tardis_rooms.forge.gametest;
+
+import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.gametest.InterfaceGameTests;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.PrefixGameTestTemplate;
+
+/**
+ * Регистрация общих игровых тестов на Forge (класс находится по {@link GameTestHolder} только при включённых тестах).
+ * Сами тесты — в {@link InterfaceGameTests}. В готовый мод не входит.
+ *
+ * <p>Без {@code fluidsPull}: на Forge 1.20.1 у ванильного котла нет обработчика жидкостей (его добавил только NeoForge),
+ * а других ванильных хранилищ жидкости нет. Жидкости проверяет тот же тест на Fabric.
+ */
+@GameTestHolder(TardisRooms.MODID)
+@PrefixGameTestTemplate(false)
+public final class ForgeGameTests {
+    private ForgeGameTests() {}
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void itemsPull(GameTestHelper h) { InterfaceGameTests.itemsPull(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void itemsPush(GameTestHelper h) { InterfaceGameTests.itemsPush(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void itemsSeveralStacks(GameTestHelper h) { InterfaceGameTests.itemsSeveralStacks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void kindOffBlocks(GameTestHelper h) { InterfaceGameTests.kindOffBlocks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void flowInOnlyBlocks(GameTestHelper h) { InterfaceGameTests.flowInOnlyBlocks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void differentIdsNotLinked(GameTestHelper h) { InterfaceGameTests.differentIdsNotLinked(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void removedPeerUnlinks(GameTestHelper h) { InterfaceGameTests.removedPeerUnlinks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void redstone(GameTestHelper h) { InterfaceGameTests.redstone(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void settingsSurviveItem(GameTestHelper h) { InterfaceGameTests.settingsSurviveItem(h); }
+}

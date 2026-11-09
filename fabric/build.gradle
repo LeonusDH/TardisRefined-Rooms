@@ -29,6 +29,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
     // Конфиг на ForgeConfigSpec. Ставится вместе с TR (вложен в его jar), поэтому сами его не вкладываем.
     modCompileOnly "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${rootProject.forge_config_api_port_version}"
+    modLocalRuntime "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${rootProject.forge_config_api_port_version}" // для игровых тестов
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
     shadowBundle(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
@@ -36,10 +37,42 @@ dependencies {
     // Энергия: Team Reborn Energy — стандарт на Fabric. Необязательна: её обычно вкладывают в себя технические моды.
     modCompileOnly("teamreborn:energy:${rootProject.reborn_energy_version}") { transitive = false }
 
-    // Tardis Refined для Fabric: только для компиляции, в игре ставится отдельным модом.
+    // Tardis Refined для Fabric: только для компиляции, в игре ставится отдельным модом. Игровым тестам нужен и при запуске.
     modCompileOnly("maven.modrinth:tardis-refined:${rootProject.tr_fabric_version}") { transitive = false }
+    modLocalRuntime("maven.modrinth:tardis-refined:${rootProject.tr_fabric_version}") { transitive = false }
     // AE2 на Fabric: сеть ME и карта памяти (на 1.21.1 сборки AE2 для Fabric нет, на 1.20.1 — есть).
     modCompileOnly("appeng:appliedenergistics2-fabric:${rootProject.ae2_version}") { transitive = false }
+}
+
+// Игровые тесты: отдельный тестовый мод (src/gametest) с точкой входа fabric-gametest; в готовый мод не входит.
+// gradlew :fabric:runGameTestServer — сервер без окна проходит тесты и выходит; упавшие тесты — ошибка сборки.
+sourceSets {
+    gametest {
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
+loom {
+    runs {
+        gameTestServer {
+            server()
+            source sourceSets.gametest
+            systemProperties.put('fabric-api.gametest', '')
+            runDirectory.set(file('build/gametest'))
+            generateRunConfig.set(false)
+        }
+    }
+}
+
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    // Сервер, который не запустился или повис, не ждёт таймаута CI: тесты идут меньше минуты.
+    timeout = java.time.Duration.ofMinutes(5)
+    doFirst {
+        def dir = file('build/gametest')
+        dir.mkdirs()
+        new File(dir, 'eula.txt').text = 'eula=true\n'
+    }
 }
 
 processResources {
@@ -50,6 +83,8 @@ processResources {
 
 shadowJar {
     exclude 'architectury.common.json'
+    // Игровые тесты — только для разработки.
+    exclude 'leonus/tardis_rooms/gametest/**', 'data/tardis_rooms/structures/gametest/**'
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
 }

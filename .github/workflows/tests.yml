@@ -1,0 +1,55 @@
+name: Tests
+
+# On demand only (Actions → Tests → Run workflow, or `gh workflow run tests.yml -f suite=...`),
+# not on every push. Each suite is its own job, so one can be run alone and a failure points at one place.
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Which tests to run
+        type: choice
+        default: all
+        options: [all, unit, gametest-forge, gametest-fabric]
+
+jobs:
+  unit:
+    name: Unit tests (JUnit)
+    if: inputs.suite == 'all' || inputs.suite == 'unit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - run: ./gradlew :common:test --no-daemon
+
+  gametest-forge:
+    name: Game tests (Forge)
+    if: inputs.suite == 'all' || inputs.suite == 'gametest-forge'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - run: ./gradlew :forge:runGameTestServer --no-daemon
+
+  gametest-fabric:
+    name: Game tests (Fabric)
+    if: inputs.suite == 'all' || inputs.suite == 'gametest-fabric'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - run: ./gradlew :fabric:runGameTestServer --no-daemon

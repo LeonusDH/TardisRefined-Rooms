@@ -10,14 +10,15 @@ architectury {
 base { archivesName = "${rootProject.mod_id}-forge" }
 
 configurations {
-    // Код из common: в разработке — как есть, в готовый jar — после преобразования под Forge.
+    // Код из common: для компиляции — как есть, в готовый jar — после преобразования под Forge.
     common {
         canBeResolved = true
         canBeConsumed = false
     }
+    // При запуске (тесты, датаген) common не кладётся отдельным jar: у common и forge общие пакеты, и Forge
+    // не запустит два модуля с одним пакетом. Вместо этого common, уже преобразованный под Forge (как в готовом
+    // моде), входит в тот же мод (loom.mods ниже).
     compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentForge.extendsFrom common
     shadowBundle {
         canBeResolved = true
         canBeConsumed = false
@@ -25,6 +26,12 @@ configurations {
 }
 
 loom {
+    mods {
+        tardis_rooms {
+            sourceSet sourceSets.main
+            modFiles.from(configurations.shadowBundle)
+        }
+    }
     forge {
         // На Forge 1.20.1 миксины подключаются через манифест jar, а не через mods.toml.
         mixinConfig 'tardis_rooms.mixins.json'
@@ -37,6 +44,33 @@ loom {
             programArgs '--output', project(':common').file('src/generated/resources').absolutePath
             programArgs '--existing', project(':common').file('src/main/resources').absolutePath
         }
+        // gradlew :forge:runGameTestServer — игровые тесты (leonus.tardis_rooms.gametest): сервер без окна
+        // проходит их и выходит; упавшие тесты — ошибка сборки.
+        gameTestServer {
+            // Шаблон Forge gameTestServer: запуск через GameTestServer (проходит тесты и выходит), а не обычный сервер.
+            // Loom берёт аргументы запуска по имени окружения, поэтому окружение называется так же, как шаблон.
+            environment 'gameTestServer'
+            forgeTemplate 'gameTestServer'
+            systemProperties.put('forge.enableGameTest', 'true')
+            systemProperties.put('forge.enabledGameTestNamespaces', rootProject.mod_id)
+            runDirectory.set(file('build/gametest'))
+            generateRunConfig.set(false)
+        }
+    }
+}
+
+// Запускам нужен common, преобразованный под Forge (см. loom.mods): собрать его до запуска.
+tasks.matching { it.name.startsWith('run') }.configureEach {
+    dependsOn configurations.shadowBundle
+}
+
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    // Сервер, который не запустился или повис, не ждёт таймаута CI: тесты идут меньше минуты.
+    timeout = java.time.Duration.ofMinutes(5)
+    doFirst {
+        def dir = file('build/gametest')
+        dir.mkdirs()
+        new File(dir, 'eula.txt').text = 'eula=true\n'
     }
 }
 
@@ -65,6 +99,8 @@ processResources {
 shadowJar {
     exclude 'fabric.mod.json'
     exclude 'architectury.common.json'
+    // Игровые тесты — только для разработки.
+    exclude 'leonus/tardis_rooms/gametest/**', 'leonus/tardis_rooms/forge/gametest/**', 'data/tardis_rooms/structures/gametest/**'
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
 }

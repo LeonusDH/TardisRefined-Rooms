@@ -37,7 +37,7 @@ public class InterfaceBlock extends BaseEntityBlock {
 
     /** Можно ли поставить здесь: в ТАРДИС — везде, снаружи — только рядом с оболочкой. */
     public static boolean canPlaceAt(Level level, BlockPos pos) {
-        return leonus.tardis_rooms.TardisRooms.isTardisDimension(level) || !InterfaceBlockEntity.nearbyTardises(level, pos).isEmpty();
+        return !LinkScope.of(level, pos).isEmpty();
     }
 
     @Override

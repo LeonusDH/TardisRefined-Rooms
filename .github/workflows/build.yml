@@ -1,5 +1,6 @@
 name: Build
 
+# Only the build: jars for testing in game. Tests are in tests.yml and run on demand.
 on:
   push:
     branches: ['1.20.1']
@@ -23,7 +24,19 @@ jobs:
       - name: Build the addon
         run: |
           set -o pipefail
-          ./gradlew build --continue --no-daemon 2>&1 | tee build.log
+          ./gradlew assemble --continue --no-daemon 2>&1 | tee build.log
+
+      - name: Check the release jars contain no test code
+        run: |
+          status=0
+          for jar in $(ls forge/build/libs/*.jar fabric/build/libs/*.jar | grep -v -e '-dev' -e '-sources'); do
+            echo "$jar: $(unzip -Z1 "$jar" | wc -l) entries"
+            if unzip -Z1 "$jar" | grep -E 'gametest'; then
+              echo "::error file=$jar::test code or test data in the release jar"
+              status=1
+            fi
+          done
+          exit $status
 
       # Ошибки компиляции — аннотациями к запуску, чтобы их было видно без скачивания лога.
       - name: Report errors

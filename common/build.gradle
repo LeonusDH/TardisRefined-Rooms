@@ -21,3 +21,15 @@ sourceSets.main.resources {
     srcDir 'src/generated/resources'
     exclude '.cache'
 }
+
+// Тесты кода без запуска игры (JUnit): gradlew :common:test. В CI — по запросу (workflow Tests).
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging { events 'passed', 'failed'; exceptionFormat 'full' }
+}
