@@ -36,9 +36,15 @@ public final class ManagePayloads {
         /** Сервер, главный поток. */
         public static void handle(Request r, ServerPlayer player) {
             if (!(player.level() instanceof ServerLevel level)) return;
-            if (!Lattice.isTardisLevel(level) || player.distanceToSqr(r.core().getCenter()) > 64) return;
+            if (!Lattice.isTardisLevel(level) || player.distanceToSqr(r.core().getCenter()) > 64) {
+                TardisRooms.debug("{}: room info for {} ignored: not in a TARDIS or too far", player.getGameProfile().getName(), r.core().toShortString());
+                return;
+            }
             ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(r.core());
-            if (piece == null) return;
+            if (piece == null) {
+                TardisRooms.debug("{}: room info for {} ignored: no room there", player.getGameProfile().getName(), r.core().toShortString());
+                return;
+            }
             // Почему нельзя удалить. Мешают только вещи внутри — можно удалить вместе с ними (окно подтверждения):
             // тогда и какие это вещи (по блоку на вещь).
             TRoomsText problem = null;

@@ -8,7 +8,7 @@
 |---|---|---|
 | `disableProceduralRooms` | `true` | Stop Tardis Refined from generating procedural ARS rooms and corridors around the interior, including the random corridors above the hub. The console room, the Eye of Harmony and the central corridor hub stay. Affects only chunks that haven't been generated yet |
 | `simplifyHub` | `true` | Strip the Tardis Refined hub down to its essential parts, once per TARDIS, when a player first enters it. See [Rooms](rooms.md#the-hub) |
-| `debug` | `false` | Write details to the log: who grew, replaced or removed what, why an action was refused, the connectivity graph when removing or replacing, where nodes were placed in the hub |
+| `debug` | `false` | Also write the addon's details to the main log (`latest.log`), see [Logs](#logs) |
 | `compat.mekanism` | `true` | Mekanism chemicals through the TARDIS Interface |
 | `compat.ae2` | `true` | AE2 ME networks through the TARDIS Interface and the Memory Card for IDs |
 | `compat.jade` | `true` | Interface status in the Jade tooltip |
@@ -28,6 +28,12 @@ blocks = ["#minecraft:all_signs", "#minecraft:banners",
 ```
 
 Entries are written as described in [Block entries](block-entries.md). Anything in these blocks is lost together with the room: don't add blocks where players keep things, and be careful with whole mods, since in tech mods almost every block holds something. TARDIS Interfaces always count. Datapack rooms can mark such blocks for themselves, see [Rooms from datapacks](datapack-rooms.md#removable-blocks).
+
+## Logs
+
+- **`latest.log`, always:** a summary when the server starts (interface kinds, main options); rooms grown, replaced and removed (who, what, where); a room removed together with what was in the way, with the list of lost blocks; the hub simplified or left as it is and why; datapack rooms loaded; warnings and errors.
+- **Details, at DEBUG level, always** (on NeoForge they go to `logs/debug.log`): every player action with rooms, interfaces, the screwdriver, wrenches and the Memory Card; why a request was refused, including silent refusals (too far, no permission); interface status changes and new IDs; what keeps a room from being removed; what was remembered when a room grew; skipped entries.
+- With `debug = true`, the details also go to `latest.log`, marked `[debug]`, together with the connectivity graph when a room is removed or replaced.
 
 ## Client: `config/tardis_rooms/client.toml`
 

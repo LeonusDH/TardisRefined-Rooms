@@ -193,6 +193,7 @@ public final class ModuleRegistry extends SavedData {
             fp.forEach((floor, mods) -> { for (long m : mods) r.owners.computeIfAbsent(floor, x -> new HashMap<>()).put(m, p.id); });
             r.nextId = Math.max(r.nextId, p.id + 1);
         }
+        TardisRooms.debug("Loaded {} grown room(s)", r.pieces.size());
         return r;
     }
 

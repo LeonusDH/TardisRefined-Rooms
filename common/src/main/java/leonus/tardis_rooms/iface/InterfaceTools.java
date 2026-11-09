@@ -46,11 +46,16 @@ public final class InterfaceTools {
     /** Ключ по интерфейсу: Shift + ПКМ — снять в инвентарь, ПКМ — переключить режим грани, по которой кликнули. */
     private static UseResult wrench(Player player, Level level, BlockPos pos, Direction face, InterfaceBlockEntity be) {
         if (level.isClientSide()) return UseResult.CONSUMED;
-        if (!player.mayBuild() || !level.mayInteract(player, pos)) return UseResult.CONSUMED;
+        if (!player.mayBuild() || !level.mayInteract(player, pos)) {
+            TardisRooms.debug("{}: wrench on the interface at {} ignored: may not build here", player.getGameProfile().getName(), pos.toShortString());
+            return UseResult.CONSUMED;
+        }
         if (player.isShiftKeyDown()) {
+            TardisRooms.debug("{}: wrench picked up the interface at {}", player.getGameProfile().getName(), pos.toShortString());
             be.dismantle(player);
         } else if (face != null) {
             FaceMode m = be.face(face).next();
+            TardisRooms.debug("{}: wrench set the {} side of the interface at {} to {}", player.getGameProfile().getName(), face, pos.toShortString(), m);
             be.setFace(face, m);
             player.displayClientMessage(TRoomsText.MSG_INTERFACE_FACE.text(faceName(face).text(), faceModeName(m).text().withStyle(ChatFormatting.AQUA)), true);
         }

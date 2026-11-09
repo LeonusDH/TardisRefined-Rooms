@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.fabric;
 
+import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
@@ -56,6 +57,7 @@ final class FabricEvents {
             if (be instanceof InterfaceBlockEntity ibe) ibe.onChunkUnloaded();
         });
         ServerTickEvents.END_SERVER_TICK.register(HubInitializer::onServerTick);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> TardisRooms.onServerStarted());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             HubInitializer.onServerStopped();
             InterfaceNetwork.clear();

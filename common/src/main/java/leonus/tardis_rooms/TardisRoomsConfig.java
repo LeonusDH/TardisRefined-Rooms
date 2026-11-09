@@ -42,9 +42,10 @@ public final class TardisRoomsConfig {
                         "or the hub doesn't match the Tardis Refined templates, the hub is left as it is.")
                 .define("simplifyHub", true);
         DEBUG = b
-                .comment("Debug: log details of what the addon does: who grew, replaced or removed what, why an action was refused,",
-                        "the connectivity graph when removing or replacing, where nodes were placed in the hub.",
-                        "Off: only the line about the mod loading goes to the log.")
+                .comment("Debug: also write the addon's details to the main log (latest.log): players' actions with rooms, interfaces",
+                        "and the screwdriver, why an action was refused, interface status changes, the connectivity graph when removing",
+                        "or replacing. The details are always logged at DEBUG level (on NeoForge: logs/debug.log); rooms grown, replaced",
+                        "or removed and other changes to the world always go to latest.log.")
                 .define("debug", false);
         b.comment("Compatibility with other mods. An option does nothing if that mod isn't installed.").push("compat");
         COMPAT_MEKANISM = b.comment("Mekanism: chemicals through the TARDIS Interface.").define("mekanism", true);

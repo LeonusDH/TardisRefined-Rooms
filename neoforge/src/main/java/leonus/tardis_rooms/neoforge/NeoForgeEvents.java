@@ -1,5 +1,6 @@
 package leonus.tardis_rooms.neoforge;
 
+import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
@@ -16,6 +17,7 @@ import leonus.tardis_rooms.command.TRoomsCommands;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -31,6 +33,7 @@ final class NeoForgeEvents {
         bus.addListener((RegisterCommandsEvent e) -> TRoomsCommands.register(e.getDispatcher()));
         bus.addListener((EntityJoinLevelEvent e) -> HubInitializer.onEntityJoin(e.getLevel(), e.getEntity()));
         bus.addListener((ServerTickEvent.Post e) -> HubInitializer.onServerTick(e.getServer()));
+        bus.addListener((ServerStartedEvent e) -> TardisRooms.onServerStarted());
         bus.addListener((ServerStoppedEvent e) -> {
             HubInitializer.onServerStopped();
             InterfaceNetwork.clear();

@@ -50,6 +50,7 @@ public final class RemovableBlocks {
         if (now != parsedFrom) {
             Parsed p = parse(now);
             for (String b : p.bad()) TardisRooms.LOGGER.warn("{}: skipping {}", TardisRooms.REMOVABLE_CONFIG, b);
+            TardisRooms.debug("{}: {} entr(ies) in use, {} skipped", TardisRooms.REMOVABLE_CONFIG, p.matchers().size(), p.bad().size());
             matchers = p.matchers();
             parsedFrom = now;
         }

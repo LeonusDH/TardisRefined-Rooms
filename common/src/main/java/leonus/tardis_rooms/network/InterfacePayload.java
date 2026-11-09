@@ -42,10 +42,26 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
 
     /** Сервер, главный поток. */
     public static void handle(InterfacePayload p, ServerPlayer player) {
-        if (!InterfaceHost.holdsConfigurator(player)) return;
-        if (player.distanceToSqr(p.pos().getCenter()) > 64) return;
-        if (!player.mayBuild() || !player.level().mayInteract(player, p.pos())) return;
-        if (!(player.level().getBlockEntity(p.pos()) instanceof InterfaceBlockEntity be)) return;
+        String who = player.getGameProfile().getName();
+        String why = !InterfaceHost.holdsConfigurator(player) ? "no screwdriver in hand"
+                : player.distanceToSqr(p.pos().getCenter()) > 64 ? "too far"
+                : !player.mayBuild() || !player.level().mayInteract(player, p.pos()) ? "may not build here"
+                : !(player.level().getBlockEntity(p.pos()) instanceof InterfaceBlockEntity) ? "no interface there" : null;
+        if (why != null) {
+            TardisRooms.debug("{}: interface action {} at {} ignored: {}", who, p.action(), p.pos().toShortString(), why);
+            return;
+        }
+        InterfaceBlockEntity be = (InterfaceBlockEntity) player.level().getBlockEntity(p.pos());
+        TardisRooms.debug("{}: interface at {}: {}", who, p.pos().toShortString(), switch (p.action()) {
+            case FLOW -> "direction " + Flow.of(p.value());
+            case TOGGLE -> "toggle " + p.kind().map(ResourceLocation::toString).orElse("?");
+            case GENERATE -> "generate ID";
+            case CLEAR -> "clear ID";
+            case PASTE -> "paste ID from the screwdriver";
+            case FACE -> "side " + (p.value() >= 0 && p.value() < 18 ? Direction.from3DDataValue(p.value() % 6) : "?")
+                    + (p.value() / 6 == 0 ? " next" : p.value() / 6 == 1 ? " previous" : " default");
+            default -> "unknown action " + p.action();
+        });
         switch (p.action()) {
             case FLOW -> be.setFlow(Flow.of(p.value()));
             case TOGGLE -> {

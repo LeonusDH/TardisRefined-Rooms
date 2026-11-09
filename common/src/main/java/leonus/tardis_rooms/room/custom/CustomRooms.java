@@ -103,6 +103,9 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
                 continue;
             }
             out.put(id, room);
+            CustomRoom d = room.def();
+            TardisRooms.debug("Datapack room {}: {}×{} modules, {} level(s), {} exit(s), group {}, rotatable {}, {} removable place(s), {} removable description(s)",
+                    id, room.width(), room.depth(), d.floors(), d.exits().size() + 1, d.group(), d.rotatable(), d.marks().size(), d.patterns().size());
         }
         List<CustomRoomInfo> list = new ArrayList<>();
         for (Loaded l : out.values()) list.add(CustomRoomInfo.of(l));
