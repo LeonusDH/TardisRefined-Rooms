@@ -46,7 +46,7 @@ When a room grows, the addon remembers every such block that came with the room,
 
 A block that changes on its own, such as a beacon, may count as touched after a while. The page of a lectern and a hopper's cooldown are ignored.
 
-Rooms grown with an addon version before 1.1.0 have nothing remembered. For them:
+Rooms grown with an addon version before 1.2.0 have nothing remembered. For them:
 
 - a vanilla block counts only if something is inside: items in a container (chests, barrels, shulker boxes, furnaces, hoppers, brewing stands, chiseled bookshelves, decorated pots, jukeboxes and so on), a book on a lectern, food on a campfire, bees in a hive. A chest with unopened loot counts too;
 - a block from another mod always counts, since its contents can't be checked.
