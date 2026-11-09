@@ -90,4 +90,7 @@ public final class NeoForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void roomRemovableMarkedIgnored(GameTestHelper h) { RoomGameTests.removableMarkedIgnored(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomRemovableDescriptions(GameTestHelper h) { RoomGameTests.removableDescriptions(h); }
 }

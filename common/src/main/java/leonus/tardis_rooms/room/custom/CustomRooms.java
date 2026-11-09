@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.mixin.StructureTemplateAccessor;
+import leonus.tardis_rooms.room.BlockMatcher;
 import leonus.tardis_rooms.room.Lattice;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -152,7 +153,14 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
             if (p.getX() < 0 || p.getZ() < 0 || p.getX() >= size.getX() || p.getZ() >= size.getZ() || p.getY() < 0 || p.getY() >= templates.get(0).getSize().getY())
                 problems.add("control_block " + p.toShortString() + " is outside the bottom floor's structure");
         });
-        for (CustomRoom.Mark m : def.removable()) {
+        for (String pattern : def.patterns()) {
+            try {
+                BlockMatcher.parse(pattern);
+            } catch (IllegalArgumentException e) {
+                problems.add("removable \"" + pattern + "\": " + e.getMessage());
+            }
+        }
+        for (CustomRoom.Mark m : def.marks()) {
             BlockPos p = m.pos();
             if (m.floor() < 0 || m.floor() >= templates.size()) {
                 problems.add("removable " + p.toShortString() + ": no floor " + m.floor());

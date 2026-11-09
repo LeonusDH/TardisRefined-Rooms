@@ -86,4 +86,7 @@ public final class FabricGameTests {
 
     @GameTest(template = TEMPLATE)
     public static void roomRemovableMarkedIgnored(GameTestHelper h) { RoomGameTests.removableMarkedIgnored(h); }
+
+    @GameTest(template = TEMPLATE)
+    public static void roomRemovableDescriptions(GameTestHelper h) { RoomGameTests.removableDescriptions(h); }
 }

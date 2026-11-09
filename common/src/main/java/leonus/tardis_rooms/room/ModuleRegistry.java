@@ -6,14 +6,17 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -41,6 +44,15 @@ public final class ModuleRegistry extends SavedData {
         public Map<Long, Integer> template;
         /** Места блоков, которые уходят вместе с помещением ({@link BlockPos#asLong}; помещения из датапаков, поле removable). */
         public Set<Long> removable = Set.of();
+        /** Описания блоков, которые уходят вместе с помещением ({@link BlockMatcher}; помещения из датапаков, поле removable). */
+        public List<String> removableMatch = List.of();
+        private List<BlockMatcher> matchers;
+
+        /** {@link #removableMatch}, разобранные (неправильные — пропущены: при загрузке датапака они уже отсеяны). */
+        public List<BlockMatcher> matchers() {
+            if (matchers == null) matchers = RemovableBlocks.parse(removableMatch).matchers();
+            return matchers;
+        }
 
         Piece(int id, ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core) {
             this.id = id; this.pieceId = pieceId; this.node = node; this.footprint = footprint; this.core = core;
@@ -98,10 +110,11 @@ public final class ModuleRegistry extends SavedData {
     }
 
     public Piece addPiece(ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core, Map<Long, Integer> template,
-                          Set<BlockPos> removable) {
+                          Set<BlockPos> removable, List<String> removableMatch) {
         Piece p = new Piece(nextId++, pieceId, node, copy(footprint), core);
         p.template = new HashMap<>(template);
         p.removable = removable.stream().map(BlockPos::asLong).collect(Collectors.toUnmodifiableSet());
+        p.removableMatch = List.copyOf(removableMatch);
         pieces.put(p.id, p);
         p.footprint.forEach((floor, mods) -> {
             for (long m : mods) owners.computeIfAbsent(floor, x -> new HashMap<>()).put(m, p.id);
@@ -158,6 +171,12 @@ public final class ModuleRegistry extends SavedData {
                 for (long v : t.getLongArray("removable")) rm.add(v);
                 p.removable = Set.copyOf(rm);
             }
+            if (t.contains("removable_match", Tag.TAG_LIST)) {
+                ListTag rl = t.getList("removable_match", Tag.TAG_STRING);
+                List<String> pm = new ArrayList<>();
+                for (int k = 0; k < rl.size(); k++) pm.add(rl.getString(k));
+                p.removableMatch = List.copyOf(pm);
+            }
             if (t.contains("template", Tag.TAG_COMPOUND)) {
                 CompoundTag tt = t.getCompound("template");
                 long[] at = tt.getLongArray("pos");
@@ -189,6 +208,11 @@ public final class ModuleRegistry extends SavedData {
             t.put("footprint", ft);
             if (p.core != null) t.put("core", NbtUtils.writeBlockPos(p.core));
             if (p.customName != null) t.putString("name", p.customName);
+            if (!p.removableMatch.isEmpty()) {
+                ListTag rl = new ListTag();
+                for (String m : p.removableMatch) rl.add(StringTag.valueOf(m));
+                t.put("removable_match", rl);
+            }
             if (!p.removable.isEmpty()) t.putLongArray("removable", p.removable.stream().mapToLong(Long::longValue).toArray());
             // Пустой список тоже пишется: «у шаблона нет блок-сущностей» — не то же, что «отпечатков не снимали».
             if (p.template != null) {

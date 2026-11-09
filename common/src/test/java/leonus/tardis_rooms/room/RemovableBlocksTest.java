@@ -4,26 +4,47 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/** Строки настройки removableWithRoom и поля removable: весь мод и шаблоны со звёздочкой (описания блоков — в игровых тестах). */
 class RemovableBlocksTest {
+    private static ResourceLocation id(String s) { return ResourceLocation.parse(s); }
+
     @Test
-    void blocksAndTags() {
-        RemovableBlocks.Parsed p = RemovableBlocks.parse(List.of("minecraft:lectern", " #minecraft:banners ", "mymod:shelf"));
-        assertEquals(Set.of(ResourceLocation.parse("minecraft:lectern"), ResourceLocation.parse("mymod:shelf")), p.blocks());
-        assertEquals(List.of(ResourceLocation.parse("minecraft:banners")), p.tags());
+    void wholeMod() {
+        BlockMatcher m = BlockMatcher.parse("@mekanism");
+        assertTrue(m.testId(id("mekanism:basic_universal_cable")));
+        assertFalse(m.testId(id("minecraft:chest")));
+        assertFalse(m.testId(id("mekanismgenerators:heat_generator")));
     }
 
     @Test
-    void badEntriesSkipped() {
-        assertFalse(RemovableBlocks.valid("Not A Block!"));
+    void starPattern() {
+        BlockMatcher cables = BlockMatcher.parse("mekanism:*_cable");
+        assertTrue(cables.testId(id("mekanism:basic_universal_cable")));
+        assertFalse(cables.testId(id("mekanism:basic_mechanical_pipe")));
+        BlockMatcher signs = BlockMatcher.parse("*:*_sign");
+        assertTrue(signs.testId(id("minecraft:oak_sign")));
+        assertTrue(signs.testId(id("somemod:iron_sign")));
+        assertFalse(signs.testId(id("minecraft:oak_sign_post")));
+        assertTrue(BlockMatcher.parse("mekanism:*").testId(id("mekanism:digital_miner")));
+        assertTrue(BlockMatcher.parse("*_bed").testId(id("minecraft:red_bed"))); // без пространства — minecraft
+    }
+
+    @Test
+    void badEntries() {
+        assertThrows(IllegalArgumentException.class, () -> BlockMatcher.parse("@"));
+        assertThrows(IllegalArgumentException.class, () -> BlockMatcher.parse("Not A Block!"));
+        assertThrows(IllegalArgumentException.class, () -> BlockMatcher.parse("mekanism:*CABLE"));
+        RemovableBlocks.Parsed p = RemovableBlocks.parse(List.of("Not A Block!", "@mekanism"));
+        assertEquals(1, p.matchers().size());
+        assertEquals(1, p.bad().size());
+        assertFalse(RemovableBlocks.valid(" "));
         assertFalse(RemovableBlocks.valid(42));
-        assertTrue(RemovableBlocks.valid("#c:chests"));
-        RemovableBlocks.Parsed p = RemovableBlocks.parse(List.of("Not A Block!", "minecraft:lectern"));
-        assertEquals(Set.of(ResourceLocation.parse("minecraft:lectern")), p.blocks());
+        assertTrue(RemovableBlocks.valid("mekanism:something_not_registered_yet"));
     }
 }

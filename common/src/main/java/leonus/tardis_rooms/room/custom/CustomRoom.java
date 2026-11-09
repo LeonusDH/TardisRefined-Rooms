@@ -26,15 +26,23 @@ import java.util.Optional;
  *   "entrance": {"x": 0, "z": 0, "side": "south"},   // выход, которым помещение пристраивается к узлу
  *   "exits": [{"x": 0, "z": 0, "side": "north"}],    // остальные выходы; "floor": 1 — на втором этаже
  *   "control_block": [11, 0, 11],            // необязательно; блок управления (y = 0 — пол нижнего этажа)
- *   "removable": [[3, 2, 5], [3, 2, 5, 1]],   // необязательно; блоки, которые уходят вместе с помещением, что бы в них
- *                                            // ни было: x, y, z в шаблоне и этаж (по умолчанию 0)
+ *   "removable": [[3, 2, 5], [3, 2, 5, 1], "minecraft:player_head{profile:{name:\"MHF_Question\"}}"],
+ *                                            // необязательно; блоки, которые уходят вместе с помещением, что бы в них
+ *                                            // ни было: места (x, y, z в шаблоне и этаж, по умолчанию 0) или описания
+ *                                            // блоков (BlockMatcher) — любой такой блок в помещении
  *   "rotatable": false                       // необязательно (по умолчанию true): false — строится только от узла,
  *                                            // смотрящего туда же, куда вход шаблона, без поворота
  * }
  * }</pre>
  */
 public record CustomRoom(Component name, Optional<Component> description, String group, List<ResourceLocation> structures,
-                         Exit entrance, List<Exit> exits, Optional<BlockPos> controlBlock, List<Mark> removable, boolean rotatable) {
+                         Exit entrance, List<Exit> exits, Optional<BlockPos> controlBlock, List<Either<Mark, String>> removable, boolean rotatable) {
+
+    /** Отмеченные места (из removable). */
+    public List<Mark> marks() { return removable.stream().flatMap(e -> e.left().stream()).toList(); }
+
+    /** Описания блоков (из removable): строки {@link leonus.tardis_rooms.room.BlockMatcher}. */
+    public List<String> patterns() { return removable.stream().flatMap(e -> e.right().stream()).toList(); }
 
     /** Отмеченный блок: место в шаблоне этажа {@code floor} (0 — нижний). В JSON — [x, y, z] или [x, y, z, этаж]. */
     public record Mark(BlockPos pos, int floor) {
@@ -69,7 +77,7 @@ public record CustomRoom(Component name, Optional<Component> description, String
             Exit.CODEC.fieldOf("entrance").forGetter(CustomRoom::entrance),
             Exit.CODEC.listOf().optionalFieldOf("exits", List.of()).forGetter(CustomRoom::exits),
             BlockPos.CODEC.optionalFieldOf("control_block").forGetter(CustomRoom::controlBlock),
-            Mark.CODEC.listOf().optionalFieldOf("removable", List.of()).forGetter(CustomRoom::removable),
+            Codec.either(Mark.CODEC, Codec.STRING).listOf().optionalFieldOf("removable", List.of()).forGetter(CustomRoom::removable),
             Codec.BOOL.optionalFieldOf("rotatable", true).forGetter(CustomRoom::rotatable)
     ).apply(i, CustomRoom::new));
 

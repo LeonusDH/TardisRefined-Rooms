@@ -99,7 +99,7 @@ public final class RoomGrowth {
 
     /** Блок-сущности, которые мешают удалить или заменить помещение (см. {@link RoomBlockEntities}); пусто — не мешают. */
     public static List<BlockPos> blockers(ServerLevel level, ModuleRegistry.Piece piece) {
-        return RoomBlockEntities.blockers(level, RoomBlockEntities.boxes(piece.footprint), piece.template, piece.removable);
+        return RoomBlockEntities.blockers(level, RoomBlockEntities.boxes(piece.footprint), piece.template, piece.removable, piece.matchers());
     }
 
     // ---------- рост ----------
@@ -146,7 +146,7 @@ public final class RoomGrowth {
         BlockPos core = placeCore(level, plan.get());
         // Отпечатки — сразу после постройки: всё, что в помещении сейчас, — его шаблон.
         Map<Long, Integer> template = RoomBlockEntities.fingerprint(level, RoomBlockEntities.boxes(plan.get().footprint()));
-        reg.addPiece(pieceId, node, plan.get().footprint(), core, template, plan.get().removable());
+        reg.addPiece(pieceId, node, plan.get().footprint(), core, template, plan.get().removable(), plan.get().removableMatch());
         for (Map.Entry<Integer, Set<Long>> e : plan.get().footprint().entrySet()) Lattice.refresh(level, e.getValue(), e.getKey());
         TardisRooms.debug("{} {} {} from module {},{} {} floor {} in {}", player.getGameProfile().getName(),
                 replacing != null ? "replaced with" : "grew", pieceId, node.mx(), node.mz(), node.side(), node.floorY(), level.dimension().location());

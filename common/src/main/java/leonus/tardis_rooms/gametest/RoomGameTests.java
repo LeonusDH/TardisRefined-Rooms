@@ -1,6 +1,8 @@
 package leonus.tardis_rooms.gametest;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.room.BlockMatcher;
 import leonus.tardis_rooms.room.BlockerHighlight;
 import leonus.tardis_rooms.room.RoomBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -171,6 +173,23 @@ public final class RoomGameTests {
         expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, marked), LECTERN);
         h.setBlock(EXTRA, TRoomsBlocks.INTERFACE.get());
         expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, marked), LECTERN, EXTRA);
+        h.succeed();
+    }
+
+    /** Описания блоков: данные сравниваются частично, весь мод и шаблон со звёздочкой — по id. */
+    public static void removableDescriptions(GameTestHelper h) {
+        furnish(h);
+        Map<Long, Integer> template = RoomBlockEntities.fingerprint(h.getLevel(), box(h));
+        ((Container) h.getBlockEntity(CHEST)).setItem(0, new ItemStack(Items.DIAMOND));
+        ((LecternBlockEntity) h.getBlockEntity(LECTERN)).setBook(new ItemStack(Items.WRITABLE_BOOK));
+        List<BlockMatcher> diamondChest = List.of(BlockMatcher.parse("minecraft:chest{Items:[{id:\"minecraft:diamond\"}]}"));
+        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(), diamondChest), LECTERN);
+        ((Container) h.getBlockEntity(CHEST)).setItem(0, new ItemStack(Items.EMERALD));
+        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(), diamondChest), CHEST, LECTERN);
+        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(), List.of(BlockMatcher.parse("*:lect*"))), CHEST);
+        h.setBlock(EXTRA, TRoomsBlocks.INTERFACE.get());
+        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, Set.of(),
+                List.of(BlockMatcher.parse("@minecraft"), BlockMatcher.parse("@" + TardisRooms.MODID))), EXTRA);
         h.succeed();
     }
 }

@@ -1,6 +1,8 @@
 package leonus.tardis_rooms.room.custom;
 
 import com.google.gson.JsonParser;
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import leonus.tardis_rooms.room.Lattice;
 import net.minecraft.core.BlockPos;
@@ -15,11 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Поле removable помещения из датапака: формат и перенос отражением полосы у прохода. */
 class RemovableMarksTest {
     @Test
-    void threeOrFourNumbers() {
-        var codec = CustomRoom.Mark.CODEC.listOf();
-        var marks = codec.parse(JsonOps.INSTANCE, JsonParser.parseString("[[3, 2, 5], [3, 2, 5, 1]]")).getOrThrow();
-        assertEquals(List.of(new CustomRoom.Mark(new BlockPos(3, 2, 5), 0), new CustomRoom.Mark(new BlockPos(3, 2, 5), 1)), marks);
-        assertTrue(codec.parse(JsonOps.INSTANCE, JsonParser.parseString("[[3, 2]]")).error().isPresent());
+    void placesAndDescriptions() {
+        var codec = Codec.either(CustomRoom.Mark.CODEC, Codec.STRING).listOf();
+        var list = codec.parse(JsonOps.INSTANCE, JsonParser.parseString("[[3, 2, 5], [3, 2, 5, 1], \"#minecraft:banners\"]")).getOrThrow();
+        assertEquals(Either.left(new CustomRoom.Mark(new BlockPos(3, 2, 5), 0)), list.get(0));
+        assertEquals(Either.left(new CustomRoom.Mark(new BlockPos(3, 2, 5), 1)), list.get(1));
+        assertEquals(Either.right("#minecraft:banners"), list.get(2));
+        assertTrue(CustomRoom.Mark.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("[3, 2]")).error().isPresent());
     }
 
     @Test

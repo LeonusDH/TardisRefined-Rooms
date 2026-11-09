@@ -1,62 +1,55 @@
 package leonus.tardis_rooms.room;
 
+import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.TardisRoomsConfig;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Блоки, которые никогда не мешают удалить помещение и уходят вместе с ним, что бы в них ни было, — из настройки
- * сервера {@code removableWithRoom}: id блоков и метки через {@code #}. Разобранный список запоминается, пока
- * настройка та же.
+ * сервера {@code removableWithRoom} (строки — см. {@link BlockMatcher}). Строки разбираются при первом использовании,
+ * а не при загрузке настройки: тогда ещё не все моды зарегистрировали блоки. Неправильные пропускаются с
+ * предупреждением в логе. Разобранный список запоминается, пока настройка та же.
  */
 public final class RemovableBlocks {
-    /** Разобранная настройка: id блоков и метки. Неправильные строки пропускаются (их отсекает и проверка настройки). */
-    public record Parsed(Set<ResourceLocation> blocks, List<ResourceLocation> tags) {}
+    /** Разбор строк: годные и неправильные (с причиной). */
+    public record Parsed(List<BlockMatcher> matchers, List<String> bad) {}
 
     public static Parsed parse(List<? extends String> entries) {
-        Set<ResourceLocation> blocks = new HashSet<>();
-        List<ResourceLocation> tags = new ArrayList<>();
+        List<BlockMatcher> ok = new ArrayList<>();
+        List<String> bad = new ArrayList<>();
         for (String e : entries) {
-            String s = e.trim();
-            boolean tag = s.startsWith("#");
-            ResourceLocation id = ResourceLocation.tryParse(tag ? s.substring(1) : s);
-            if (id == null) continue;
-            if (tag) tags.add(id); else blocks.add(id);
+            try {
+                ok.add(BlockMatcher.parse(e));
+            } catch (IllegalArgumentException ex) {
+                bad.add(e + " (" + ex.getMessage() + ")");
+            }
         }
-        return new Parsed(Set.copyOf(blocks), List.copyOf(tags));
+        return new Parsed(List.copyOf(ok), List.copyOf(bad));
     }
 
-    /** Подходит ли строка для настройки: id блока или {@code #}метка. */
+    /** Для проверки настройки: только непустая строка (разбор — позже, см. выше). */
     public static boolean valid(Object o) {
-        if (!(o instanceof String s)) return false;
-        s = s.trim();
-        return ResourceLocation.tryParse(s.startsWith("#") ? s.substring(1) : s) != null;
+        return o instanceof String s && !s.isBlank();
     }
 
     private static List<? extends String> cachedFrom;
-    private static Set<ResourceLocation> blocks = Set.of();
-    private static List<TagKey<Block>> tags = List.of();
+    private static List<BlockMatcher> matchers = List.of();
 
     /** Уходит ли этот блок вместе с помещением, что бы в нём ни было. */
-    public static boolean matches(BlockState state) {
+    public static boolean matches(ServerLevel level, BlockPos pos, BlockState state) {
         List<? extends String> now = TardisRoomsConfig.removableWithRoom();
         if (now != cachedFrom) {
             Parsed p = parse(now);
-            blocks = p.blocks();
-            tags = p.tags().stream().map(id -> TagKey.create(Registries.BLOCK, id)).toList();
+            for (String b : p.bad()) TardisRooms.LOGGER.warn("Config removableWithRoom: skipping {}", b);
+            matchers = p.matchers();
             cachedFrom = now;
         }
-        if (blocks.contains(BuiltInRegistries.BLOCK.getKey(state.getBlock()))) return true;
-        for (TagKey<Block> t : tags) if (state.is(t)) return true;
+        for (BlockMatcher m : matchers) if (m.test(level, pos, state)) return true;
         return false;
     }
 

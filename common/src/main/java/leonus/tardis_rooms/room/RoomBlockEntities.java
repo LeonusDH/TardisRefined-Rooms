@@ -74,25 +74,35 @@ public final class RoomBlockEntities {
 
     /** То же; {@code removable} — места ({@link BlockPos#asLong}), которые помещение отметило как уходящие с ним. */
     public static List<BlockPos> blockers(ServerLevel level, List<BoundingBox> boxes, @Nullable Map<Long, Integer> template, Set<Long> removable) {
+        return blockers(level, boxes, template, removable, List.of());
+    }
+
+    /** То же; {@code matchers} — описания блоков, которые помещение отметило как уходящие с ним (где бы они ни стояли). */
+    public static List<BlockPos> blockers(ServerLevel level, List<BoundingBox> boxes, @Nullable Map<Long, Integer> template,
+                                         Set<Long> removable, List<BlockMatcher> matchers) {
         List<BlockPos> out = new ArrayList<>();
         forEach(level, boxes, be -> {
-            if (be instanceof InterfaceBlockEntity || !removable.contains(be.getBlockPos().asLong()))
-                if (blocks(level, be, template)) out.add(be.getBlockPos().immutable());
+            if (!(be instanceof InterfaceBlockEntity) && (removable.contains(be.getBlockPos().asLong()) || matchesAny(level, be, matchers))) return;
+            if (blocks(level, be, template)) out.add(be.getBlockPos().immutable());
         });
         return out;
     }
 
+    private static boolean matchesAny(ServerLevel level, BlockEntity be, List<BlockMatcher> matchers) {
+        for (BlockMatcher m : matchers) if (m.test(level, be.getBlockPos(), be.getBlockState())) return true;
+        return false;
+    }
+
     private static boolean blocks(ServerLevel level, BlockEntity be, @Nullable Map<Long, Integer> template) {
         if (be instanceof InterfaceBlockEntity) return true;
-        if (ignored(be)) return false;
+        if (ignored(be) || RemovableBlocks.matches(level, be.getBlockPos(), be.getBlockState())) return false;
         if (template == null) return hasContents(be);
         Integer expected = template.get(be.getBlockPos().asLong());
         return expected == null || expected != hash(level, be);
     }
 
-    /** Блоки TR и наши служебные — часть самой ТАРДИС; блоки из настройки уходят вместе с помещением. */
+    /** Блоки TR и наши служебные — часть самой ТАРДИС. */
     private static boolean ignored(BlockEntity be) {
-        if (RemovableBlocks.matches(be.getBlockState())) return true;
         String ns = blockId(be).getNamespace();
         return ns.equals(TardisRefined.MODID) || ns.equals(TardisRooms.MODID);
     }

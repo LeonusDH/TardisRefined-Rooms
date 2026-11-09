@@ -95,7 +95,28 @@ The `tardis_rooms` namespace is reserved for the built-in rooms, so use your own
 
 A passage is `{"x": ..., "z": ..., "side": ..., "floor": ...}`: the module inside the template (counted from 0), the wall it is in (`north`, `south`, `west` or `east`) and the level (`0` is the bottom one, the default).
 
-`removable` lists blocks of the template that go with the room whatever is in them, so they never keep it from being removed or replaced. Each entry is `[x, y, z]` in template coordinates on the bottom level, or `[x, y, z, floor]` for another level, for example `"removable": [[3, 2, 5], [7, 2, 5, 1]]`. Only these exact blocks count: the same block placed by a player elsewhere in the room still has to be emptied first. Anything in a marked block is lost together with the room, so mark only blocks where players are not expected to keep things.
+`removable` lists blocks that go with the room whatever is in them, so they never keep it from being removed or replaced. An entry is either a place or a description:
+
+- `[x, y, z]` is a block in template coordinates on the bottom level, `[x, y, z, floor]` on another level. Only that exact block counts: the same block placed by a player elsewhere in the room still has to be emptied first. Use places for ordinary blocks such as a lectern or a chest.
+- A string matches every such block in this room, wherever it stands, including blocks placed by players, written as described below. Use it for blocks a player is unlikely to place, such as a head with a particular profile: `"minecraft:player_head{profile:{name:\"MHF_Question\"}}"`.
+
+```json
+"removable": [[11, 2, 11], [3, 2, 5, 1], "minecraft:player_head{profile:{name:\"MHF_Question\"}}"]
+```
+
+Anything in these blocks is lost together with the room, so mark only blocks where players are not expected to keep things.
+
+#### Which blocks an entry matches
+
+The same strings work in `removable` and in the `removableWithRoom` config option:
+
+| Entry | Matches |
+|---|---|
+| `minecraft:lectern` | that block |
+| `#minecraft:banners` | blocks in the tag |
+| `mekanism:*_cable`, `*:*_sign` | block ids where `*` stands for any text; without a namespace, `minecraft` is assumed |
+| `@mekanism` | every block of the mod, same as `mekanism:*` |
+| `minecraft:player_head{profile:{name:"MHF_Question"}}`, `#minecraft:candles[lit=false]` | as in `/execute if block`: a block or tag with block states and data; data matches if it contains the given fields |
 
 ### Template requirements
 
@@ -129,7 +150,7 @@ If you remove a datapack, the rooms already built from it stay in place. They sh
 |---|---|---|
 | `disableProceduralRooms` | `true` | Stop Tardis Refined from generating procedural ARS rooms and corridors |
 | `simplifyHub` | `true` | Strip the TR hub down to its essential parts (see above) |
-| `removableWithRoom` | signs, banners, heads | Blocks that never keep a room from being removed or replaced and go with it, whatever is in them: block ids and tags with `#`, such as `#minecraft:all_signs`. Don't add blocks where players keep things. TARDIS Interfaces always count |
+| `removableWithRoom` | signs, banners, heads | Blocks that never keep a room from being removed or replaced and go with it, whatever is in them. Entries are written as described [below](#which-blocks-an-entry-matches). Don't add blocks where players keep things, and be careful with whole mods: in tech mods almost every block holds something. TARDIS Interfaces always count |
 | `debug` | `false` | Log detailed information about what the addon builds, replaces or removes |
 | `compat.mekanism` / `compat.ae2` / `compat.jade` | `true` | Turn individual integrations on or off |
 

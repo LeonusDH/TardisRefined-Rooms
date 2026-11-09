@@ -73,7 +73,7 @@ public final class CustomRoomPlan {
         // Отмеченные блоки — в мир так же, как блок управления; попавшие в отражённую полосу у прохода — туда,
         // куда их перенесёт отражение.
         Set<BlockPos> removable = new HashSet<>();
-        for (CustomRoom.Mark mark : def.removable()) {
+        for (CustomRoom.Mark mark : def.marks()) {
             if (mark.floor() < 0 || mark.floor() >= floors.size()) continue;
             BlockPos w = StructureTemplate.transform(mark.pos(), Mirror.NONE, rot, BlockPos.ZERO).offset(dx, floors.get(mark.floor()), dz);
             int height = room.templates().get(mark.floor()).getSize().getY();
@@ -97,7 +97,7 @@ public final class CustomRoomPlan {
                     mirrorDoorway(level, Lattice.keyX(m), Lattice.keyZ(m), rot.rotate(e.side()), floors.get(i), height);
                 }
             }
-        }, coreSpot, null, core, Set.copyOf(removable)));
+        }, coreSpot, null, core, Set.copyOf(removable), def.patterns()));
     }
 
     // ---------- проход после поворота ----------
