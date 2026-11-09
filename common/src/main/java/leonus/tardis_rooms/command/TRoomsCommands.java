@@ -39,6 +39,13 @@ public final class TRoomsCommands {
             src.sendFailure(TRoomsText.CMD_EXPORT_NAMESPACE.text());
             return 0;
         }
+        // Путь id становится путём файла в датапаке: «..» вывел бы запись за пределы его папки.
+        for (String part : id.getPath().split("/")) {
+            if (part.isEmpty() || part.equals(".") || part.equals("..")) {
+                src.sendFailure(TRoomsText.CMD_EXPORT_BAD_ID.text());
+                return 0;
+            }
+        }
         try {
             RoomExporter.Result r = RoomExporter.export(level, BlockPos.containing(src.getPosition()), id);
             String path = r.pack().toAbsolutePath().toString();

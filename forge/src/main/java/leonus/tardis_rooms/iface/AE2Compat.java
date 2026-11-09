@@ -91,7 +91,10 @@ public final class AE2Compat {
                 be.getLevel().updateNeighborsAt(be.getBlockPos(), be.getBlockState().getBlock());
                 return;
             }
-            if (link != null) link.sync();
+            if (link != null) {
+                link.exposeOpenSides();
+                link.sync();
+            }
         }
 
         static void destroy(InterfaceBlockEntity be) {
@@ -155,7 +158,18 @@ public final class AE2Compat {
 
         @Override
         public IGridNode getGridNode(Direction dir) {
-            return node.getNode();
+            return be.open(dir) ? node.getNode() : null;
+        }
+
+        /** Кабели ME подключаются только к открытым сторонам (выключенная сторона — как будто её нет). */
+        private Set<Direction> exposed = EnumSet.allOf(Direction.class);
+
+        void exposeOpenSides() {
+            Set<Direction> open = EnumSet.noneOf(Direction.class);
+            for (Direction d : Direction.values()) if (be.open(d)) open.add(d);
+            if (open.equals(exposed)) return;
+            exposed = open;
+            node.setExposedOnSides(open);
         }
 
         /** Соединения — ровно со связанными интерфейсами, у которых тоже включена сеть ME (создаёт одна из сторон). */

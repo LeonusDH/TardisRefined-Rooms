@@ -47,7 +47,7 @@ public class InterfaceSidesScreen extends Screen {
     private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_ON = RoomMonitorScreen.sprite("iface/neighbours_on");
     private static final net.minecraft.resources.ResourceLocation ICON_NEIGHBOURS_OFF = RoomMonitorScreen.sprite("iface/neighbours_off");
     private static final net.minecraft.resources.ResourceLocation ICON_RESET = RoomMonitorScreen.sprite("iface/reset_view");
-    private static final int GOLD = 0xFFB28610, AQUA = 0xFF3FA7B8;
+    private static final int GOLD = 0xFFB28610, AQUA = 0xFF3FA7B8, RED = 0xFFB0413E;
 
     private final Screen parent;
     private final BlockPos pos;
@@ -84,7 +84,7 @@ public class InterfaceSidesScreen extends Screen {
         y = icon(x, y, ICON_BACK, CommonComponents.GUI_BACK.copy(), TRoomsText.IFACE_SIDES_BACK_TOOLTIP.text(), this::onClose);
         y = icon(x, y, neighbours ? ICON_NEIGHBOURS_ON : ICON_NEIGHBOURS_OFF,
                 (neighbours ? TRoomsText.IFACE_SIDES_NEIGHBOURS_ON : TRoomsText.IFACE_SIDES_NEIGHBOURS_OFF).text(),
-                TRoomsText.IFACE_SIDES_NEIGHBOURS_TOOLTIP.text(), () -> { neighbours = !neighbours; Minecraft.getInstance().tell(this::rebuildWidgets); });
+                TRoomsText.IFACE_SIDES_NEIGHBOURS_TOOLTIP.text(), () -> { neighbours = !neighbours; Minecraft.getInstance().tell(this::rebuildIfShown); });
         icon(x, y, ICON_RESET, TRoomsText.IFACE_SIDES_RESET.text(), TRoomsText.IFACE_SIDES_RESET_TOOLTIP.text(),
                 () -> { yaw = startYaw; pitch = 25f; });
     }
@@ -220,7 +220,8 @@ public class InterfaceSidesScreen extends Screen {
 
         int ly = viewY() + VIEW + 5, lx = left + 10;
         lx = legend(g, lx, ly, GOLD, InterfaceTools.faceModeName(FaceMode.PUSH).text());
-        legend(g, lx + 8, ly, AQUA, InterfaceTools.faceModeName(FaceMode.PULL).text());
+        lx = legend(g, lx + 8, ly, AQUA, InterfaceTools.faceModeName(FaceMode.PULL).text());
+        legend(g, lx + 8, ly, RED, InterfaceTools.faceModeName(FaceMode.DISABLED).text());
     }
 
     @Override
@@ -250,7 +251,12 @@ public class InterfaceSidesScreen extends Screen {
     }
 
     private static ChatFormatting color(FaceMode m) {
-        return switch (m) { case DEFAULT -> ChatFormatting.GRAY; case PUSH -> ChatFormatting.GOLD; case PULL -> ChatFormatting.AQUA; };
+        return switch (m) {
+            case DEFAULT -> ChatFormatting.GRAY;
+            case PUSH -> ChatFormatting.GOLD;
+            case PULL -> ChatFormatting.AQUA;
+            case DISABLED -> ChatFormatting.RED;
+        };
     }
 
     private void renderBlocks(GuiGraphics g, InterfaceData data) {
@@ -284,7 +290,7 @@ public class InterfaceSidesScreen extends Screen {
         Matrix4f m = ps.last().pose();
         for (Direction d : Direction.values()) {
             FaceMode fm = data.face(d);
-            int c = fm == FaceMode.PUSH ? GOLD : fm == FaceMode.PULL ? AQUA : 0;
+            int c = switch (fm) { case PUSH -> GOLD; case PULL -> AQUA; case DISABLED -> RED; case DEFAULT -> 0; };
             int alpha = c == 0 ? 0 : 0x90;
             if (d == hovered) {
                 if (c == 0) { c = 0xFFFFFF; alpha = 0x50; } else alpha = 0xC0;
@@ -318,5 +324,10 @@ public class InterfaceSidesScreen extends Screen {
             case EAST -> new float[][]{{hi, 0, 0}, {hi, 1, 0}, {hi, 1, 1}, {hi, 0, 1}};
         };
         for (float[] p : v) vc.vertex(m, p[0], p[1], p[2]).color(r, g, b, a).endVertex();
+    }
+
+    /** Перестроить экран после клика — если его за это время не закрыли и не сменили. */
+    private void rebuildIfShown() {
+        if (minecraft != null && minecraft.screen == this) rebuildWidgets();
     }
 }

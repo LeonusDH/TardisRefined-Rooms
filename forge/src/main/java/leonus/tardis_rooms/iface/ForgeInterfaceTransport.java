@@ -4,6 +4,7 @@ import leonus.tardis_rooms.TardisRooms;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -21,11 +22,7 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Передача через интерфейс на Forge — capabilities (на 1.20.1 — через LazyOptional, подключаются к блоку событием). «Виды» ({@link EnergyView}, {@link ItemView}, {@link FluidView},
@@ -36,6 +33,14 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
     static final int FLUID_PER_OP = 16000;
 
     private final InterfaceBlockEntity be;
+    /** Свои соседи по видам — их берут связанные интерфейсы (см. {@link LinkedStorages}). */
+    private final LinkedStorages.Sides<IEnergyStorage> energySides;
+    private final LinkedStorages.Sides<IItemHandler> itemSides;
+    private final LinkedStorages.Sides<IFluidHandler> fluidSides;
+    /** Хранилища у соседей связанных интерфейсов — по виду. */
+    final LinkedStorages<IEnergyStorage> linkedEnergy;
+    final LinkedStorages<IItemHandler> linkedItems;
+    final LinkedStorages<IFluidHandler> linkedFluids;
     private final IEnergyStorage energy;
     private final IItemHandler items;
     private final IFluidHandler fluids;
@@ -43,6 +48,12 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
 
     public ForgeInterfaceTransport(InterfaceBlockEntity be) {
         this.be = be;
+        this.energySides = sides(be, ForgeCapabilities.ENERGY);
+        this.itemSides = sides(be, ForgeCapabilities.ITEM_HANDLER);
+        this.fluidSides = sides(be, ForgeCapabilities.FLUID_HANDLER);
+        this.linkedEnergy = new LinkedStorages<>(be, TransferType.ENERGY, peer -> of(peer).energySides);
+        this.linkedItems = new LinkedStorages<>(be, TransferType.ITEMS, peer -> of(peer).itemSides);
+        this.linkedFluids = new LinkedStorages<>(be, TransferType.FLUIDS, peer -> of(peer).fluidSides);
         this.energy = new EnergyView(be, this);
         this.items = new ItemView(be, this);
         this.fluids = new FluidView(be, this);
@@ -57,11 +68,6 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         return new FluidStack(s, amount);
     }
 
-    /** Возможность блока по соседству, или null. */
-    static <T> @Nullable T cap(Level level, BlockPos pos, Capability<T> cap, @Nullable Direction side) {
-        BlockEntity nbe = level.getBlockEntity(pos);
-        return nbe == null ? null : nbe.getCapability(cap, side).resolve().orElse(null);
-    }
 
     // ---------- подключение к блоку ----------
 
@@ -79,7 +85,8 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
     private record Provider(InterfaceBlockEntity be) implements ICapabilityProvider {
         @Override
         public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-            if (be.transport() == null) return LazyOptional.empty();
+            // С выключенной стороны трубы интерфейса не видят.
+            if (be.transport() == null || !be.open(side)) return LazyOptional.empty();
             return of(be).lazy(cap);
         }
     }
@@ -131,6 +138,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         dropOptionals();
         Level level = be.getLevel();
         if (level != null && !level.isClientSide()) level.updateNeighborsAt(be.getBlockPos(), be.getBlockState().getBlock());
+        AE2Compat.update(be); // стороны, открытые для кабелей ME, — сразу, а не на ближайшем секундном такте
     }
 
     /** Погасить LazyOptional (трубы отпустят обработчики), не трогая соседей. */
@@ -143,6 +151,12 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         fluidsOpt = LazyOptional.empty();
         optsReady = false;
         MekanismCompat.invalidate(this);
+    }
+
+    /** Сосед изменился: запомненные возможности соседей проверить заново (см. {@link CapCache}). */
+    @Override
+    public void neighborChanged() {
+        neighbours++;
     }
 
     @Override
@@ -163,20 +177,20 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
 
     @Override
     public void moveFace(BlockPos np, Direction side, boolean pull) {
-        Level level = be.getLevel();
+        Direction face = side.getOpposite(); // своя сторона, к которой примыкает сосед
         if (be.enabled(TransferType.ENERGY)) {
-            IEnergyStorage h = cap(level, np, ForgeCapabilities.ENERGY, side);
+            IEnergyStorage h = energySides.at(face);
             if (h != null) moveEnergy(h, pull);
         }
         if (be.enabled(TransferType.ITEMS)) {
-            IItemHandler h = cap(level, np, ForgeCapabilities.ITEM_HANDLER, side);
+            IItemHandler h = itemSides.at(face);
             if (h != null) moveItems(h, pull);
         }
         if (be.enabled(TransferType.FLUIDS)) {
-            IFluidHandler h = cap(level, np, ForgeCapabilities.FLUID_HANDLER, side);
+            IFluidHandler h = fluidSides.at(face);
             if (h != null) moveFluids(h, pull);
         }
-        if (be.enabled(TransferType.CHEMICALS)) MekanismCompat.moveFace(be, this, np, side, pull, FLUID_PER_OP);
+        if (be.enabled(TransferType.CHEMICALS)) MekanismCompat.moveFace(this, face, pull, FLUID_PER_OP);
     }
 
     private void moveEnergy(IEnergyStorage h, boolean pull) {
@@ -190,7 +204,7 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
      * так не пересчитываются все слоты всех хранилищ на каждый слот).
      */
     private void moveItems(IItemHandler h, boolean pull) {
-        List<IItemHandler> froms = pull ? List.of(h) : handlers(ForgeCapabilities.ITEM_HANDLER, TransferType.ITEMS, true);
+        List<IItemHandler> froms = pull ? List.of(h) : linkedItems.get(LinkedStorages.Pick.FROM);
         IItemHandler to = pull ? items : h;
         for (IItemHandler from : froms) {
             for (int slot = 0; slot < from.getSlots(); slot++) {
@@ -220,46 +234,59 @@ public final class ForgeInterfaceTransport implements InterfaceTransport {
         if (can > 0) to.fill(from.drain(ForgeInterfaceTransport.withAmount(probe, can), IFluidHandler.FluidAction.EXECUTE), IFluidHandler.FluidAction.EXECUTE);
     }
 
-    // ---------- соседи связанных интерфейсов ----------
+    // ---------- свои соседи ----------
 
-    private long cacheTick = -1;
-    /**
-     * Кэш на тик: по два списка (откуда / куда) на каждую возможность. Ключ — возможность, а не вид передачи:
-     * у химикатов Mekanism 10.4 на один вид передачи четыре возможности (газы, инфузии, пигменты, суспензии).
-     */
-    private final Map<Capability<?>, List<?>> cacheIn = new HashMap<>(), cacheOut = new HashMap<>();
+    /** Растёт, когда меняется соседний блок: запомненные возможности соседей тогда проверяются заново. */
+    private int neighbours;
+
+    /** Соседи блока по возможности {@code cap}: по {@link CapCache} на сторону; кэш живёт, пока блок не убран. */
+    static <T> LinkedStorages.Sides<T> sides(InterfaceBlockEntity be, Capability<T> cap) {
+        return new SideCaches<T, CapCache<T>>(be, (level, pos, side) -> new CapCache<>(of(be), level, pos, side.getOpposite(), cap),
+                (cache, side) -> cache.get());
+    }
 
     /**
-     * Обработчики соседей связанных интерфейсов: {@code fromInputs} — у интерфейсов со входом (откуда забирать),
-     * иначе — у интерфейсов с выходом (куда отдавать). Соседние интерфейсы пропускаются. Кэш на тик.
+     * Сосед с одной стороны по одной возможности (на Forge 1.20.1 нет BlockCapabilityCache — свой, такой же по смыслу).
+     * Возможность запоминается и спрашивается у соседа заново, только если её LazyOptional погас или соседний блок
+     * изменился (поставили, сломали, заменили). Каждый раз её у соседа не спрашиваем: у некоторых модов это дорого.
      */
-    @SuppressWarnings("unchecked")
-    <T> List<T> handlers(Capability<T> cap, TransferType type, boolean fromInputs) {
-        Level level = be.getLevel();
-        if (level == null || !be.isConnected()) return List.of();
-        long now = level.getGameTime();
-        if (now != cacheTick) { cacheIn.clear(); cacheOut.clear(); cacheTick = now; }
-        Map<Capability<?>, List<?>> cache = fromInputs ? cacheIn : cacheOut;
-        List<?> cached = cache.get(cap);
-        if (cached != null) return (List<T>) cached;
-        List<T> out = new ArrayList<>();
-        for (InterfaceBlockEntity peer : InterfaceNetwork.peers(be)) {
-            if (!peer.enabled(type) || (fromInputs ? !peer.flow().in : !peer.flow().out)) continue;
-            Level pl = peer.getLevel();
-            if (pl == null) continue;
-            for (Direction d : Direction.values()) {
-                // Грань «забирать» сама вынимает из соседа — класть туда же нельзя (гоняли бы по кругу); и наоборот.
-                FaceMode fm = peer.face(d);
-                if (fromInputs ? fm == FaceMode.PUSH : fm == FaceMode.PULL) continue;
-                BlockPos np = peer.getBlockPos().relative(d);
-                if (!pl.isLoaded(np) || pl.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
-                T h = cap(pl, np, cap, d.getOpposite());
-                if (h != null) out.add(h);
-            }
+    static final class CapCache<T> {
+        private final ForgeInterfaceTransport owner;
+        private final ServerLevel level;
+        private final BlockPos pos;
+        /** Сторона соседа, которой он примыкает к интерфейсу. */
+        private final Direction side;
+        private final Capability<T> cap;
+        private @Nullable BlockEntity source;
+        private @Nullable T value;
+        private boolean valid;
+        private int seen;
+
+        CapCache(ForgeInterfaceTransport owner, ServerLevel level, BlockPos pos, Direction side, Capability<T> cap) {
+            this.owner = owner;
+            this.level = level;
+            this.pos = pos;
+            this.side = side;
+            this.cap = cap;
         }
-        // По кругу: каждый раз начинаем с другого получателя, чтобы делить поровну.
-        if (out.size() > 1) Collections.rotate(out, -(int) (now % out.size()));
-        cache.put(cap, out);
-        return out;
+
+        @Nullable T get() {
+            if (valid && seen == owner.neighbours) return value;
+            seen = owner.neighbours;
+            BlockEntity nbe = level.getBlockEntity(pos);
+            // Сосед тот же и его возможность не погасла — она та же.
+            if (valid && nbe == source) return value;
+            source = nbe;
+            value = null;
+            valid = true;
+            if (nbe != null) {
+                LazyOptional<T> o = nbe.getCapability(cap, side);
+                if (o.isPresent()) {
+                    value = o.resolve().orElse(null);
+                    o.addListener(x -> valid = false);
+                }
+            }
+            return value;
+        }
     }
 }

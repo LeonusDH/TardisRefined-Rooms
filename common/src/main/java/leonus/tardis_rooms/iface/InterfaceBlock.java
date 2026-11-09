@@ -58,14 +58,15 @@ public class InterfaceBlock extends BaseEntityBlock {
     @Override
     @SuppressWarnings("deprecation")
     public int getSignal(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.core.Direction direction) {
-        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be ? be.redstoneOut() : 0;
+        // direction — от соседа к интерфейсу; своя сторона к соседу — противоположная.
+        return level.getBlockEntity(pos) instanceof InterfaceBlockEntity be && be.open(direction.getOpposite()) ? be.redstoneOut() : 0;
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean moving) {
         super.neighborChanged(state, level, pos, block, fromPos, moving);
-        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) be.updateRedstoneInput();
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof InterfaceBlockEntity be) be.neighborChanged();
     }
 
     /** Убрали интерфейс — связанные пересчитывают свой сигнал без него. */

@@ -29,6 +29,9 @@ public final class ForgeGameTests {
     public static void itemsSeveralStacks(GameTestHelper h) { InterfaceGameTests.itemsSeveralStacks(h); }
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void disabledSideBlocks(GameTestHelper h) { InterfaceGameTests.disabledSideBlocks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void kindOffBlocks(GameTestHelper h) { InterfaceGameTests.kindOffBlocks(h); }
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
@@ -42,6 +45,9 @@ public final class ForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void redstone(GameTestHelper h) { InterfaceGameTests.redstone(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void redstoneDisabledSide(GameTestHelper h) { InterfaceGameTests.redstoneDisabledSide(h); }
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void settingsSurviveItem(GameTestHelper h) { InterfaceGameTests.settingsSurviveItem(h); }

@@ -1,13 +1,13 @@
 package leonus.tardis_rooms.iface;
 
 import leonus.tardis_rooms.TRoomsBlocks;
+import leonus.tardis_rooms.iface.LinkedStorages.Pick;
 import leonus.tardis_rooms.platform.Platform;
 import net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.Level;
 import team.reborn.energy.api.EnergyStorage;
 import team.reborn.energy.api.EnergyStorageUtil;
+
 
 /**
  * Энергия через интерфейс на Fabric — Team Reborn Energy. Мод необязательный: вложенный {@link Impl} загружается,
@@ -20,19 +20,21 @@ final class FabricEnergy {
 
     static Object view(FabricInterfaceTransport transport) { return new Impl.View(transport); }
 
-    static void moveFace(FabricInterfaceTransport transport, Level level, BlockPos np, Direction side, boolean pull) {
-        Impl.moveFace(transport, level, np, side, pull);
+    /** Грань «вставлять»/«забирать» для энергии: сосед со своей стороны {@code face}. */
+    static void moveFace(FabricInterfaceTransport transport, Direction face, boolean pull) {
+        Impl.moveFace(transport, face, pull);
     }
 
     private static final class Impl {
         static void register() {
             EnergyStorage.SIDED.registerForBlockEntity(
-                    (be, side) -> (EnergyStorage) FabricInterfaceTransport.of(be).energy(), TRoomsBlocks.INTERFACE_BE.get());
+                    (be, side) -> be.open(side) ? (EnergyStorage) FabricInterfaceTransport.of(be).energy() : null, TRoomsBlocks.INTERFACE_BE.get());
         }
 
-        static void moveFace(FabricInterfaceTransport transport, Level level, BlockPos np, Direction side, boolean pull) {
-            EnergyStorage h = EnergyStorage.SIDED.find(level, np, side);
-            if (h == null || !(transport.energy() instanceof EnergyStorage mine)) return;
+        static void moveFace(FabricInterfaceTransport transport, Direction face, boolean pull) {
+            if (!(transport.energy() instanceof View mine)) return;
+            EnergyStorage h = mine.sides.at(face);
+            if (h == null) return;
             if (pull) EnergyStorageUtil.move(h, mine, Long.MAX_VALUE, null);
             else EnergyStorageUtil.move(mine, h, Long.MAX_VALUE, null);
         }
@@ -40,8 +42,18 @@ final class FabricEnergy {
         /** Принятое во вход отдаётся соседям выходов, забираемое из выхода — у соседей входов. Своего запаса нет. */
         static final class View implements EnergyStorage {
             private final FabricInterfaceTransport transport;
+            /** Свои соседи по энергии — их берут связанные интерфейсы. */
+            final LinkedStorages.Sides<EnergyStorage> sides;
+            /** Хранилища энергии у соседей связанных интерфейсов. */
+            private final LinkedStorages<EnergyStorage> linked;
 
-            View(FabricInterfaceTransport transport) { this.transport = transport; }
+            View(FabricInterfaceTransport transport) {
+                this.transport = transport;
+                this.sides = FabricInterfaceTransport.sides(transport.be, EnergyStorage.SIDED);
+                this.linked = new LinkedStorages<>(transport.be, TransferType.ENERGY,
+                        peer -> FabricInterfaceTransport.of(peer).energy() instanceof View v ? v.sides : null);
+            }
+
 
             @Override
             public boolean supportsInsertion() { return transport.be.canIn(TransferType.ENERGY); }
@@ -55,7 +67,7 @@ final class FabricEnergy {
                 InterfaceNetwork.depth++;
                 try {
                     long done = 0;
-                    for (EnergyStorage h : transport.handlers(EnergyStorage.SIDED, TransferType.ENERGY, false)) {
+                    for (EnergyStorage h : linked.get(Pick.TO)) {
                         if (done >= maxAmount) break;
                         if (h.supportsInsertion()) done += h.insert(maxAmount - done, transaction);
                     }
@@ -71,7 +83,7 @@ final class FabricEnergy {
                 InterfaceNetwork.depth++;
                 try {
                     long done = 0;
-                    for (EnergyStorage h : transport.handlers(EnergyStorage.SIDED, TransferType.ENERGY, true)) {
+                    for (EnergyStorage h : linked.get(Pick.FROM)) {
                         if (done >= maxAmount) break;
                         if (h.supportsExtraction()) done += h.extract(maxAmount - done, transaction);
                     }
@@ -81,33 +93,20 @@ final class FabricEnergy {
                 }
             }
 
-            /** Заряд и ёмкость — сумма хранилищ у связанных интерфейсов (их и показывает Jade). */
+            /** Своего запаса нет: показываем заряд хранилищ у связанных интерфейсов (его и рисует Jade). */
             @Override
-            public long getAmount() { return linked()[0]; }
+            public long getAmount() { return totals()[0]; }
 
             /** Если связанных хранилищ нет — ёмкость условная: некоторые кабели не подключаются к хранилищу с нулевой ёмкостью. */
             @Override
             public long getCapacity() {
-                long cap = linked()[1];
+                long cap = totals()[1];
                 return cap > 0 ? cap : Integer.MAX_VALUE;
             }
 
-            private long[] linked() {
-                long[] out = new long[2];
-                if (InterfaceNetwork.depth > 0) return out;
-                InterfaceNetwork.depth++;
-                try {
-                    java.util.Set<EnergyStorage> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
-                    for (boolean fromInputs : new boolean[]{true, false})
-                        for (EnergyStorage h : transport.handlers(EnergyStorage.SIDED, TransferType.ENERGY, fromInputs)) {
-                            if (!seen.add(h)) continue;
-                            out[0] += h.getAmount();
-                            out[1] += h.getCapacity();
-                        }
-                } finally {
-                    InterfaceNetwork.depth--;
-                }
-                return out;
+            /** Заряд и ёмкость хранилищ у связанных интерфейсов. */
+            private long[] totals() {
+                return linked.totals(EnergyStorage::getAmount, EnergyStorage::getCapacity);
             }
         }
     }

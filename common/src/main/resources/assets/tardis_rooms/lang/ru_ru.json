@@ -93,6 +93,7 @@
   "command.tardis_rooms.export.no_entrance": "У помещения нет прохода на нижнем уровне, который мог бы стать входом",
   "command.tardis_rooms.export.entrance_moved": "Помещение пристроено с верхнего уровня; входом назначен первый проход нижнего уровня",
   "command.tardis_rooms.export.namespace": "Используйте своё пространство имён, например mypack:rooms/library",
+  "command.tardis_rooms.export.bad_id": "В id не должно быть частей пути «.» и «..», например mypack:rooms/library",
   "command.tardis_rooms.export.done": "Помещение сохранено как %s в датапак %s — перенесите его в папку datapacks мира",
   "command.tardis_rooms.export.open": "Нажмите, чтобы скопировать путь",
   "command.tardis_rooms.export.error": "Не удалось сохранить: %s",
@@ -203,6 +204,7 @@
   "tardis_rooms.face.up": "Верх",
   "tardis_rooms.face.west": "Запад",
   "tardis_rooms.face_mode.default": "По умолчанию",
+  "tardis_rooms.face_mode.disabled": "Выключено",
   "tardis_rooms.face_mode.pull": "Забирать",
   "tardis_rooms.face_mode.push": "Вставлять",
   "tardis_rooms.jade.interface.faces": "Стороны: %s"

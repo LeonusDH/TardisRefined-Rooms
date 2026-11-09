@@ -1,6 +1,5 @@
 package leonus.tardis_rooms.iface;
 
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.energy.IEnergyStorage;
 
 /** Энергия через интерфейс: принятое во вход отдаётся соседям выходов, забираемое из выхода — у соседей входов. */
@@ -19,7 +18,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : transport.handlers(ForgeCapabilities.ENERGY, TransferType.ENERGY, false)) {
+            for (IEnergyStorage h : transport.linkedEnergy.get(LinkedStorages.Pick.TO)) {
                 if (done >= max) break;
                 if (h.canReceive()) done += h.receiveEnergy(max - done, simulate);
             }
@@ -35,7 +34,7 @@ final class EnergyView implements IEnergyStorage {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IEnergyStorage h : transport.handlers(ForgeCapabilities.ENERGY, TransferType.ENERGY, true)) {
+            for (IEnergyStorage h : transport.linkedEnergy.get(LinkedStorages.Pick.FROM)) {
                 if (done >= max) break;
                 if (h.canExtract()) done += h.extractEnergy(max - done, simulate);
             }
@@ -56,22 +55,9 @@ final class EnergyView implements IEnergyStorage {
         return cap > 0 ? (int) Math.min(Integer.MAX_VALUE, cap) : Integer.MAX_VALUE;
     }
 
+    /** Заряд и ёмкость хранилищ у связанных интерфейсов. */
     private long[] linked() {
-        long[] out = new long[2];
-        if (InterfaceNetwork.depth > 0) return out;
-        InterfaceNetwork.depth++;
-        try {
-            java.util.Set<IEnergyStorage> seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
-            for (boolean fromInputs : new boolean[]{true, false})
-                for (IEnergyStorage h : transport.handlers(ForgeCapabilities.ENERGY, TransferType.ENERGY, fromInputs)) {
-                    if (!seen.add(h)) continue;
-                    out[0] += h.getEnergyStored();
-                    out[1] += h.getMaxEnergyStored();
-                }
-        } finally {
-            InterfaceNetwork.depth--;
-        }
-        return out;
+        return transport.linkedEnergy.totals(IEnergyStorage::getEnergyStored, IEnergyStorage::getMaxEnergyStored);
     }
 
     @Override

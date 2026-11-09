@@ -1,6 +1,5 @@
 package leonus.tardis_rooms.iface;
 
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 
@@ -19,7 +18,7 @@ final class FluidView implements IFluidHandler {
     private int inTanks() { return be.canIn(TransferType.FLUIDS) ? 1 : 0; }
 
     private List<IFluidHandler> sources() {
-        return be.canOut(TransferType.FLUIDS) ? transport.handlers(ForgeCapabilities.FLUID_HANDLER, TransferType.FLUIDS, true) : List.of();
+        return be.canOut(TransferType.FLUIDS) ? transport.linkedFluids.get(LinkedStorages.Pick.FROM) : List.of();
     }
 
     @Override
@@ -68,7 +67,7 @@ final class FluidView implements IFluidHandler {
         InterfaceNetwork.depth++;
         try {
             int done = 0;
-            for (IFluidHandler h : transport.handlers(ForgeCapabilities.FLUID_HANDLER, TransferType.FLUIDS, false)) {
+            for (IFluidHandler h : transport.linkedFluids.get(LinkedStorages.Pick.TO)) {
                 if (done >= resource.getAmount()) break;
                 done += h.fill(ForgeInterfaceTransport.withAmount(resource, resource.getAmount() - done), action);
             }

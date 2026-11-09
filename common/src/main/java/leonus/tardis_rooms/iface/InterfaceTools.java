@@ -107,6 +107,7 @@ public final class InterfaceTools {
             case DEFAULT -> TRoomsText.FACE_MODE_DEFAULT;
             case PUSH -> TRoomsText.FACE_MODE_PUSH;
             case PULL -> TRoomsText.FACE_MODE_PULL;
+            case DISABLED -> TRoomsText.FACE_MODE_DISABLED;
         };
     }
 

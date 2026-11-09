@@ -132,6 +132,15 @@ public final class InterfaceGameTests {
     }
 
 
+    /** Выключенная сторона у приёмника — ничего не идёт. */
+    public static void disabledSideBlocks(GameTestHelper h) {
+        chests(h, 10);
+        Pair p = pair(h);
+        p.a.setFace(Direction.WEST, FaceMode.PULL);
+        p.b.setFace(Direction.EAST, FaceMode.DISABLED);
+        nothingMoved(h, 10);
+    }
+
     /** Предметы выключены у одного из интерфейсов — ничего не идёт. */
     public static void kindOffBlocks(GameTestHelper h) {
         chests(h, 10);
@@ -200,6 +209,22 @@ public final class InterfaceGameTests {
     }
 
 
+    /** Выключенная сторона не выдаёт сигнал. */
+    public static void redstoneDisabledSide(GameTestHelper h) {
+        h.setBlock(DST, Blocks.REDSTONE_LAMP);
+        Pair p = pair(h);
+        p.a.toggle(TransferType.REDSTONE);
+        p.b.toggle(TransferType.REDSTONE);
+        p.b.setFlow(Flow.OUT);
+        p.b.setFace(Direction.EAST, FaceMode.DISABLED);
+        h.setBlock(SRC, Blocks.REDSTONE_BLOCK);
+        h.runAfterDelay(20, () -> {
+            h.assertTrue(p.b.redstoneOut() == 15, "интерфейс не получил сигнал");
+            h.assertBlockProperty(DST, RedstoneLampBlock.LIT, false);
+            h.succeed();
+        });
+    }
+
     // ---------- настройки ----------
 
     /** Снятый интерфейс уносит настройки в предмет и ставится с ними же. */
@@ -209,7 +234,7 @@ public final class InterfaceGameTests {
         a.toggle(TransferType.FLUIDS);
         a.toggle(TransferType.REDSTONE);
         a.setFace(Direction.NORTH, FaceMode.PUSH);
-        a.setFace(Direction.UP, FaceMode.PULL);
+        a.setFace(Direction.UP, FaceMode.DISABLED);
         ItemStack stack = new ItemStack(TRoomsBlocks.INTERFACE_ITEM.get());
         ItemData.setInterfaceData(stack, a.data()); // как в dismantle и при обычной поломке
         h.setBlock(B, TRoomsBlocks.INTERFACE.get());

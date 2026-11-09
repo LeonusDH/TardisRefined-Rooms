@@ -78,7 +78,11 @@ public class JadePlugin implements IWailaPlugin {
                 if (!first) faces.append(", ");
                 faces.append(leonus.tardis_rooms.iface.InterfaceTools.faceName(dir).text()).append(": ")
                         .append(leonus.tardis_rooms.iface.InterfaceTools.faceModeName(m).text()
-                                .withStyle(m == leonus.tardis_rooms.iface.FaceMode.PUSH ? ChatFormatting.GOLD : ChatFormatting.AQUA));
+                                .withStyle(switch (m) {
+                                    case PUSH -> ChatFormatting.GOLD;
+                                    case PULL -> ChatFormatting.AQUA;
+                                    default -> ChatFormatting.RED;
+                                }));
                 first = false;
             }
             if (!first) tooltip.add(TRoomsText.JADE_INTERFACE_FACES.text(faces).withStyle(ChatFormatting.GRAY));

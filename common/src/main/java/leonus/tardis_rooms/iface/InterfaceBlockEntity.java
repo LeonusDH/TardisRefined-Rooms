@@ -19,6 +19,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 import whocraft.tardis_refined.common.blockentity.shell.ShellBaseBlockEntity;
 
 import java.util.ArrayList;
@@ -90,7 +91,17 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     public FaceMode face(Direction d) { return data.face(d); }
 
-    public void setFace(Direction d, FaceMode m) { setData(data.withFace(d, m)); }
+    public void setFace(Direction d, FaceMode m) {
+        setData(data.withFace(d, m));
+        // Выключенная сторона не принимает и не выдаёт редстоун: перечитать вход и сообщить соседям про выход.
+        if (level != null && !level.isClientSide()) {
+            updateRedstoneInput();
+            level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
+        }
+    }
+
+    /** Сторона открыта для соседа (не выключена); {@code null} — без стороны (сам блок), открыто. */
+    public boolean open(@Nullable Direction side) { return side == null || face(side) != FaceMode.DISABLED; }
 
     public void toggle(TransferType t) { if (t.available()) setData(data.toggle(t)); }
 
@@ -182,7 +193,7 @@ public class InterfaceBlockEntity extends BlockEntity {
         if (!isConnected() || InterfaceNetwork.depth > 0) return;
         for (Direction d : Direction.values()) {
             FaceMode m = face(d);
-            if (m == FaceMode.DEFAULT) continue;
+            if (m != FaceMode.PUSH && m != FaceMode.PULL) continue;
             boolean pull = m == FaceMode.PULL;
             if (!(pull ? flow().in : flow().out)) continue;
             BlockPos np = worldPosition.relative(d);
@@ -244,6 +255,12 @@ public class InterfaceBlockEntity extends BlockEntity {
 
     public int redstoneOut() { return redstoneOut; }
 
+    /** Соседний блок изменился (сервер). */
+    void neighborChanged() {
+        transport.neighborChanged();
+        updateRedstoneInput();
+    }
+
     /** Сосед изменился (или настройки): перечитать входящий сигнал и, если он другой, сообщить связанным. */
     public void updateRedstoneInput() {
         if (level == null || level.isClientSide()) return;
@@ -253,7 +270,7 @@ public class InterfaceBlockEntity extends BlockEntity {
             // той же сети иначе защёлкнул бы сигнал навсегда.
             for (Direction d : Direction.values()) {
                 BlockPos np = worldPosition.relative(d);
-                if (level.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
+                if (!open(d) || level.getBlockEntity(np) instanceof InterfaceBlockEntity) continue;
                 v = Math.max(v, level.getSignal(np, d));
                 if (v >= 15) break;
             }

@@ -69,8 +69,9 @@ public final class TardisRoomsFabric implements ModInitializer {
     /** Хранилища интерфейса для труб (Transfer API) и энергия (Team Reborn Energy, если установлен). */
     private static void registerStorages() {
         var type = TRoomsBlocks.INTERFACE_BE.get();
-        ItemStorage.SIDED.registerForBlockEntity((be, side) -> FabricInterfaceTransport.of(be).items(), type);
-        FluidStorage.SIDED.registerForBlockEntity((be, side) -> FabricInterfaceTransport.of(be).fluids(), type);
+        // С выключенной стороны трубы интерфейса не видят.
+        ItemStorage.SIDED.registerForBlockEntity((be, side) -> be.open(side) ? FabricInterfaceTransport.of(be).items() : null, type);
+        FluidStorage.SIDED.registerForBlockEntity((be, side) -> be.open(side) ? FabricInterfaceTransport.of(be).fluids() : null, type);
         FabricInterfaceTransport.registerEnergy();
         leonus.tardis_rooms.iface.AE2Compat.register();
     }

@@ -17,7 +17,6 @@ import mekanism.api.chemical.pigment.PigmentStack;
 import mekanism.api.chemical.slurry.ISlurryHandler;
 import mekanism.api.chemical.slurry.Slurry;
 import mekanism.api.chemical.slurry.SlurryStack;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -25,6 +24,7 @@ import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.util.LazyOptional;
 
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Химикаты Mekanism 10.4 (Minecraft 1.20.1). В отличие от 10.7, химикатов четыре вида — газы, инфузии, пигменты и
@@ -54,9 +54,10 @@ public final class MekanismCompat {
         if (LOADED) Impl.invalidate(transport);
     }
 
-    static void moveFace(InterfaceBlockEntity be, ForgeInterfaceTransport transport, BlockPos np, Direction side, boolean pull, int max) {
-        if (!enabled() || be.getLevel() == null) return;
-        Impl.moveFace(be, transport, np, side, pull, max);
+    /** Грань «вставлять»/«забирать» для химикатов: сосед со своей стороны {@code face}. */
+    static void moveFace(ForgeInterfaceTransport transport, Direction face, boolean pull, int max) {
+        if (!enabled()) return;
+        Impl.moveFace(transport, face, pull, max);
     }
 
     /** Отдельный класс, чтобы типы Mekanism не грузились без него. */
@@ -78,10 +79,10 @@ public final class MekanismCompat {
             LazyOptional<ISlurryHandler> slurryOpt;
 
             Views(InterfaceBlockEntity be, ForgeInterfaceTransport t) {
-                gas = new GasView(be, t);
-                infusion = new InfusionView(be, t);
-                pigment = new PigmentView(be, t);
-                slurry = new SlurryView(be, t);
+                gas = new GasView(be);
+                infusion = new InfusionView(be);
+                pigment = new PigmentView(be);
+                slurry = new SlurryView(be);
                 reset();
             }
 
@@ -118,12 +119,12 @@ public final class MekanismCompat {
             if (t.chemicalsIfCreated() instanceof Views v) v.invalidate();
         }
 
-        static void moveFace(InterfaceBlockEntity be, ForgeInterfaceTransport t, BlockPos np, Direction side, boolean pull, int max) {
+        static void moveFace(ForgeInterfaceTransport t, Direction face, boolean pull, int max) {
             if (!(t.chemicals() instanceof Views v)) return;
-            move(ForgeInterfaceTransport.cap(be.getLevel(), np, GAS, side), v.gas, pull, max);
-            move(ForgeInterfaceTransport.cap(be.getLevel(), np, INFUSION, side), v.infusion, pull, max);
-            move(ForgeInterfaceTransport.cap(be.getLevel(), np, PIGMENT, side), v.pigment, pull, max);
-            move(ForgeInterfaceTransport.cap(be.getLevel(), np, SLURRY, side), v.slurry, pull, max);
+            move(v.gas.sides.at(face), v.gas, pull, max);
+            move(v.infusion.sides.at(face), v.infusion, pull, max);
+            move(v.pigment.sides.at(face), v.pigment, pull, max);
+            move(v.slurry.sides.at(face), v.slurry, pull, max);
         }
 
         private static <C extends Chemical<C>, S extends ChemicalStack<C>> void move(IChemicalHandler<C, S> h, IChemicalHandler<C, S> mine, boolean pull, long max) {
@@ -147,17 +148,21 @@ public final class MekanismCompat {
      */
     private abstract static class ChemicalView<C extends Chemical<C>, S extends ChemicalStack<C>, H extends IChemicalHandler<C, S>> implements IChemicalHandler<C, S> {
         private final InterfaceBlockEntity be;
-        private final ForgeInterfaceTransport transport;
-        private final Capability<H> cap;
+        /** Свои соседи по этой возможности — их берут связанные интерфейсы. */
+        final LinkedStorages.Sides<H> sides;
+        /** Хранилища этого вида химикатов у соседей связанных интерфейсов. */
+        private final LinkedStorages<H> linked;
 
-        ChemicalView(InterfaceBlockEntity be, ForgeInterfaceTransport transport, Capability<H> cap) {
+        /** {@code select} — тот же вид химикатов у связанного интерфейса. */
+        ChemicalView(InterfaceBlockEntity be, Capability<H> cap, Function<Impl.Views, ChemicalView<C, S, H>> select) {
             this.be = be;
-            this.transport = transport;
-            this.cap = cap;
+            this.sides = ForgeInterfaceTransport.sides(be, cap);
+            this.linked = new LinkedStorages<>(be, TransferType.CHEMICALS,
+                    peer -> ForgeInterfaceTransport.of(peer).chemicals() instanceof Impl.Views v ? select.apply(v).sides : null);
         }
 
         private List<H> sources() {
-            return be.canOut(TransferType.CHEMICALS) ? transport.handlers(cap, TransferType.CHEMICALS, true) : List.of();
+            return be.canOut(TransferType.CHEMICALS) ? linked.get(LinkedStorages.Pick.FROM) : List.of();
         }
 
         /** Непустые баки у связанных интерфейсов (обработчик и номер бака). */
@@ -216,7 +221,7 @@ public final class MekanismCompat {
             InterfaceNetwork.depth++;
             try {
                 S rest = stack;
-                for (H h : transport.handlers(cap, TransferType.CHEMICALS, false)) {
+                for (H h : linked.get(LinkedStorages.Pick.TO)) {
                     rest = h.insertChemical(rest, action);
                     if (rest.isEmpty()) break;
                 }
@@ -239,20 +244,25 @@ public final class MekanismCompat {
             }
         }
 
-        /** Забрать что угодно: из первого хранилища у связанных входов, где что-то есть. */
+        /** Забрать что угодно: первый химикат, какой найдётся, — и дальше только его, по всем хранилищам (как у жидкостей). */
         @Override
+        @SuppressWarnings("unchecked")
         public S extractChemical(long amount, Action action) {
             if (amount <= 0 || !be.canOut(TransferType.CHEMICALS) || InterfaceNetwork.depth > 0) return getEmptyStack();
+            S first = getEmptyStack();
             InterfaceNetwork.depth++;
             try {
                 for (H h : sources()) {
-                    S got = h.extractChemical(amount, action);
-                    if (!got.isEmpty()) return got;
+                    S probe = h.extractChemical(amount, Action.SIMULATE);
+                    if (!probe.isEmpty()) { first = probe; break; }
                 }
-                return getEmptyStack();
             } finally {
                 InterfaceNetwork.depth--;
             }
+            if (first.isEmpty()) return getEmptyStack();
+            S want = (S) first.copy();
+            want.setAmount(amount);
+            return extractChemical(want, action);
         }
 
         /** Забрать именно этот химикат — сколько наберётся по всем хранилищам у связанных входов. */
@@ -280,19 +290,19 @@ public final class MekanismCompat {
     }
 
     private static final class GasView extends ChemicalView<Gas, GasStack, IGasHandler> implements IGasHandler {
-        GasView(InterfaceBlockEntity be, ForgeInterfaceTransport t) { super(be, t, Impl.GAS); }
+        GasView(InterfaceBlockEntity be) { super(be, Impl.GAS, v -> v.gas); }
     }
 
     private static final class InfusionView extends ChemicalView<InfuseType, InfusionStack, IInfusionHandler> implements IInfusionHandler {
-        InfusionView(InterfaceBlockEntity be, ForgeInterfaceTransport t) { super(be, t, Impl.INFUSION); }
+        InfusionView(InterfaceBlockEntity be) { super(be, Impl.INFUSION, v -> v.infusion); }
     }
 
     private static final class PigmentView extends ChemicalView<Pigment, PigmentStack, IPigmentHandler> implements IPigmentHandler {
-        PigmentView(InterfaceBlockEntity be, ForgeInterfaceTransport t) { super(be, t, Impl.PIGMENT); }
+        PigmentView(InterfaceBlockEntity be) { super(be, Impl.PIGMENT, v -> v.pigment); }
     }
 
     private static final class SlurryView extends ChemicalView<Slurry, SlurryStack, ISlurryHandler> implements ISlurryHandler {
-        SlurryView(InterfaceBlockEntity be, ForgeInterfaceTransport t) { super(be, t, Impl.SLURRY); }
+        SlurryView(InterfaceBlockEntity be) { super(be, Impl.SLURRY, v -> v.slurry); }
     }
 
     private MekanismCompat() {}

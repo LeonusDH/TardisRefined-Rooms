@@ -37,11 +37,13 @@ class InterfaceDataTest {
 
     @Test
     void facesAreIndependent() {
-        InterfaceData d = InterfaceData.DEFAULT.withFace(Direction.DOWN, FaceMode.PUSH).withFace(Direction.EAST, FaceMode.PULL);
+        InterfaceData d = InterfaceData.DEFAULT.withFace(Direction.DOWN, FaceMode.PUSH).withFace(Direction.EAST, FaceMode.PULL)
+                .withFace(Direction.WEST, FaceMode.DISABLED);
         assertEquals(FaceMode.PUSH, d.face(Direction.DOWN));
         assertEquals(FaceMode.PULL, d.face(Direction.EAST));
+        assertEquals(FaceMode.DISABLED, d.face(Direction.WEST));
         for (Direction dir : Direction.values())
-            if (dir != Direction.DOWN && dir != Direction.EAST) assertEquals(FaceMode.DEFAULT, d.face(dir), dir.toString());
+            if (dir != Direction.DOWN && dir != Direction.EAST && dir != Direction.WEST) assertEquals(FaceMode.DEFAULT, d.face(dir), dir.toString());
         assertEquals(FaceMode.DEFAULT, d.withFace(Direction.DOWN, FaceMode.DEFAULT).face(Direction.DOWN));
     }
 
