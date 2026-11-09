@@ -20,7 +20,6 @@ import whocraft.tardis_refined.client.screen.components.SelectionListEntry;
 import whocraft.tardis_refined.registry.TRSoundRegistry;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -259,15 +258,14 @@ public class RoomManageScreen extends RoomMonitorScreen {
         @Override
         public ObjectSelectionList<SelectionListEntry> createSelectionList() {
             GenericMonitorSelectionList<SelectionListEntry> list = newList();
-            List<ResourceLocation> blockers = parent.info.blockers();
-            SelectionListEntry count = new SelectionListEntry(TRoomsText.SCREEN_FORCE_COUNT.text(blockers.size()).withStyle(ChatFormatting.GOLD), e -> {}, listLeft(), false);
+            Map<ResourceLocation, Integer> kinds = parent.info.blockers();
+            int total = kinds.values().stream().mapToInt(Integer::intValue).sum();
+            SelectionListEntry count = new SelectionListEntry(TRoomsText.SCREEN_FORCE_COUNT.text(total).withStyle(ChatFormatting.GOLD), e -> {}, listLeft(), false);
             tip(count, Component.translatable(parent.info.problem()).withStyle(ChatFormatting.RED));
             list.children().add(count);
-            // Виды вещей — по убыванию числа.
-            Map<ResourceLocation, Integer> kinds = new LinkedHashMap<>();
-            for (ResourceLocation id : blockers) kinds.merge(id, 1, Integer::sum);
+            // Виды вещей — по убыванию числа, при равенстве — по id (порядок не прыгает).
             List<Map.Entry<ResourceLocation, Integer>> sorted = new ArrayList<>(kinds.entrySet());
-            sorted.sort(Map.Entry.<ResourceLocation, Integer>comparingByValue().reversed());
+            sorted.sort(Map.Entry.<ResourceLocation, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()));
             for (int i = 0; i < Math.min(KINDS_SHOWN, sorted.size()); i++) {
                 var k = sorted.get(i);
                 Component text = Component.empty().append(BuiltInRegistries.BLOCK.get(k.getKey()).getName()).append(" \u00d7" + k.getValue());

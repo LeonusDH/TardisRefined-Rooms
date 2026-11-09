@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,6 +48,14 @@ class ForceRemovalTest {
         assertFalse(ForceRemoval.take(player, T1, CORE.above(), 10_000));
         assertFalse(ForceRemoval.take(player, T2, CORE, 10_000));
         assertFalse(ForceRemoval.take(UUID.randomUUID(), T1, CORE, 10_000));
+    }
+
+    @Test
+    void staleForgottenOnNextArm() {
+        ForceRemoval.arm(player, T1, CORE, 0);
+        ForceRemoval.arm(UUID.randomUUID(), T1, CORE, 1_000);
+        ForceRemoval.arm(UUID.randomUUID(), T2, CORE, ForceRemoval.EXPIRE_MS + 500);
+        assertEquals(2, ForceRemoval.armedCount()); // первое (самое старое) выброшено, второе ещё живо
     }
 
     @Test

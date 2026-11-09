@@ -26,6 +26,8 @@ public final class ForceRemoval {
 
     /** Игрок открыл окно подтверждения для помещения с блоком управления {@code core}. */
     public static void arm(UUID player, ResourceKey<Level> level, BlockPos core, long now) {
+        // Заодно — разрешения, которые уже не взять (игрок закрыл окно или ушёл): иначе лежали бы до остановки сервера.
+        ARMED.values().removeIf(a -> now - a.at() > EXPIRE_MS);
         ARMED.put(player, new Armed(level, core.immutable(), now));
     }
 
@@ -37,6 +39,11 @@ public final class ForceRemoval {
         if (waited < WAIT_MS) return false;
         ARMED.remove(player);
         return waited <= EXPIRE_MS;
+    }
+
+    /** Сколько разрешений сейчас помнится (для тестов). */
+    static int armedCount() {
+        return ARMED.size();
     }
 
     /** Сервер остановлен. */

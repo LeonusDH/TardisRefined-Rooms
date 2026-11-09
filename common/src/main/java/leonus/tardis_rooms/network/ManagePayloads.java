@@ -20,7 +20,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import leonus.tardis_rooms.platform.Platform;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Пакеты блока управления: запрос сведений, ответ, удаление. */
 public final class ManagePayloads {
@@ -46,14 +48,19 @@ public final class ManagePayloads {
                 return;
             }
             // Почему нельзя удалить. Мешают только вещи внутри — можно удалить вместе с ними (окно подтверждения):
-            // тогда и какие это вещи (по блоку на вещь).
+            // тогда и какие это вещи: вид (блок) → сколько их.
             TRoomsText problem = null;
-            List<ResourceLocation> blockers = List.of();
+            Map<ResourceLocation, Integer> blockers = Map.of();
             if (!Connectivity.canRemove(level, piece)) {
                 problem = TRoomsText.MSG_CUTS_OFF;
             } else {
-                blockers = BlockerHighlight.group(level, RoomGrowth.blockers(level, piece)).stream()
-                        .map(t -> BuiltInRegistries.BLOCK.getKey(level.getBlockState(t.pos()).getBlock())).limit(256).toList();
+                blockers = new HashMap<>();
+                for (BlockerHighlight.Target t : BlockerHighlight.group(level, RoomGrowth.blockers(level, piece)))
+                    blockers.merge(BuiltInRegistries.BLOCK.getKey(level.getBlockState(t.pos()).getBlock()), 1, Integer::sum);
+                if (blockers.size() > Info.MAX_KINDS) { // столько видов не бывает, но пакет не должен сломаться
+                    blockers = blockers.entrySet().stream().sorted(Map.Entry.<ResourceLocation, Integer>comparingByValue().reversed())
+                            .limit(Info.MAX_KINDS).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                }
                 if (!blockers.isEmpty()) problem = TRoomsText.MSG_HAS_CONTAINERS;
             }
             BlockPos nodePos = Lattice.nodePos(piece.node.mx(), piece.node.mz(), piece.node.side(), piece.node.floorY());
@@ -63,13 +70,16 @@ public final class ManagePayloads {
     }
 
     /**
-     * Сервер → клиент: сведения о помещении; {@code customName} пусто — названия нет. {@code blockers} — блоки вещей,
-     * которые мешают удалить (по одному на вещь); не пусто — можно удалить вместе с ними через окно подтверждения.
+     * Сервер → клиент: сведения о помещении; {@code customName} пусто — названия нет. {@code blockers} — вещи, которые
+     * мешают удалить: вид (блок) → сколько; не пусто — можно удалить вместе с ними через окно подтверждения.
      */
     public record Info(BlockPos core, ResourceLocation pieceId, String customName, BlockPos nodePos, boolean canRemove, String problem,
-                       List<ResourceLocation> blockers) implements CustomPacketPayload {
+                       Map<ResourceLocation, Integer> blockers) implements CustomPacketPayload {
         public static final Type<Info> TYPE = new Type<>(rl("manage_info"));
-        private static final StreamCodec<ByteBuf, List<ResourceLocation>> IDS = ResourceLocation.STREAM_CODEC.apply(ByteBufCodecs.list(256));
+        /** Видов вещей в пакете не больше этого (число самих вещей не ограничено). */
+        static final int MAX_KINDS = 1024;
+        private static final StreamCodec<ByteBuf, Map<ResourceLocation, Integer>> IDS =
+                ByteBufCodecs.map(HashMap::new, ResourceLocation.STREAM_CODEC, ByteBufCodecs.VAR_INT, MAX_KINDS);
         // Полей семь, а StreamCodec.composite в 1.21.1 берёт не больше шести — пишем по порядку сами.
         public static final StreamCodec<RegistryFriendlyByteBuf, Info> STREAM_CODEC = StreamCodec.of(
                 (buf, i) -> {
