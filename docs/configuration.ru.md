@@ -1,0 +1,40 @@
+# Настройки и команды
+
+[English](configuration.md) · **Русский** · [Содержание](README.ru.md)
+
+## Сервер и мир: `config/tardis_rooms/common.toml`
+
+| Параметр | По умолчанию | Что делает |
+|---|---|---|
+| `disableProceduralRooms` | `true` | Не генерировать процедурные ARS-комнаты и коридоры Tardis Refined вокруг интерьера, в том числе случайные коридоры над хабом. Консольная комната, Око Гармонии и центральный хаб коридоров остаются. Влияет только на ещё не сгенерированные чанки |
+| `simplifyHub` | `true` | Оставить в хабе Tardis Refined только обязательные части — один раз на ТАРДИС, когда в неё впервые входит игрок. См. [Помещения](rooms.ru.md#хаб) |
+| `removableWithRoom` | таблички, флаги, головы | Блоки, которые не мешают убрать или заменить помещение и уходят вместе с ним, что бы в них ни было. Как записывать — на странице [Записи блоков](block-entries.ru.md). Не добавляйте блоки, в которых игроки хранят вещи, и осторожнее с целыми модами: у модов техники почти каждый блок что-то хранит. Интерфейс ТАРДИС мешает всегда |
+| `debug` | `false` | Писать в лог подробности: кто что пристроил, заменил или удалил, почему действие отклонено, граф связности при удалении и замене, расстановку узлов в хабе |
+| `compat.mekanism` | `true` | Химикаты Mekanism через интерфейс ТАРДИС |
+| `compat.ae2` | `true` | Сеть ME из AE2 через интерфейс ТАРДИС и карта памяти для ID |
+| `compat.jade` | `true` | Состояние интерфейса в подсказке Jade |
+
+Параметр `compat` что-то значит, только если этот мод установлен.
+
+Список `removableWithRoom` по умолчанию:
+
+```toml
+removableWithRoom = ["#minecraft:all_signs", "#minecraft:banners",
+    "minecraft:skeleton_skull", "minecraft:skeleton_wall_skull", "minecraft:wither_skeleton_skull", "minecraft:wither_skeleton_wall_skull",
+    "minecraft:zombie_head", "minecraft:zombie_wall_head", "minecraft:creeper_head", "minecraft:creeper_wall_head",
+    "minecraft:piglin_head", "minecraft:piglin_wall_head", "minecraft:dragon_head", "minecraft:dragon_wall_head",
+    "minecraft:player_head", "minecraft:player_wall_head"]
+```
+
+## Клиент: `config/tardis_rooms/client.toml`
+
+| Параметр | По умолчанию | Что делает |
+|---|---|---|
+| `doorLeverClosedAngle` | `60.0` | Консоль Factory: на сколько градусов поворачивается рычаг двери, когда дверь закрыта. Если рычаг уходит не в ту сторону, поменяйте знак. `0` отключает анимацию |
+
+## Команды
+
+| Команда | Кому | Что делает |
+|---|---|---|
+| `/tardis_rooms export <id>` | операторам | Сохранить помещение, в котором вы стоите, как помещение для датапака. См. [Экспорт помещения](datapack-rooms.ru.md#экспорт-помещения) |
+| `/tardis_rooms show_blockers <x y z>` | всем | Снова обвести то, что мешает убрать помещение с блоком управления в `x y z`, на расстоянии до 64 блоков. Её выполняет нажатие на сообщение «Мешает» в чате |

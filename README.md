@@ -4,6 +4,8 @@
 
 An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Minecraft 1.21.1 (NeoForge and Fabric) that replaces its endless procedural ARS corridors with an interior you build yourself, room by room.
 
+Full documentation: [docs](docs/README.md).
+
 ## Features
 
 ### Growing the interior
@@ -11,11 +13,10 @@ An addon for [Tardis Refined](https://github.com/Whocraft/TardisRefined) on Mine
 - The interior sits on a fixed grid of modules across five floors: the hub floor, three below it and one above.
 - **Room Growth Nodes** sit in the passages. Right-click one with the sonic screwdriver to open a catalogue of rooms and corridors. Pick one and the TARDIS grows it behind the wall. Growing is free.
 - The catalogue shows a top-down plan of each option and a **floor map** of what's already taken: built rooms, the hub, zones where nothing can be built, and where the new space would go.
-- Every room has a **Room Control Block**. Use the screwdriver on it to replace or remove the room. A room can't be removed if other rooms connect through it.
-- Your things inside also keep a room from being removed or replaced: containers or machines you placed or filled. Blocks that came with the room itself, such as an empty lectern in a datapack room, don't count as long as nobody has touched them. The addon tells you in chat which block is in the way and where, and outlines the blocks in the way through walls for 15 seconds. Click the message to outline them again.
-- You can still remove such a room together with everything in it: the removal window lists what is in the way and unlocks **Remove all** after a 10-second countdown. Those blocks and everything in them are lost.
+- Every room has a **Room Control Block**. Use the screwdriver on it to rename, replace or remove the room. A room can't be removed if other rooms connect through it.
+- Your things inside also keep a room from being removed: containers or machines you placed or filled. Blocks that came with the room and haven't been touched don't count. The addon names what is in the way, outlines it through walls, and can still remove the room together with it after a 10-second countdown. See [Rooms](docs/rooms.md).
 - Where a passage leads nowhere, a **Passage Seal** closes it. When a neighbouring space is free, the seal becomes a new growth node.
-- Datapacks can add their own rooms, and any built room can be exported as one. See [Custom rooms from datapacks](#custom-rooms-from-datapacks).
+- Datapacks can add their own rooms, and any built room can be exported as one. See [Rooms from datapacks](docs/datapack-rooms.md).
 
 ### TARDIS Interface
 
@@ -27,6 +28,8 @@ A block that moves resources between linked interfaces, either between rooms or 
 - Each side can be set to **Default**, **Insert**, **Extract** or **Disabled**, either in a 3D side screen or with a wrench from any mod. Insert and Extract sides work with plain chests, no pipes needed. A disabled side neither takes nor gives anything: pipes, ME cables and redstone ignore it, and the block next to it is not used by linked interfaces.
 - Shift + right-click with a wrench picks the interface up straight into your inventory, settings included.
 - Wrenches are recognised by the `tardis_rooms:wrenches` item tag: the common wrench tags plus the Tech Reborn wrench. A modpack can add its own with a datapack.
+
+More in [TARDIS Interface](docs/interface.md).
 
 ### Other changes to Tardis Refined
 
@@ -59,102 +62,11 @@ Mekanism, AE2 and Jade support can also be turned off in the config.
 
 ## Custom rooms from datapacks
 
-A datapack can add its own rooms to the catalogue. Each room is one or two structure templates (one per level) and a JSON file. A ready-made example is in [`examples/datapack/tardis_rooms_example`](examples/datapack/tardis_rooms_example): copy the folder into a world's `datapacks` folder and the Library appears among the rooms.
-
-### Files
-
-- `data/<namespace>/structure/<path>.nbt` holds the templates, saved with a structure block or with the export command below.
-- `data/<namespace>/tardis_rooms/rooms/<name>.json` describes the room.
-
-The `tardis_rooms` namespace is reserved for the built-in rooms, so use your own.
-
-```json
-{
-  "name": "Library",
-  "description": "Bookshelves along the walls",
-  "group": "room",
-  "structure": "example:rooms/library",
-  "entrance": {"x": 0, "z": 0, "side": "south"},
-  "exits": [{"x": 0, "z": 0, "side": "north"}],
-  "control_block": [11, 1, 15],
-  "rotatable": true
-}
-```
-
-| Field | Required | Meaning |
-|---|---|---|
-| `name` | yes | Name in the catalogue: plain text or a text component such as `{"translate": "..."}` |
-| `description` | no | Tooltip in the catalogue |
-| `group` | no | `corridor`, `room` or `special`. Without it the room goes to the "From datapacks" group, which is hidden while it is empty |
-| `structure` | yes | Template id, or a list of two ids for a two-level room (bottom level first) |
-| `entrance` | yes | The passage the room is attached to the growth node with. Must be on the bottom level |
-| `exits` | no | Other passages. Each gets a growth node, joins a neighbour's passage or is sealed |
-| `control_block` | no | Where the Room Control Block goes, in template coordinates. Without it, it goes near the middle of the floor |
-| `removable` | no | Blocks of this room that never keep it from being removed, see below |
-| `rotatable` | no | `true` by default. `false` means the room is never turned: it can only be grown from nodes it already faces |
-
-A passage is `{"x": ..., "z": ..., "side": ..., "floor": ...}`: the module inside the template (counted from 0), the wall it is in (`north`, `south`, `west` or `east`) and the level (`0` is the bottom one, the default).
-
-`removable` lists blocks that go with the room whatever is in them, so they never keep it from being removed or replaced. An entry is either a place or a description:
-
-- `[x, y, z]` is a block in template coordinates on the bottom level, `[x, y, z, floor]` on another level. Only that exact block counts: the same block placed by a player elsewhere in the room still has to be emptied first. Use places for ordinary blocks such as a lectern or a chest.
-- A string matches every such block in this room, wherever it stands, including blocks placed by players, written as described below. Use it for blocks a player is unlikely to place, such as a head with a particular profile: `"minecraft:player_head{profile:{name:\"MHF_Question\"}}"`.
-
-```json
-"removable": [[11, 2, 11], [3, 2, 5, 1], "minecraft:player_head{profile:{name:\"MHF_Question\"}}"]
-```
-
-Anything in these blocks is lost together with the room, so mark only blocks where players are not expected to keep things.
-
-#### Which blocks an entry matches
-
-The same strings work in `removable` and in the `removableWithRoom` config option:
-
-| Entry | Matches |
-|---|---|
-| `minecraft:lectern` | that block |
-| `#minecraft:banners` | blocks in the tag |
-| `mekanism:*_cable`, `*:*_sign` | block ids where `*` stands for any text; without a namespace, `minecraft` is assumed |
-| `@mekanism` | every block of the mod, same as `mekanism:*` |
-| `minecraft:player_head{profile:{name:"MHF_Question"}}`, `#minecraft:candles[lit=false]` | as in `/execute if block`: a block or tag with block states and data; data matches if it contains the given fields |
-
-### Template requirements
-
-- Width and depth are multiples of 24 blocks (one module). A level is at most 27 blocks high. Both levels of a two-level room have the same footprint.
-- Each passage is a hole in the outer wall at blocks 8–10 along the wall, counted from the module's north or west corner, and 2–4 blocks above the bottom of the template. These blocks must be air. The row above, at 5, may hold an arch.
-- Save the template with air included. Empty spots in a template leave whatever was there before.
-- The template is placed with its bottom at the level's floor: layers 0–1 are the floor, as in the built-in rooms.
-
-The passages at 8–10 are not centred in the wall, so when a room is turned to face a node, some passages land at 13–15. The addon then mirrors a strip of that wall, blocks 8–15 along it, the full height of the level and 3 blocks deep, so the passage lands back at 8–10. Keep decorations that must not be mirrored out of this strip, or set `"rotatable": false`.
-
-A two-level room grows upwards from the node's level, so it can't be grown from the top level. On the top level only 18 blocks of height are available.
-
-Problems are reported in the server log when datapacks load, one line per problem, starting with `Datapack room <id>:`. A room with problems is skipped.
-
-### Exporting a room
-
-`/tardis_rooms export <id>` saves the room you are standing in, whether built-in, from a datapack or rebuilt by hand, as a datapack room. It needs operator rights.
-
-- The result is a complete datapack in `<world>/tardis_rooms_export` with the templates, the JSON and `pack.mcmeta`. Move it to the world's `datapacks` folder and run `/reload`.
-- The room is saved as it stands, without turning it. The entrance is the side it was attached to the node with.
-- Growth nodes, seals and their lamps become air, and the Room Control Block becomes the floor next to it, with its position written to `control_block`. TARDIS Interfaces become air too, so that their IDs don't repeat.
-- Only rectangular rooms on one level or on two neighbouring levels can be exported.
-
-If you remove a datapack, the rooms already built from it stay in place. They show up as "Unknown room" and can still be replaced or removed.
+A datapack can add its own rooms to the catalogue: one or two structure templates and a JSON file per room. Any built room can be saved as such a datapack with `/tardis_rooms export <id>`. A ready-made example is in [`examples/datapack`](examples/datapack/README.md). The room JSON, the template requirements and exporting are described in [Rooms from datapacks](docs/datapack-rooms.md).
 
 ## Configuration
 
-`config/tardis_rooms/common.toml`:
-
-| Option | Default | What it does |
-|---|---|---|
-| `disableProceduralRooms` | `true` | Stop Tardis Refined from generating procedural ARS rooms and corridors |
-| `simplifyHub` | `true` | Strip the TR hub down to its essential parts (see above) |
-| `removableWithRoom` | signs, banners, heads | Blocks that never keep a room from being removed or replaced and go with it, whatever is in them. Entries are written as described [below](#which-blocks-an-entry-matches). Don't add blocks where players keep things, and be careful with whole mods: in tech mods almost every block holds something. TARDIS Interfaces always count |
-| `debug` | `false` | Log detailed information about what the addon builds, replaces or removes |
-| `compat.mekanism` / `compat.ae2` / `compat.jade` | `true` | Turn individual integrations on or off |
-
-The client config sets the Factory console's door lever angle.
+The config is `config/tardis_rooms/common.toml`. It switches off Tardis Refined's procedural rooms and the hub simplification, lists blocks that never keep a room from being removed, turns on debug logging and individual integrations. Every option and command is described in [Configuration and commands](docs/configuration.md).
 
 ## Building
 
@@ -189,7 +101,7 @@ The interface code in `common/.../iface` doesn't depend on Tardis Refined. What 
 ### Tests
 
 - `./gradlew :common:test` runs the unit tests (no game needed).
-- `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGameTestServer` start a server without a window, run the interface game tests and exit. A failed test fails the task.
+- `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGameTestServer` start a server without a window, run the game tests (interfaces and rooms) and exit. A failed test fails the task.
 
 On GitHub the build runs on every push, and the tests run on demand: Actions → Tests → Run workflow, all of them or one suite.
 

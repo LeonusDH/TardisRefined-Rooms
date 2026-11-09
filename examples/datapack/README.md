@@ -37,4 +37,4 @@ tardis_rooms_example/
   - `[11, 2, 11]` is the lectern in the middle. Without it, a book left on the lectern would keep the room from being removed. A lectern placed by a player elsewhere still has to be emptied first.
   - `"minecraft:player_head{profile:{name:\"MHF_Question\"}}"` shows the other kind of entry: any question-mark head in this room, wherever it stands. The Library has none; the entry is only here as an example.
 
-All fields, the template requirements and the entry format for `removable` are described in the main [README](../../README.md#custom-rooms-from-datapacks).
+All fields, the template requirements and the entry format for `removable` are described in [Rooms from datapacks](../../docs/datapack-rooms.md) and [Block entries](../../docs/block-entries.md).
