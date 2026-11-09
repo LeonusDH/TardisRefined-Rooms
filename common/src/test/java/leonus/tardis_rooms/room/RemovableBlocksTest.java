@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Строки файла removable_with_room.json и поля removable: весь мод и шаблоны со звёздочкой (описания блоков — в игровых тестах). */
+/** Строки файла removable_with_room.toml и поля removable: весь мод и шаблоны со звёздочкой (описания блоков — в игровых тестах). */
 class RemovableBlocksTest {
     private static ResourceLocation id(String s) { return ResourceLocation.parse(s); }
 
@@ -53,15 +53,5 @@ class RemovableBlocksTest {
         BlockMatcher.check("@mekanism");
         assertThrows(IllegalArgumentException.class, () -> BlockMatcher.check("#Bad Tag!"));
         assertThrows(IllegalArgumentException.class, () -> BlockMatcher.check("#minecraft:banners[lit=false]junk"));
-    }
-
-    @Test
-    void fileFormat() {
-        assertEquals(List.of("@mekanism", "#minecraft:banners"),
-                RemovableBlocks.entries("{\"_comment\": \"x\", \"blocks\": [\"@mekanism\", \"#minecraft:banners\"]}"));
-        assertThrows(IllegalArgumentException.class, () -> RemovableBlocks.entries("[\"@mekanism\"]"));
-        assertThrows(IllegalArgumentException.class, () -> RemovableBlocks.entries("{\"blocks\": [1]}"));
-        // Файл по умолчанию читается обратно тем же списком.
-        assertEquals(RemovableBlocks.DEFAULT, RemovableBlocks.entries(RemovableBlocks.defaultFile()));
     }
 }

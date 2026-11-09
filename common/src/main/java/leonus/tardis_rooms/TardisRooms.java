@@ -11,6 +11,8 @@ public final class TardisRooms {
     /** Конфиги лежат в своей папке: config/tardis_rooms/. */
     public static final String COMMON_CONFIG = MODID + "/common.toml";
     public static final String CLIENT_CONFIG = MODID + "/client.toml";
+    /** Блоки, которые уходят вместе с помещением ({@link TardisRoomsConfig#REMOVABLE_SPEC}). */
+    public static final String REMOVABLE_CONFIG = MODID + "/removable_with_room.toml";
 
     /** Отладочная запись в лог — только при debug = true в config/tardis_rooms/common.toml. */
     public static void debug(String message, Object... args) {

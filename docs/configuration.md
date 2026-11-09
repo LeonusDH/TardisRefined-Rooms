@@ -15,21 +15,16 @@
 
 A `compat` option only matters if that mod is installed.
 
-## Blocks that go with a room: `config/tardis_rooms/removable_with_room.json`
+## Blocks that go with a room: `config/tardis_rooms/removable_with_room.toml`
 
-Blocks that never keep a room from being removed or replaced and go with it, whatever is in them. It is a separate file so that a modpack can add its mods without touching the main config. It is created with the default list if it doesn't exist, read when the server starts and read again on `/reload`.
+Blocks that never keep a room from being removed or replaced and go with it, whatever is in them. It is a separate file so that a modpack can add its mods without touching the main config. It is created with the default list and comments describing the entries. Changes are picked up by themselves, no restart needed. A line of your own can be commented out with `#`.
 
-```json
-{
-  "_comment": "...",
-  "blocks": [
-    "#minecraft:all_signs", "#minecraft:banners",
+```toml
+blocks = ["#minecraft:all_signs", "#minecraft:banners",
     "minecraft:skeleton_skull", "minecraft:skeleton_wall_skull", "minecraft:wither_skeleton_skull", "minecraft:wither_skeleton_wall_skull",
     "minecraft:zombie_head", "minecraft:zombie_wall_head", "minecraft:creeper_head", "minecraft:creeper_wall_head",
     "minecraft:piglin_head", "minecraft:piglin_wall_head", "minecraft:dragon_head", "minecraft:dragon_wall_head",
-    "minecraft:player_head", "minecraft:player_wall_head"
-  ]
-}
+    "minecraft:player_head", "minecraft:player_wall_head"]
 ```
 
 Entries are written as described in [Block entries](block-entries.md). Anything in these blocks is lost together with the room: don't add blocks where players keep things, and be careful with whole mods, since in tech mods almost every block holds something. TARDIS Interfaces always count. Datapack rooms can mark such blocks for themselves, see [Rooms from datapacks](datapack-rooms.md#removable-blocks).

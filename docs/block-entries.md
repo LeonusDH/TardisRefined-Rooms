@@ -4,7 +4,7 @@
 
 Two places name blocks that go with a room whatever is in them, so they never keep it from being removed or replaced:
 
-- the file `config/tardis_rooms/removable_with_room.json`, for every room ([Configuration](configuration.md#blocks-that-go-with-a-room));
+- the file `config/tardis_rooms/removable_with_room.toml`, for every room ([Configuration](configuration.md#blocks-that-go-with-a-room));
 - the `removable` field of a datapack room, for that room only ([Rooms from datapacks](datapack-rooms.md#removable-blocks)).
 
 Both take the same strings:
@@ -30,7 +30,7 @@ Both take the same strings:
 ## Mistakes
 
 - In a datapack, a wrongly written entry is reported in the server log when datapacks load, as `Datapack room <id>: removable "...": <reason>`, and the room is skipped. Tags aren't loaded yet at that moment, so a tag that doesn't exist is reported later, the first time the room is checked: `Room <n> (<id>): removable: skipping ...`.
-- In `removable_with_room.json`, entries are checked the first time they are needed, once tags are loaded. A wrong entry is skipped with a warning in the log, `tardis_rooms/removable_with_room.json: skipping ...`; the rest still works. If the file itself can't be read (broken JSON), the error goes to the log and the default list is used until the file is fixed.
+- In `removable_with_room.toml`, entries are checked the first time they are needed, once tags are loaded, and again after the file changes. A wrong entry is skipped with a warning in the log, `tardis_rooms/removable_with_room.toml: skipping ...`; the rest still works.
 
 ## Be careful
 

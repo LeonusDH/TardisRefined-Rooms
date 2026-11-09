@@ -57,6 +57,7 @@ public final class TardisRoomsNeoForge {
         }
         container.registerConfig(ModConfig.Type.COMMON, TardisRoomsConfig.SPEC, TardisRooms.COMMON_CONFIG);
         container.registerConfig(ModConfig.Type.CLIENT, TardisRoomsConfig.CLIENT_SPEC, TardisRooms.CLIENT_CONFIG);
+        container.registerConfig(ModConfig.Type.COMMON, TardisRoomsConfig.REMOVABLE_SPEC, TardisRooms.REMOVABLE_CONFIG);
         registerEntries(modBus);
         NeoForgeEvents.register(NeoForge.EVENT_BUS);
         if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) leonus.tardis_rooms.neoforge.client.NeoForgeClientEvents.register();

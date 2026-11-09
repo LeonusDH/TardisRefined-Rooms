@@ -15,21 +15,16 @@
 
 Параметр `compat` что-то значит, только если этот мод установлен.
 
-## Блоки, которые уходят вместе с помещением: `config/tardis_rooms/removable_with_room.json`
+## Блоки, которые уходят вместе с помещением: `config/tardis_rooms/removable_with_room.toml`
 
-Блоки, которые не мешают убрать или заменить помещение и уходят вместе с ним, что бы в них ни было. Это отдельный файл, чтобы сборка могла дописать свои моды, не трогая основные настройки. Если файла нет, он создаётся со списком по умолчанию; читается при запуске сервера и заново — по `/reload`.
+Блоки, которые не мешают убрать или заменить помещение и уходят вместе с ним, что бы в них ни было. Это отдельный файл, чтобы сборка могла дописать свои моды, не трогая основные настройки. Он создаётся со списком по умолчанию и комментариями о записях. Изменения подхватываются сами, перезапуск не нужен. Свою строку можно закомментировать через `#`.
 
-```json
-{
-  "_comment": "...",
-  "blocks": [
-    "#minecraft:all_signs", "#minecraft:banners",
+```toml
+blocks = ["#minecraft:all_signs", "#minecraft:banners",
     "minecraft:skeleton_skull", "minecraft:skeleton_wall_skull", "minecraft:wither_skeleton_skull", "minecraft:wither_skeleton_wall_skull",
     "minecraft:zombie_head", "minecraft:zombie_wall_head", "minecraft:creeper_head", "minecraft:creeper_wall_head",
     "minecraft:piglin_head", "minecraft:piglin_wall_head", "minecraft:dragon_head", "minecraft:dragon_wall_head",
-    "minecraft:player_head", "minecraft:player_wall_head"
-  ]
-}
+    "minecraft:player_head", "minecraft:player_wall_head"]
 ```
 
 Как записывать — на странице [Записи блоков](block-entries.ru.md). Всё, что лежит в этих блоках, пропадёт вместе с помещением: не добавляйте блоки, в которых игроки хранят вещи, и осторожнее с целыми модами — у модов техники почти каждый блок что-то хранит. Интерфейс ТАРДИС мешает всегда. Помещения из датапаков могут отметить такие блоки у себя сами, см. [Помещения из датапаков](datapack-rooms.ru.md#блоки-которые-уходят-вместе-с-помещением).

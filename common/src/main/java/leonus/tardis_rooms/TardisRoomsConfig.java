@@ -1,6 +1,9 @@
 package leonus.tardis_rooms;
 
+import leonus.tardis_rooms.room.RemovableBlocks;
 import net.neoforged.neoforge.common.ModConfigSpec;
+
+import java.util.List;
 
 
 public final class TardisRoomsConfig {
@@ -9,6 +12,10 @@ public final class TardisRoomsConfig {
     public static final ModConfigSpec.BooleanValue DEBUG;
     public static final ModConfigSpec.BooleanValue SIMPLIFY_HUB;
     public static final ModConfigSpec.BooleanValue COMPAT_MEKANISM, COMPAT_AE2, COMPAT_JADE;
+
+    /** Отдельный файл: блоки, которые уходят вместе с помещением (сборке проще дописать свои моды). */
+    public static final ModConfigSpec REMOVABLE_SPEC;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> REMOVABLE_BLOCKS;
 
     public static final ModConfigSpec CLIENT_SPEC;
     public static final ModConfigSpec.DoubleValue DOOR_LEVER_CLOSED_ANGLE;
@@ -44,6 +51,26 @@ public final class TardisRoomsConfig {
                         "Если рычаг уходит не в ту сторону, поменяй знак. 0 отключает анимацию.")
                 .defineInRange("doorLeverClosedAngle", 60.0, -180.0, 180.0);
         CLIENT_SPEC = c.build();
+
+        ModConfigSpec.Builder r = new ModConfigSpec.Builder();
+        REMOVABLE_BLOCKS = r
+                .comment("Блоки, которые не мешают убрать или заменить помещение ТАРДИС и уходят вместе с ним, что бы в них ни было.",
+                        "",
+                        "Записи:",
+                        "  \"minecraft:lectern\"            — блок",
+                        "  \"#minecraft:banners\"           — блоки с тегом",
+                        "  \"mekanism:*_cable\", \"*:*_sign\" — id, где * — любой текст (без пространства имён — minecraft)",
+                        "  \"@mekanism\"                    — все блоки мода (альтернативно: \"mekanism:*\")",
+                        "  \"minecraft:player_head{profile:{name:\\\"MHF_Question\\\"}}\", \"#minecraft:candles[lit=false]\"",
+                        "                                  — как в /execute if block: свойства и данные (данные — частично)",
+                        "",
+                        "ВНИМАНИЕ: всё, что лежит в этих блоках, пропадает вместе с помещением. Не добавляйте блоки, в которых игроки",
+                        "хранят вещи; с \"@мод\" будьте особенно осторожны — у модов техники почти каждый блок что-то хранит.",
+                        "Интерфейс ТАРДИС мешает всегда. Неправильные записи пропускаются с предупреждением в логе.",
+                        "Изменения подхватываются сами, перезапуск не нужен. Помещения из датапаков отмечают такие блоки у себя сами",
+                        "(поле removable в JSON помещения). Подробнее: docs/block-entries.ru.md в репозитории аддона.")
+                .defineListAllowEmpty("blocks", RemovableBlocks.DEFAULT, () -> "", o -> o instanceof String s && !s.isBlank());
+        REMOVABLE_SPEC = r.build();
     }
 
     /** Безопасно читает значение: до загрузки конфига используется значение по умолчанию. */
@@ -69,6 +96,11 @@ public final class TardisRoomsConfig {
 
     public static boolean debug() {
         return SPEC.isLoaded() ? DEBUG.get() : DEBUG.getDefault();
+    }
+
+    /** Строки списка блоков, уходящих вместе с помещением (до загрузки файла — по умолчанию). */
+    public static List<? extends String> removableBlocks() {
+        return REMOVABLE_SPEC.isLoaded() ? REMOVABLE_BLOCKS.get() : RemovableBlocks.DEFAULT;
     }
 
     public static double doorLeverClosedAngle() {

@@ -7,7 +7,6 @@ import com.mojang.serialization.JsonOps;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.mixin.StructureTemplateAccessor;
 import leonus.tardis_rooms.room.BlockMatcher;
-import leonus.tardis_rooms.room.RemovableBlocks;
 import leonus.tardis_rooms.room.Lattice;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -80,8 +79,6 @@ public final class CustomRooms extends SimpleJsonResourceReloadListener {
     /** Своя ошибка не должна ломать загрузку датапаков (а с ней и мира): что бы ни случилось — в лог, помещений нет. */
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
-        // Заодно — список блоков, уходящих вместе с помещением: его тоже перечитываем по /reload.
-        RemovableBlocks.reload();
         try {
             load(files, resources);
         } catch (Exception e) {

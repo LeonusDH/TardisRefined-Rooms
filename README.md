@@ -66,7 +66,7 @@ A datapack can add its own rooms to the catalogue: one or two structure template
 
 ## Configuration
 
-The config is `config/tardis_rooms/common.toml`. It switches off Tardis Refined's procedural rooms and the hub simplification, turns on debug logging and individual integrations. Blocks that never keep a room from being removed are listed in a separate file, `config/tardis_rooms/removable_with_room.json`. Every option and command is described in [Configuration and commands](docs/configuration.md).
+The config is `config/tardis_rooms/common.toml`. It switches off Tardis Refined's procedural rooms and the hub simplification, turns on debug logging and individual integrations. Blocks that never keep a room from being removed are listed in a separate file, `config/tardis_rooms/removable_with_room.toml`. Every option and command is described in [Configuration and commands](docs/configuration.md).
 
 ## Building
 
