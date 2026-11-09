@@ -90,9 +90,12 @@ The `tardis_rooms` namespace is reserved for the built-in rooms, so use your own
 | `entrance` | yes | The passage the room is attached to the growth node with. Must be on the bottom level |
 | `exits` | no | Other passages. Each gets a growth node, joins a neighbour's passage or is sealed |
 | `control_block` | no | Where the Room Control Block goes, in template coordinates. Without it, it goes near the middle of the floor |
+| `removable` | no | Blocks of this room that never keep it from being removed, see below |
 | `rotatable` | no | `true` by default. `false` means the room is never turned: it can only be grown from nodes it already faces |
 
 A passage is `{"x": ..., "z": ..., "side": ..., "floor": ...}`: the module inside the template (counted from 0), the wall it is in (`north`, `south`, `west` or `east`) and the level (`0` is the bottom one, the default).
+
+`removable` lists blocks of the template that go with the room whatever is in them, so they never keep it from being removed or replaced. Each entry is `[x, y, z]` in template coordinates on the bottom level, or `[x, y, z, floor]` for another level, for example `"removable": [[3, 2, 5], [7, 2, 5, 1]]`. Only these exact blocks count: the same block placed by a player elsewhere in the room still has to be emptied first. Anything in a marked block is lost together with the room, so mark only blocks where players are not expected to keep things.
 
 ### Template requirements
 
@@ -106,19 +109,6 @@ The passages at 8–10 are not centred in the wall, so when a room is turned to 
 A two-level room grows upwards from the node's level, so it can't be grown from the top level. On the top level only 18 blocks of height are available.
 
 Problems are reported in the server log when datapacks load, one line per problem, starting with `Datapack room <id>:`. A room with problems is skipped.
-
-### Blocks removed with a room
-
-Blocks in the `tardis_rooms:removable_with_room` block tag never keep a room from being removed: they go with the room, whatever is in them. By default the tag holds signs, banners and heads. A datapack can add more, for example decorative blocks of your own rooms that players are not expected to fill:
-
-```json
-// data/tardis_rooms/tags/block/removable_with_room.json
-{
-  "values": ["mymod:display_shelf", "#mymod:decorations"]
-}
-```
-
-Anything in such a block is lost together with the room, so don't add blocks where players keep things.
 
 ### Exporting a room
 
@@ -139,6 +129,7 @@ If you remove a datapack, the rooms already built from it stay in place. They sh
 |---|---|---|
 | `disableProceduralRooms` | `true` | Stop Tardis Refined from generating procedural ARS rooms and corridors |
 | `simplifyHub` | `true` | Strip the TR hub down to its essential parts (see above) |
+| `removableWithRoom` | signs, banners, heads | Blocks that never keep a room from being removed or replaced and go with it, whatever is in them: block ids and tags with `#`, such as `#minecraft:all_signs`. Don't add blocks where players keep things. TARDIS Interfaces always count |
 | `debug` | `false` | Log detailed information about what the addon builds, replaces or removes |
 | `compat.mekanism` / `compat.ae2` / `compat.jade` | `true` | Turn individual integrations on or off |
 

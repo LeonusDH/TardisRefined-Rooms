@@ -86,5 +86,8 @@ public final class NeoForgeGameTests {
     public static void roomDoubleChestIsOneTarget(GameTestHelper h) { RoomGameTests.doubleChestIsOneTarget(h); }
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
-    public static void roomRemovableTagIgnored(GameTestHelper h) { RoomGameTests.removableTagIgnored(h); }
+    public static void roomRemovableConfigIgnored(GameTestHelper h) { RoomGameTests.removableConfigIgnored(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void roomRemovableMarkedIgnored(GameTestHelper h) { RoomGameTests.removableMarkedIgnored(h); }
 }

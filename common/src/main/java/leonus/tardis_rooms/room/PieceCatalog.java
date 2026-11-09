@@ -117,11 +117,13 @@ public final class PieceCatalog {
     /** План постройки: модули и выходы по этажам и действие. */
     /**
      * {@code coreFloor} — уровень блока управления (null — нижний уровень помещения);
-     * {@code coreExact} — точное место блока управления (помещения из датапаков), иначе ищется место у {@code coreSpot}.
+     * {@code coreExact} — точное место блока управления (помещения из датапаков), иначе ищется место у {@code coreSpot};
+     * {@code removable} — места блоков, которые уходят вместе с помещением (помещения из датапаков, поле removable).
      */
-    public record Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot, Integer coreFloor, BlockPos coreExact) {
+    public record Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot, Integer coreFloor,
+                       BlockPos coreExact, Set<BlockPos> removable) {
         Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot, Integer coreFloor) {
-            this(footprint, exits, build, coreSpot, coreFloor, null);
+            this(footprint, exits, build, coreSpot, coreFloor, null, Set.of());
         }
 
         Plan(Map<Integer, Set<Long>> footprint, Map<Integer, Set<ModSide>> exits, Consumer<ServerLevel> build, int[] coreSpot) {

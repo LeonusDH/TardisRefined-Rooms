@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Сохранённое состояние застройки одной TARDIS: пристроенные помещения (из чего состоит, откуда пристроено,
@@ -38,6 +39,8 @@ public final class ModuleRegistry extends SavedData {
          * null — помещение выращено до появления отпечатков (для него запасное правило).
          */
         public Map<Long, Integer> template;
+        /** Места блоков, которые уходят вместе с помещением ({@link BlockPos#asLong}; помещения из датапаков, поле removable). */
+        public Set<Long> removable = Set.of();
 
         Piece(int id, ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core) {
             this.id = id; this.pieceId = pieceId; this.node = node; this.footprint = footprint; this.core = core;
@@ -94,9 +97,11 @@ public final class ModuleRegistry extends SavedData {
         return null;
     }
 
-    public Piece addPiece(ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core, Map<Long, Integer> template) {
+    public Piece addPiece(ResourceLocation pieceId, Node node, Map<Integer, Set<Long>> footprint, BlockPos core, Map<Long, Integer> template,
+                          Set<BlockPos> removable) {
         Piece p = new Piece(nextId++, pieceId, node, copy(footprint), core);
         p.template = new HashMap<>(template);
+        p.removable = removable.stream().map(BlockPos::asLong).collect(Collectors.toUnmodifiableSet());
         pieces.put(p.id, p);
         p.footprint.forEach((floor, mods) -> {
             for (long m : mods) owners.computeIfAbsent(floor, x -> new HashMap<>()).put(m, p.id);
@@ -148,6 +153,11 @@ public final class ModuleRegistry extends SavedData {
             BlockPos core = NbtUtils.readBlockPos(t, "core").orElse(null);
             Piece p = new Piece(t.getInt("id"), id, node, fp, core);
             if (t.contains("name", Tag.TAG_STRING)) p.customName = t.getString("name");
+            if (t.contains("removable", Tag.TAG_LONG_ARRAY)) {
+                Set<Long> rm = new HashSet<>();
+                for (long v : t.getLongArray("removable")) rm.add(v);
+                p.removable = Set.copyOf(rm);
+            }
             if (t.contains("template", Tag.TAG_COMPOUND)) {
                 CompoundTag tt = t.getCompound("template");
                 long[] at = tt.getLongArray("pos");
@@ -179,6 +189,7 @@ public final class ModuleRegistry extends SavedData {
             t.put("footprint", ft);
             if (p.core != null) t.put("core", NbtUtils.writeBlockPos(p.core));
             if (p.customName != null) t.putString("name", p.customName);
+            if (!p.removable.isEmpty()) t.putLongArray("removable", p.removable.stream().mapToLong(Long::longValue).toArray());
             // Пустой список тоже пишется: «у шаблона нет блок-сущностей» — не то же, что «отпечатков не снимали».
             if (p.template != null) {
                 CompoundTag tt = new CompoundTag();

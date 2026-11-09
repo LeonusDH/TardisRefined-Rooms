@@ -4,14 +4,11 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.RandomizableContainer;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.CampfireBlockEntity;
@@ -40,12 +37,11 @@ import java.util.function.Consumer;
  * <p>У помещений, выращенных до появления отпечатков, их нет. Для них — запасное правило ({@link #hasContents}):
  * ванильная блок-сущность мешает, только если в ней что-то лежит; модовая — всегда (её содержимое не узнать).
  *
- * <p>Блоки из метки {@link #REMOVABLE} ({@code tardis_rooms:removable_with_room}) не мешают никогда и сносятся вместе
- * с помещением, что бы в них ни было. По умолчанию — таблички, флаги и головы; датапак может дополнить метку.
+ * <p>Никогда не мешают: блоки из настройки сервера {@code removableWithRoom} ({@link RemovableBlocks}) и места,
+ * которые помещение из датапака отметило у себя ({@code removable} в его JSON), — они уходят вместе с помещением,
+ * что бы в них ни было. Интерфейс мешает всегда.
  */
 public final class RoomBlockEntities {
-    /** Блоки, которые удаляются вместе с помещением, что бы в них ни было (data/tardis_rooms/tags/block/removable_with_room.json). */
-    public static final TagKey<Block> REMOVABLE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "removable_with_room"));
 
     /** Объём помещения: по коробке на модуль и этаж. */
     public static List<BoundingBox> boxes(Map<Integer, Set<Long>> footprint) {
@@ -73,9 +69,15 @@ public final class RoomBlockEntities {
      * {@code template} — отпечатки шаблона ({@link #fingerprint}); null — помещение старое, без отпечатков.
      */
     public static List<BlockPos> blockers(ServerLevel level, List<BoundingBox> boxes, @Nullable Map<Long, Integer> template) {
+        return blockers(level, boxes, template, Set.of());
+    }
+
+    /** То же; {@code removable} — места ({@link BlockPos#asLong}), которые помещение отметило как уходящие с ним. */
+    public static List<BlockPos> blockers(ServerLevel level, List<BoundingBox> boxes, @Nullable Map<Long, Integer> template, Set<Long> removable) {
         List<BlockPos> out = new ArrayList<>();
         forEach(level, boxes, be -> {
-            if (blocks(level, be, template)) out.add(be.getBlockPos().immutable());
+            if (be instanceof InterfaceBlockEntity || !removable.contains(be.getBlockPos().asLong()))
+                if (blocks(level, be, template)) out.add(be.getBlockPos().immutable());
         });
         return out;
     }
@@ -88,9 +90,9 @@ public final class RoomBlockEntities {
         return expected == null || expected != hash(level, be);
     }
 
-    /** Блоки TR и наши служебные — часть самой ТАРДИС; блоки из {@link #REMOVABLE} уходят вместе с помещением. */
+    /** Блоки TR и наши служебные — часть самой ТАРДИС; блоки из настройки уходят вместе с помещением. */
     private static boolean ignored(BlockEntity be) {
-        if (be.getBlockState().is(REMOVABLE)) return true;
+        if (RemovableBlocks.matches(be.getBlockState())) return true;
         String ns = blockId(be).getNamespace();
         return ns.equals(TardisRefined.MODID) || ns.equals(TardisRooms.MODID);
     }

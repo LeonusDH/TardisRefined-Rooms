@@ -22,6 +22,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Игровые тесты: какие блок-сущности мешают удалить помещение ({@link RoomBlockEntities}). Вместо помещения — небольшая
@@ -148,16 +149,28 @@ public final class RoomGameTests {
         h.succeed();
     }
 
-    /** Блоки из метки removable_with_room не мешают, даже поставленные после роста; интерфейс — всё равно мешает. */
-    public static void removableTagIgnored(GameTestHelper h) {
+    /** Блоки из настройки по умолчанию (таблички, флаги) не мешают, даже поставленные после роста; интерфейс мешает. */
+    public static void removableConfigIgnored(GameTestHelper h) {
         Map<Long, Integer> template = RoomBlockEntities.fingerprint(h.getLevel(), box(h));
         h.setBlock(CHEST, Blocks.OAK_SIGN);
         h.setBlock(LECTERN, Blocks.WHITE_BANNER);
-        h.assertTrue(h.getBlockState(CHEST).is(RoomBlockEntities.REMOVABLE), "табличка не в метке");
         expect(h, blockers(h, template));
         expect(h, blockers(h, null));
         h.setBlock(EXTRA, TRoomsBlocks.INTERFACE.get());
         expect(h, blockers(h, template), EXTRA);
+        h.succeed();
+    }
+
+    /** Отмеченное помещением место не мешает, что бы в нём ни было; соседний блок — как обычно; интерфейс — всегда. */
+    public static void removableMarkedIgnored(GameTestHelper h) {
+        furnish(h);
+        Map<Long, Integer> template = RoomBlockEntities.fingerprint(h.getLevel(), box(h));
+        ((Container) h.getBlockEntity(CHEST)).setItem(0, new ItemStack(Items.DIAMOND));
+        ((LecternBlockEntity) h.getBlockEntity(LECTERN)).setBook(new ItemStack(Items.WRITABLE_BOOK));
+        Set<Long> marked = Set.of(h.absolutePos(CHEST).asLong(), h.absolutePos(EXTRA).asLong());
+        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, marked), LECTERN);
+        h.setBlock(EXTRA, TRoomsBlocks.INTERFACE.get());
+        expect(h, RoomBlockEntities.blockers(h.getLevel(), box(h), template, marked), LECTERN, EXTRA);
         h.succeed();
     }
 }
