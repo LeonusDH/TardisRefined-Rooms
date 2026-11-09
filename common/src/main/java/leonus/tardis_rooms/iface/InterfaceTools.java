@@ -23,8 +23,8 @@ import net.minecraft.world.phys.BlockHitResult;
  */
 public final class InterfaceTools {
     /**
-     * Ключи других модов — метка {@code tardis_rooms:wrenches} (data/tardis_rooms/tags/item/wrenches.json): общие метки ключей,
-     * которыми их помечают Mekanism, AE2, Powah и другие, плюс ключи без такой метки (Tech Reborn). Сборка может дополнить её датапаком.
+     * Ключи других модов — тег {@code tardis_rooms:wrenches} (data/tardis_rooms/tags/item/wrenches.json): общие теги ключей,
+     * которыми их помечают Mekanism, AE2, Powah и другие, плюс ключи без такого тега (Tech Reborn). Сборка может дополнить его датапаком.
      */
     private static final TagKey<Item> WRENCHES = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(TardisRooms.MODID, "wrenches"));
 

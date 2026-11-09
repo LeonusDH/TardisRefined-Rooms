@@ -53,10 +53,10 @@ Rooms grown with an addon version before 1.1.0 have nothing remembered. For them
 
 ### Blocks that never count
 
-- Blocks listed in the server config option `removableWithRoom`. By default: signs, banners and heads.
+- Blocks listed in `config/tardis_rooms/removable_with_room.json`. By default: signs, banners and heads.
 - Blocks a datapack room marks in its `removable` field.
 
-Both go with the room whatever is in them. See [Configuration](configuration.md) and [Rooms from datapacks](datapack-rooms.md#removable-blocks).
+Both go with the room whatever is in them. See [Configuration](configuration.md#blocks-that-go-with-a-room) and [Rooms from datapacks](datapack-rooms.md#removable-blocks).
 
 ## Finding what's in the way
 

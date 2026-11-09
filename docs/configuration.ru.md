@@ -8,7 +8,6 @@
 |---|---|---|
 | `disableProceduralRooms` | `true` | Не генерировать процедурные ARS-комнаты и коридоры Tardis Refined вокруг интерьера, в том числе случайные коридоры над хабом. Консольная комната, Око Гармонии и центральный хаб коридоров остаются. Влияет только на ещё не сгенерированные чанки |
 | `simplifyHub` | `true` | Оставить в хабе Tardis Refined только обязательные части — один раз на ТАРДИС, когда в неё впервые входит игрок. См. [Помещения](rooms.ru.md#хаб) |
-| `removableWithRoom` | таблички, флаги, головы | Блоки, которые не мешают убрать или заменить помещение и уходят вместе с ним, что бы в них ни было. Как записывать — на странице [Записи блоков](block-entries.ru.md). Не добавляйте блоки, в которых игроки хранят вещи, и осторожнее с целыми модами: у модов техники почти каждый блок что-то хранит. Интерфейс ТАРДИС мешает всегда |
 | `debug` | `false` | Писать в лог подробности: кто что пристроил, заменил или удалил, почему действие отклонено, граф связности при удалении и замене, расстановку узлов в хабе |
 | `compat.mekanism` | `true` | Химикаты Mekanism через интерфейс ТАРДИС |
 | `compat.ae2` | `true` | Сеть ME из AE2 через интерфейс ТАРДИС и карта памяти для ID |
@@ -16,15 +15,24 @@
 
 Параметр `compat` что-то значит, только если этот мод установлен.
 
-Список `removableWithRoom` по умолчанию:
+## Блоки, которые уходят вместе с помещением: `config/tardis_rooms/removable_with_room.json`
 
-```toml
-removableWithRoom = ["#minecraft:all_signs", "#minecraft:banners",
+Блоки, которые не мешают убрать или заменить помещение и уходят вместе с ним, что бы в них ни было. Это отдельный файл, чтобы сборка могла дописать свои моды, не трогая основные настройки. Если файла нет, он создаётся со списком по умолчанию; читается при запуске сервера и заново — по `/reload`.
+
+```json
+{
+  "_comment": "...",
+  "blocks": [
+    "#minecraft:all_signs", "#minecraft:banners",
     "minecraft:skeleton_skull", "minecraft:skeleton_wall_skull", "minecraft:wither_skeleton_skull", "minecraft:wither_skeleton_wall_skull",
     "minecraft:zombie_head", "minecraft:zombie_wall_head", "minecraft:creeper_head", "minecraft:creeper_wall_head",
     "minecraft:piglin_head", "minecraft:piglin_wall_head", "minecraft:dragon_head", "minecraft:dragon_wall_head",
-    "minecraft:player_head", "minecraft:player_wall_head"]
+    "minecraft:player_head", "minecraft:player_wall_head"
+  ]
+}
 ```
+
+Как записывать — на странице [Записи блоков](block-entries.ru.md). Всё, что лежит в этих блоках, пропадёт вместе с помещением: не добавляйте блоки, в которых игроки хранят вещи, и осторожнее с целыми модами — у модов техники почти каждый блок что-то хранит. Интерфейс ТАРДИС мешает всегда. Помещения из датапаков могут отметить такие блоки у себя сами, см. [Помещения из датапаков](datapack-rooms.ru.md#блоки-которые-уходят-вместе-с-помещением).
 
 ## Клиент: `config/tardis_rooms/client.toml`
 
