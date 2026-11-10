@@ -1,6 +1,7 @@
 package leonus.tardis_rooms.forge;
 
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.command.TRoomsCommands;
 import leonus.tardis_rooms.iface.InterfaceNetwork;
 import leonus.tardis_rooms.iface.InterfaceTools;
@@ -20,6 +21,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.config.ConfigTracker;
 
 /** События Forge → общий код. Здесь только перевод: что делать, решает общий код. */
 final class ForgeEvents {
@@ -31,7 +33,11 @@ final class ForgeEvents {
         bus.addListener((AddReloadListenerEvent e) -> e.addListener(CustomRooms.INSTANCE));
         bus.addListener((OnDatapackSyncEvent e) -> {
             if (e.getPlayer() != null) CustomRooms.sync(e.getPlayer());
-            else e.getPlayerList().getPlayers().forEach(CustomRooms::sync);
+            else {
+                e.getPlayerList().getPlayers().forEach(CustomRooms::sync);
+                var removable = ConfigTracker.INSTANCE.fileMap().get(TardisRooms.REMOVABLE_CONFIG);
+                if (removable != null) TardisRoomsConfig.reloadRemovable(removable.getConfigData());
+            }
         });
         bus.addListener((RegisterCommandsEvent e) -> TRoomsCommands.register(e.getDispatcher()));
         bus.addListener((EntityJoinLevelEvent e) -> HubInitializer.onEntityJoin(e.getLevel(), e.getEntity()));

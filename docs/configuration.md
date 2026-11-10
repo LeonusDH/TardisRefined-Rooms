@@ -17,7 +17,7 @@ A `compat` option only matters if that mod is installed.
 
 ## Blocks that go with a room: `config/tardis_rooms/removable_with_room.toml`
 
-Blocks that never keep a room from being removed or replaced and go with it, whatever is in them. It is a separate file so that a modpack can add its mods without touching the main config. It is created with the default list and comments describing the entries. Changes are picked up by themselves, no restart needed. A line of your own can be commented out with `#`.
+Blocks that never keep a room from being removed or replaced and go with it, whatever is in them. It is a separate file so that a modpack can add its mods without touching the main config. It is created with the default list and comments describing the entries. Changes are usually picked up by themselves, no restart needed; if one isn't (on Windows this happens on 1.20.1), run `/reload`. A line of your own can be commented out with `#`.
 
 ```toml
 blocks = ["#minecraft:all_signs", "#minecraft:banners",

@@ -1,5 +1,6 @@
 package leonus.tardis_rooms;
 
+import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import leonus.tardis_rooms.room.RemovableBlocks;
 import net.minecraftforge.common.ForgeConfigSpec;
 
@@ -77,8 +78,8 @@ public final class TardisRoomsConfig {
                         "WARNING: anything in these blocks is lost together with the room. Don't add blocks where players keep things;",
                         "be especially careful with \"@mod\": in tech mods almost every block holds something.",
                         "TARDIS Interfaces always count. Wrong entries are skipped with a warning in the log.",
-                        "Changes are picked up without a restart. Datapack rooms mark such blocks for themselves (the removable field",
-                        "of the room JSON). More: " + DOCS + "block-entries.md")
+                        "Changes are usually picked up by themselves; if not, run /reload. Datapack rooms mark such blocks for themselves",
+                        "(the removable field of the room JSON). More: " + DOCS + "block-entries.md")
                 .defineListAllowEmpty(List.of("blocks"), () -> RemovableBlocks.DEFAULT, o -> o instanceof String s && !s.isBlank());
         REMOVABLE_SPEC = r.build();
     }
@@ -111,6 +112,22 @@ public final class TardisRoomsConfig {
     /** Строки списка блоков, уходящих вместе с помещением (до загрузки файла — по умолчанию). */
     public static List<? extends String> removableBlocks() {
         return REMOVABLE_SPEC.isLoaded() ? REMOVABLE_BLOCKS.get() : RemovableBlocks.DEFAULT;
+    }
+
+    /**
+     * Перечитывает removable_with_room.toml по /reload. Следилка за файлами в NightConfig 1.20.1 пропускает
+     * изменение, если Windows склеила уведомления в одно (count > 1), поэтому правка может не подхватиться сама.
+     * Делает то же, что следилка: загрузить, исправить неверное, сбросить кэш значений.
+     */
+    public static void reloadRemovable(Object data) {
+        if (!(data instanceof CommentedFileConfig file)) return;
+        file.load();
+        if (!REMOVABLE_SPEC.isCorrect(file)) {
+            REMOVABLE_SPEC.correct(file);
+            file.save();
+        }
+        REMOVABLE_SPEC.afterReload();
+        TardisRooms.LOGGER.info("{} reloaded: {} entr(ies) in use", TardisRooms.REMOVABLE_CONFIG, RemovableBlocks.current().size());
     }
 
     public static double doorLeverClosedAngle() {
