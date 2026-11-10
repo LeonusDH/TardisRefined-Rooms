@@ -83,7 +83,9 @@ final class EnergyView implements IEnergyStorage, KindPart, LinkedTotals {
     /** Заряд и ёмкость хранилищ у связанных интерфейсов (настоящие, без условной ёмкости). */
     @Override
     public long[] linkedTotals() {
-        return linked.totals(IEnergyStorage::getEnergyStored, IEnergyStorage::getMaxEnergyStored);
+        // Только накопители — то, что и принимает, и отдаёт. Машины (контроллер ME, печь) и генераторы энергию не хранят для
+        // других, их буфер — не заряд сети.
+        return linked.totals(h -> h.canReceive() && h.canExtract(), IEnergyStorage::getEnergyStored, IEnergyStorage::getMaxEnergyStored);
     }
 
     @Override

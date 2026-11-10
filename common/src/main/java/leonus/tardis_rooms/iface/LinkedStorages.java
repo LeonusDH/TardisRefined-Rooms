@@ -13,6 +13,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 
 /**
@@ -97,14 +98,16 @@ public final class LinkedStorages<T> {
 
     /**
      * Сколько всего лежит в хранилищах у всех связанных интерфейсов и сколько в них влезает — для подсказки (заряд).
+     * Считаются только те, для которых {@code counts} — да (например, только настоящие накопители, а не машины).
      * Под защитой от повторного входа: чужое хранилище, отвечая, может спросить интерфейс, и счёт пошёл бы по кругу.
      */
-    public long[] totals(ToLongFunction<T> amount, ToLongFunction<T> capacity) {
+    public long[] totals(Predicate<T> counts, ToLongFunction<T> amount, ToLongFunction<T> capacity) {
         long[] out = new long[2];
         if (InterfaceNetwork.depth > 0) return out;
         InterfaceNetwork.depth++;
         try {
             for (T h : get(Pick.ALL)) {
+                if (!counts.test(h)) continue;
                 out[0] = LongMath.saturatedAdd(out[0], amount.applyAsLong(h));
                 out[1] = LongMath.saturatedAdd(out[1], capacity.applyAsLong(h));
             }

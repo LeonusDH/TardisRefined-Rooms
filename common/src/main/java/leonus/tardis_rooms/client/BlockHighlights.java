@@ -17,7 +17,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -85,7 +84,10 @@ public final class BlockHighlights {
         // Вид строим сами, как игра (поворот камеры, затем сдвиг на неё): так не важно, что к этому моменту лежит
         // в матрицах событий разных загрузчиков.
         Vec3 cam = camera.getPosition();
-        Matrix4f view = new Matrix4f().rotation(camera.rotation().conjugate(new Quaternionf()))
+        // На 1.20.1 игра поворачивает вид так (GameRenderer.renderLevel): наклон камеры, затем поворот на её курс + 180°.
+        Matrix4f view = new Matrix4f()
+                .rotateX((float) Math.toRadians(camera.getXRot()))
+                .rotateY((float) Math.toRadians(camera.getYRot() + 180f))
                 .translate((float) (anchor.getX() - cam.x), (float) (anchor.getY() - cam.y), (float) (anchor.getZ() - cam.z));
         // Линии в 3 пикселя без проверки глубины — видны сквозь стены. Своего RenderType не заводим:
         // нужный для этого метод игры закрыт (Forge его открывает, Fabric — нет), а так одинаково на обоих.
