@@ -113,7 +113,9 @@ final class FabricEnergy {
             /** Заряд и ёмкость хранилищ у связанных интерфейсов (настоящие, без условной ёмкости). */
             @Override
             public long[] linkedTotals() {
-                return linked.totals(EnergyStorage::getAmount, EnergyStorage::getCapacity);
+                // Только накопители — то, что и принимает, и отдаёт. Машины (контроллер ME, печь) и генераторы энергию не хранят
+                // для других, их буфер — не заряд сети.
+                return linked.totals(s -> s.supportsInsertion() && s.supportsExtraction(), EnergyStorage::getAmount, EnergyStorage::getCapacity);
             }
         }
     }
