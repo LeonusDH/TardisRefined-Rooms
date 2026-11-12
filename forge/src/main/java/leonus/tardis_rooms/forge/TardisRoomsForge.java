@@ -25,6 +25,7 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.NewRegistryEvent;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,7 +53,9 @@ public final class TardisRoomsForge {
         TardisRooms.compat("Applied Energistics 2", "ae2", TardisRoomsConfig::compatAE2);
         TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
         TardisRooms.compat("AcuaTARDISGadgets", AcuaCompat.MOD_ID, StartupConfig::compatAcua);
-        AcuaCompat.init(); // до регистрации: права добавляются в реестр Acua
+        // Права добавляются в реестр Acua до регистрации. Не в конструкторе: моды строятся параллельно, а списки Acua
+        // не потокобезопасны; NewRegistryEvent идёт по очереди и раньше RegisterEvent.
+        modBus.addListener((NewRegistryEvent e) -> AcuaCompat.init());
         registerEntries(modBus);
         ForgeNetwork.register();
         ForgeEvents.register(MinecraftForge.EVENT_BUS);

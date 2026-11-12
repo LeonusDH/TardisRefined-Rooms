@@ -15,8 +15,9 @@ public final class AcuaCompat {
     private AcuaCompat() {}
 
     /**
-     * При запуске мода, до регистрации: права нужно добавить в реестр Acua, пока он открыт. Выключено в конфиге —
-     * прав нет, проверок нет (настройка читается из файла один раз: {@link StartupConfig#compatAcua()}).
+     * При запуске мода, до регистрации (на Forge — в NewRegistryEvent): права нужно добавить в реестр Acua, пока он
+     * открыт. Выключено в конфиге — прав нет, проверок нет (настройка читается из файла один раз:
+     * {@link StartupConfig#compatAcua()}).
      */
     public static void init() {
         if (!Platform.isModLoaded(MOD_ID) || !StartupConfig.compatAcua()) return;

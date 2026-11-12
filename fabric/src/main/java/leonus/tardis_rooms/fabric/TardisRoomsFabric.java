@@ -52,7 +52,7 @@ public final class TardisRoomsFabric implements ModInitializer {
         TardisRooms.compat("Applied Energistics 2", "ae2", TardisRoomsConfig::compatAE2);
         TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
         TardisRooms.compat("AcuaTARDISGadgets", AcuaCompat.MOD_ID, StartupConfig::compatAcua);
-        AcuaCompat.init(); // до регистрации: права добавляются в реестр Acua
+        AcuaCompat.init(); // до заморозки реестров: права добавляются в реестр Acua
         // Энергия на Fabric — только через Team Reborn Energy; своей настройки нет, совместимость всегда включена.
         TardisRooms.compat("Team Reborn Energy", "team_reborn_energy", () -> true);
         registerEntries();
