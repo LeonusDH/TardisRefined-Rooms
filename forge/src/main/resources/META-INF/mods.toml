@@ -54,3 +54,11 @@ mandatory = false
 versionRange = "[11.0,)"
 ordering = "NONE"
 side = "BOTH"
+
+# Права в Security Manager (compat/acua). Нужна версия с реестром tardis_permission.
+[[dependencies.${mod_id}]]
+modId = "acuatardisgadgets"
+mandatory = false
+versionRange = "[1.20.1-1.0.6,)"
+ordering = "NONE"
+side = "BOTH"

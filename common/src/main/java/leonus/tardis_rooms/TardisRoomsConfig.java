@@ -15,7 +15,7 @@ public final class TardisRoomsConfig {
     public static final ForgeConfigSpec.BooleanValue DISABLE_PROCEDURAL_ROOMS;
     public static final ForgeConfigSpec.BooleanValue DEBUG;
     public static final ForgeConfigSpec.BooleanValue SIMPLIFY_HUB;
-    public static final ForgeConfigSpec.BooleanValue COMPAT_MEKANISM, COMPAT_AE2, COMPAT_JADE;
+    public static final ForgeConfigSpec.BooleanValue COMPAT_MEKANISM, COMPAT_AE2, COMPAT_JADE, COMPAT_ACUA;
 
     /** Отдельный файл: блоки, которые уходят вместе с помещением (сборке проще дописать свои моды). */
     public static final ForgeConfigSpec REMOVABLE_SPEC;
@@ -53,6 +53,10 @@ public final class TardisRoomsConfig {
         COMPAT_MEKANISM = b.comment("Mekanism: chemicals through the TARDIS Interface.").define("mekanism", true);
         COMPAT_AE2 = b.comment("Applied Energistics 2: ME networks through the TARDIS Interface and the Memory Card for IDs.").define("ae2", true);
         COMPAT_JADE = b.comment("Jade: TARDIS Interface status in the tooltip.").define("jade", true);
+        COMPAT_ACUA = b.comment("AcuaTARDISGadgets: permissions to grow rooms, manage rooms and set up interfaces in its Security Manager.",
+                        "Off: the permissions aren't added, and everyone may build as without the mod.",
+                        "Read once at startup: restart the game after changing it.")
+                .define(StartupConfig.ACUA_PATH, true);
         b.pop();
         SPEC = b.build();
 

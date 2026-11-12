@@ -13,6 +13,10 @@ dependencies {
     modCompileOnly("maven.modrinth:tardis-refined:${rootProject.tr_fabric_version}") { transitive = false }
     // Jade: подсказки об интерфейсе. API одинаковый на обеих платформах; плагин находит Forge по @WailaPlugin, Fabric — по точке входа jade.
     modCompileOnly "maven.modrinth:jade:${rootProject.jade_version}+fabric"
+    // AcuaTARDISGadgets: права в его Security Manager. Его API — в общем коде, берём Fabric-сборку (как у TR);
+    // регистрация в его реестр идёт через Architectury API, которое у него всегда есть.
+    modCompileOnly("maven.modrinth:${rootProject.acua_project}:${rootProject.acua_fabric_version}") { transitive = false }
+    modCompileOnly("dev.architectury:architectury:${rootProject.architectury_version}") { transitive = false }
 }
 
 // Общие ресурсы обеих платформ. Английский перевод генерирует датаген (gradlew :forge:runData) в src/generated/resources;
@@ -27,6 +31,8 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Чтение настройки при запуске ({@link StartupConfig}) — тот же NightConfig, что в игре.
+    testImplementation "com.electronwill.night-config:toml:${rootProject.night_config_version}"
 }
 
 test {

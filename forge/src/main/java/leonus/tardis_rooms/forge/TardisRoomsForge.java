@@ -2,7 +2,9 @@ package leonus.tardis_rooms.forge;
 
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.StartupConfig;
 import leonus.tardis_rooms.TardisRoomsConfig;
+import leonus.tardis_rooms.compat.acua.AcuaCompat;
 import leonus.tardis_rooms.iface.ForgeInterfaceTransport;
 import leonus.tardis_rooms.iface.tardis.TardisInterfaces;
 import leonus.tardis_rooms.platform.Platform;
@@ -49,6 +51,8 @@ public final class TardisRoomsForge {
         TardisRooms.compat("Mekanism", "mekanism", TardisRoomsConfig::compatMekanism);
         TardisRooms.compat("Applied Energistics 2", "ae2", TardisRoomsConfig::compatAE2);
         TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
+        TardisRooms.compat("AcuaTARDISGadgets", AcuaCompat.MOD_ID, StartupConfig::compatAcua);
+        AcuaCompat.init(); // до регистрации: права добавляются в реестр Acua
         registerEntries(modBus);
         ForgeNetwork.register();
         ForgeEvents.register(MinecraftForge.EVENT_BUS);

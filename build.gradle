@@ -36,7 +36,11 @@ allprojects {
         maven { url = 'https://modmaven.dev/' } // Mekanism, AE2
         maven { url = 'https://maven.minecraftforge.net/' }
         maven { url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/' } // Forge Config API Port
-        exclusiveContent { // Jade, Tardis Refined
+        maven { // Architectury API: только для компиляции совместимости с AcuaTARDISGadgets (у него она есть всегда)
+            url = 'https://maven.architectury.dev/'
+            content { includeGroup 'dev.architectury' }
+        }
+        exclusiveContent { // Jade, Tardis Refined, AcuaTARDISGadgets
             forRepository { maven { url = 'https://api.modrinth.com/maven' } }
             filter { includeGroup 'maven.modrinth' }
         }

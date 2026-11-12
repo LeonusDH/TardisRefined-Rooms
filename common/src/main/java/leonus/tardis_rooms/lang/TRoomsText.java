@@ -173,6 +173,10 @@ public enum TRoomsText {
     PRESET_TOOLTIP("piece.tardis_rooms.preset.tooltip", "Ready-made Tardis Refined block: %s"),
     PRESET_CORRIDOR("piece.tardis_rooms.preset_corridor", "Corridor block %s"),
     PRESET_ROOM("piece.tardis_rooms.preset_room", "Room block %s"),
+    // ---------- Permissions in AcuaTARDISGadgets' Security Manager ----------
+    PERMISSION_GROW("tardis_permission.tardis_rooms.rooms.grow", "Grow Rooms"),
+    PERMISSION_MANAGE("tardis_permission.tardis_rooms.rooms.manage", "Manage Rooms"),
+    PERMISSION_INTERFACE("tardis_permission.tardis_rooms.interface.configure", "Set Up Interfaces"),
     // ---------- TARDIS Interface ----------
     BLOCK_TARDIS_INTERFACE("block.tardis_rooms.tardis_interface", "TARDIS Interface"),
     MSG_INTERFACE_PLACE("message.tardis_rooms.interface_place", "The interface can only be placed inside a TARDIS or right next to its shell"),

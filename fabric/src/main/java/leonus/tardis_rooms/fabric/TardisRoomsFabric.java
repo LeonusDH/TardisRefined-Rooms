@@ -3,8 +3,10 @@ package leonus.tardis_rooms.fabric;
 import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
+import leonus.tardis_rooms.StartupConfig;
 import leonus.tardis_rooms.TardisRoomsConfig;
 import leonus.tardis_rooms.command.TRoomsCommands;
+import leonus.tardis_rooms.compat.acua.AcuaCompat;
 import leonus.tardis_rooms.iface.FabricInterfaceTransport;
 import leonus.tardis_rooms.iface.tardis.TardisInterfaces;
 import leonus.tardis_rooms.network.Payload;
@@ -49,6 +51,8 @@ public final class TardisRoomsFabric implements ModInitializer {
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> TardisRoomsConfig.reloadRemovable(removable.getConfigData()));
         TardisRooms.compat("Applied Energistics 2", "ae2", TardisRoomsConfig::compatAE2);
         TardisRooms.compat("Jade", "jade", TardisRoomsConfig::compatJade);
+        TardisRooms.compat("AcuaTARDISGadgets", AcuaCompat.MOD_ID, StartupConfig::compatAcua);
+        AcuaCompat.init(); // до регистрации: права добавляются в реестр Acua
         // Энергия на Fabric — только через Team Reborn Energy; своей настройки нет, совместимость всегда включена.
         TardisRooms.compat("Team Reborn Energy", "team_reborn_energy", () -> true);
         registerEntries();
