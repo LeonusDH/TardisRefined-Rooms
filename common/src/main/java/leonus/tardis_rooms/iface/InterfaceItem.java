@@ -34,6 +34,8 @@ public class InterfaceItem extends BlockItem {
         }
         if (context.getPlayer() instanceof ServerPlayer sp
                 && !InterfaceHost.mayConfigure(sp, context.getClickedPos(), "placing an interface at " + context.getClickedPos().toShortString())) {
+            // Клиент уже поставил блок и списал предмет у себя: блок игра вернёт сама, а предмет — только так.
+            sp.containerMenu.sendAllDataToRemote();
             return InteractionResult.FAIL;
         }
         return super.place(context);
