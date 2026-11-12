@@ -5,14 +5,20 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.BlockMatcher;
 import leonus.tardis_rooms.room.BlockerHighlight;
 import leonus.tardis_rooms.room.RoomBlockEntities;
+import leonus.tardis_rooms.room.RoomPermissions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -196,4 +202,32 @@ public final class RoomGameTests {
                 List.of(BlockMatcher.parse("@minecraft"), BlockMatcher.parse("@" + TardisRooms.MODID))), EXTRA);
         h.succeed();
     }
+
+    // ---------- права ----------
+
+    /**
+     * Проверка прав: решает подставленная проверка; для нескольких ТАРДИС нужно право в каждой; ни одной — решать нечего;
+     * сломанная проверка — отказ. Помещения в тестах не вырастить (нужно измерение ТАРДИС), поэтому — сама проверка.
+     */
+    public static void permissionChecks(GameTestHelper h) {
+        ServerPlayer player = InterfaceGameTests.mockPlayer(h, BlockPos.ZERO);
+        ResourceKey<Level> mine = h.getLevel().dimension();
+        ResourceKey<Level> other = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(TardisRooms.MODID, "gametest_other"));
+        RoomPermissions.Check saved = RoomPermissions.current();
+        try {
+            RoomPermissions.set((p, tardis, action) -> !(tardis.equals(other) && action == RoomPermissions.Action.MANAGE));
+            h.assertTrue(RoomPermissions.allowed(player, mine, RoomPermissions.Action.MANAGE, "test"), "отказ там, где можно");
+            h.assertTrue(!RoomPermissions.allowed(player, other, RoomPermissions.Action.MANAGE, "test"), "можно там, где отказ");
+            h.assertTrue(RoomPermissions.allowed(player, other, RoomPermissions.Action.GROW, "test"), "отказ не в том действии");
+            h.assertTrue(RoomPermissions.allowedInAll(player, List.of(), RoomPermissions.Action.MANAGE, "test"), "отказ без ТАРДИС");
+            h.assertTrue(!RoomPermissions.allowedInAll(player, List.of(mine, other), RoomPermissions.Action.MANAGE, "test"),
+                    "можно, хотя в одной из ТАРДИС отказ");
+            RoomPermissions.set((p, tardis, action) -> { throw new IllegalStateException("game test: a broken permission check"); });
+            h.assertTrue(!RoomPermissions.allowed(player, mine, RoomPermissions.Action.GROW, "test"), "сломанная проверка пропустила");
+        } finally {
+            RoomPermissions.set(saved);
+        }
+        h.succeed();
+    }
 }
+

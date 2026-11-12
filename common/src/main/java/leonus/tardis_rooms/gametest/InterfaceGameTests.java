@@ -1,21 +1,30 @@
 package leonus.tardis_rooms.gametest;
 
+import com.mojang.authlib.GameProfile;
 import leonus.tardis_rooms.TRoomsBlocks;
 import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.iface.FaceMode;
 import leonus.tardis_rooms.iface.Flow;
 import leonus.tardis_rooms.iface.InterfaceBlockEntity;
 import leonus.tardis_rooms.iface.InterfaceHost;
+import leonus.tardis_rooms.iface.InterfaceTools;
 import leonus.tardis_rooms.iface.ItemData;
 import leonus.tardis_rooms.iface.RedstonePart;
 import leonus.tardis_rooms.iface.kind.BuiltinKinds;
+import leonus.tardis_rooms.network.InterfacePayload;
+import leonus.tardis_rooms.room.RoomPermissions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -25,8 +34,10 @@ import net.minecraft.world.level.block.LayeredCauldronBlock;
 import net.minecraft.world.level.block.RedstoneLampBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -55,7 +66,7 @@ public final class InterfaceGameTests {
 
     private static InterfaceBlockEntity iface(GameTestHelper h, BlockPos pos, int id) {
         // Область — здесь, а не при загрузке тестов: на Fabric тесты загружаются раньше, чем мод задаёт свою область.
-        InterfaceHost.set(new InterfaceHost((level, p) -> List.of(TEST_TARDIS), InterfaceHost.current().configurator()));
+        InterfaceHost.set(new InterfaceHost((level, p) -> List.of(TEST_TARDIS), InterfaceHost.current().configurator(), InterfaceHost.current().access()));
         h.setBlock(pos, TRoomsBlocks.INTERFACE.get());
         InterfaceBlockEntity be = (InterfaceBlockEntity) h.getBlockEntity(pos);
         be.pasteId(id, Optional.empty());
@@ -268,4 +279,52 @@ public final class InterfaceGameTests {
         h.assertTrue(a.data().equals(b.data()), "настройки не совпали: " + a.data() + " → " + b.data());
         h.succeed();
     }
+
+    // ---------- права ----------
+
+    /**
+     * Игрок для проверки прав: стоит над {@code pos}, в мир не входит (в списке игроков его нет). Соединение без канала:
+     * пакеты (сообщения над хотбаром) просто копятся в нём.
+     */
+    static ServerPlayer mockPlayer(GameTestHelper h, BlockPos pos) {
+        ServerPlayer player = new ServerPlayer(h.getLevel().getServer(), h.getLevel(), new GameProfile(UUID.randomUUID(), "permission-test"));
+        new ServerGamePacketListenerImpl(h.getLevel().getServer(), new Connection(PacketFlow.SERVERBOUND), player);
+        BlockPos at = h.absolutePos(pos).above();
+        player.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+        return player;
+    }
+
+    /** Без права настраивать интерфейс меню ничего не меняет и сломать интерфейс нельзя; с правом — можно. */
+    public static void noPermissionKeepsSettings(GameTestHelper h) {
+        InterfaceBlockEntity be = iface(h, A, NEXT_ID.getAndIncrement());
+        be.setFlow(Flow.IN);
+        BlockPos pos = h.absolutePos(A);
+        ServerPlayer player = mockPlayer(h, A);
+        InterfaceHost host = InterfaceHost.current();
+        RoomPermissions.Check check = RoomPermissions.current();
+        List<String> asked = new ArrayList<>();
+        try {
+            // Инструмент настройки — палка: отвёртка Tardis Refined тестам не нужна.
+            InterfaceHost.set(new InterfaceHost(host.scope(), s -> s.is(Items.STICK), host.access()));
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STICK));
+            RoomPermissions.set((p, tardis, action) -> {
+                asked.add(tardis.location() + " " + action);
+                return false;
+            });
+            InterfacePayload.handle(new InterfacePayload(pos, InterfacePayload.FLOW, Flow.OUT.ordinal()), player);
+            h.assertTrue(be.flow() == Flow.IN, "без права направление сменилось: " + be.flow());
+            h.assertTrue(asked.equals(List.of(TEST_TARDIS.location() + " CONFIGURE_INTERFACE")), "спросили не то: " + asked);
+            h.assertTrue(!InterfaceTools.onBreakBlock(player, h.getLevel(), pos), "без права интерфейс можно сломать");
+
+            RoomPermissions.set(RoomPermissions.ALLOW_ALL);
+            InterfacePayload.handle(new InterfacePayload(pos, InterfacePayload.FLOW, Flow.OUT.ordinal()), player);
+            h.assertTrue(be.flow() == Flow.OUT, "с правом направление не сменилось: " + be.flow());
+            h.assertTrue(InterfaceTools.onBreakBlock(player, h.getLevel(), pos), "с правом интерфейс нельзя сломать");
+        } finally {
+            InterfaceHost.set(host);
+            RoomPermissions.set(check);
+        }
+        h.succeed();
+    }
 }
+

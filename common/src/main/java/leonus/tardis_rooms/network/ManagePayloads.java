@@ -11,6 +11,7 @@ import leonus.tardis_rooms.room.Connectivity;
 import leonus.tardis_rooms.room.Lattice;
 import leonus.tardis_rooms.room.ModuleRegistry;
 import leonus.tardis_rooms.room.RoomGrowth;
+import leonus.tardis_rooms.room.RoomPermissions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -138,6 +139,8 @@ public final class ManagePayloads {
             if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) return;
             if (!Screwdriver.held(player) || player.distanceToSqr(r.core().getCenter()) > 64) return;
             if (!player.mayBuild() || !level.mayInteract(player, r.core())) return;
+            if (!RoomPermissions.allowed(player, level.dimension(), RoomPermissions.Action.MANAGE,
+                    "renaming the room at " + r.core().toShortString())) return;
             ModuleRegistry reg = ModuleRegistry.get(level);
             ModuleRegistry.Piece piece = reg.pieceAtCore(r.core());
             if (piece == null) return;

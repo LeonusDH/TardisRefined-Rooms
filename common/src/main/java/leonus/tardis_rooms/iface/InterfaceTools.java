@@ -9,6 +9,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -48,6 +49,9 @@ public final class InterfaceTools {
         if (level.isClientSide()) return UseResult.CONSUMED;
         if (!player.mayBuild() || !level.mayInteract(player, pos)) {
             TardisRooms.debug("{}: wrench on the interface at {} ignored: may not build here", TardisRooms.who(player), pos.toShortString());
+            return UseResult.CONSUMED;
+        }
+        if (player instanceof ServerPlayer sp && !InterfaceHost.mayConfigure(sp, pos, "wrench on the interface at " + pos.toShortString())) {
             return UseResult.CONSUMED;
         }
         if (player.isShiftKeyDown()) {
@@ -111,6 +115,15 @@ public final class InterfaceTools {
             return wrench(player, level, hit.getBlockPos(), hit.getDirection(), be);
         }
         return UseResult.PASS;
+    }
+
+    /**
+     * Игрок ломает блок (платформа зовёт на сервере до поломки). {@code false} — не давать: интерфейс ломает только
+     * тот, кому можно его настраивать ({@link InterfaceHost#mayConfigure}).
+     */
+    public static boolean onBreakBlock(Player player, Level level, BlockPos pos) {
+        if (!(player instanceof ServerPlayer sp) || !(level.getBlockEntity(pos) instanceof InterfaceBlockEntity)) return true;
+        return InterfaceHost.mayConfigure(sp, pos, "breaking the interface at " + pos.toShortString());
     }
 
     private InterfaceTools() {}

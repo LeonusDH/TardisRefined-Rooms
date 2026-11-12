@@ -93,4 +93,12 @@ public final class ForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void roomRemovableDescriptions(GameTestHelper h) { RoomGameTests.removableDescriptions(h); }
+
+    // ---------- права ----------
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void noPermissionKeepsSettings(GameTestHelper h) { InterfaceGameTests.noPermissionKeepsSettings(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void permissionChecks(GameTestHelper h) { RoomGameTests.permissionChecks(h); }
 }

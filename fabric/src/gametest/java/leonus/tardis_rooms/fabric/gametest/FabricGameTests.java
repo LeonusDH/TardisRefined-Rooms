@@ -89,4 +89,12 @@ public final class FabricGameTests {
 
     @GameTest(template = TEMPLATE)
     public static void roomRemovableDescriptions(GameTestHelper h) { RoomGameTests.removableDescriptions(h); }
+
+    // ---------- права ----------
+
+    @GameTest(template = TEMPLATE)
+    public static void noPermissionKeepsSettings(GameTestHelper h) { InterfaceGameTests.noPermissionKeepsSettings(h); }
+
+    @GameTest(template = TEMPLATE)
+    public static void permissionChecks(GameTestHelper h) { RoomGameTests.permissionChecks(h); }
 }

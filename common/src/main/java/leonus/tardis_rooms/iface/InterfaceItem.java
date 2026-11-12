@@ -4,6 +4,7 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -29,6 +30,10 @@ public class InterfaceItem extends BlockItem {
                 TardisRooms.debug("{}: interface not placed at {}: not in a TARDIS and not next to its shell",
                         TardisRooms.who(context.getPlayer()), context.getClickedPos().toShortString());
             }
+            return InteractionResult.FAIL;
+        }
+        if (context.getPlayer() instanceof ServerPlayer sp
+                && !InterfaceHost.mayConfigure(sp, context.getClickedPos(), "placing an interface at " + context.getClickedPos().toShortString())) {
             return InteractionResult.FAIL;
         }
         return super.place(context);

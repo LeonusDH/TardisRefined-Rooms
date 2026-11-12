@@ -50,6 +50,7 @@ public record InterfacePayload(BlockPos pos, int action, int value, Optional<Res
             TardisRooms.debug("{}: interface action {} at {} ignored: {}", who, p.action(), p.pos().toShortString(), why);
             return;
         }
+        if (!InterfaceHost.mayConfigure(player, p.pos(), "interface action " + p.action() + " at " + p.pos().toShortString())) return;
         InterfaceBlockEntity be = (InterfaceBlockEntity) player.level().getBlockEntity(p.pos());
         TardisRooms.debug("{}: interface at {}: {}", who, p.pos().toShortString(), switch (p.action()) {
             case FLOW -> "direction " + Flow.of(p.value());

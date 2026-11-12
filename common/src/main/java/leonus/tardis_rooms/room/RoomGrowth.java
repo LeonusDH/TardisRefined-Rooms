@@ -109,9 +109,11 @@ public final class RoomGrowth {
         if (!(player.level() instanceof ServerLevel level) || !Lattice.isTardisLevel(level)) { ignored(player, what, "not in a TARDIS"); return; }
         if (!Screwdriver.held(player)) { msg(player, TRoomsText.MSG_NEED_SCREWDRIVER); return; }
         if (!player.mayBuild() || !level.mayInteract(player, pos)) { ignored(player, what, "may not build here"); return; }
+        boolean replace = replaceCore != null && !replaceCore.equals(BlockPos.ZERO);
+        if (!RoomPermissions.allowed(player, level.dimension(), replace ? RoomPermissions.Action.MANAGE : RoomPermissions.Action.GROW, what)) return;
         ModuleRegistry reg = ModuleRegistry.get(level);
         ModuleRegistry.Piece replacing = null;
-        if (replaceCore != null && !replaceCore.equals(BlockPos.ZERO)) {
+        if (replace) {
             replacing = reg.pieceAtCore(replaceCore);
             if (replacing == null) { ignored(player, what, "no room at " + replaceCore.toShortString() + " to replace"); return; }
             if (player.distanceToSqr(replaceCore.getCenter()) > 64) { ignored(player, what, "too far from the Room Control Block"); return; }
@@ -174,6 +176,7 @@ public final class RoomGrowth {
         if (!Screwdriver.held(player)) { msg(player, TRoomsText.MSG_NEED_SCREWDRIVER); return; }
         if (player.distanceToSqr(core.getCenter()) > 64) { ignored(player, what, "too far"); return; }
         if (!player.mayBuild() || !level.mayInteract(player, core)) { ignored(player, what, "may not build here"); return; }
+        if (!RoomPermissions.allowed(player, level.dimension(), RoomPermissions.Action.MANAGE, what)) return;
         ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(core);
         if (piece == null) { ignored(player, what, "no room there"); return; }
         if (!Connectivity.canRemove(level, piece)) {
