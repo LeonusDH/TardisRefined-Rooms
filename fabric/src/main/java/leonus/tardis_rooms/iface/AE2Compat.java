@@ -19,6 +19,7 @@ import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -92,6 +93,10 @@ public final class AE2Compat {
                 short freq = data.getShort(CARD_FREQ_KEY);
                 if (freq == 0) {
                     card.notifyUser(player, MemoryCardMessages.INVALID_MACHINE);
+                    return InteractionResult.SUCCESS;
+                }
+                if (player instanceof ServerPlayer sp && !InterfaceHost.mayConfigure(sp, be.getBlockPos(),
+                        "memory card paste into the interface at " + be.getBlockPos().toShortString())) {
                     return InteractionResult.SUCCESS;
                 }
                 Optional<ResourceLocation> owner = data.contains(CARD_TARDIS_KEY) ? Optional.ofNullable(ResourceLocation.tryParse(data.getString(CARD_TARDIS_KEY))) : Optional.empty();
