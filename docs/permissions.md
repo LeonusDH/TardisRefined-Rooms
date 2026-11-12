@@ -27,3 +27,5 @@ If security was turned on in a TARDIS **before** the addon was installed, nobody
 ## Turning it off
 
 `compat.acuaTardisGadgets = false` in `config/tardis_rooms/common.toml` (see [Configuration](configuration.md)). Then the addon doesn't add its permissions to AcuaTARDISGadgets at all, and everyone may build as without that mod. The option is read once when the game starts: restart the game (or the server) after changing it.
+
+On a server, set it the same on the server and on every client: AcuaTARDISGadgets sends permissions over the network by their number in its list, and with the option different on each side the Security Manager may show or change the wrong permissions.
