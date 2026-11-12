@@ -87,6 +87,9 @@ public final class RoomGrowth {
         if (player.distanceToSqr(core.getCenter()) > SHOW_RANGE * SHOW_RANGE) { ignored(player, what, "too far"); return; }
         ModuleRegistry.Piece piece = ModuleRegistry.get(level).pieceAtCore(core);
         if (piece == null) { ignored(player, what, "no room there"); return; }
+        // Без права убирать помещение отказ — сразу, а не после отсчёта.
+        if (arm && !RoomPermissions.allowed(player, level.dimension(), RoomPermissions.Action.MANAGE,
+                "opening the remove-all window for the room at " + core.toShortString())) return;
         if (arm) ForceRemoval.arm(player.getUUID(), level.dimension(), core, System.currentTimeMillis());
         List<BlockPos> blockers = blockers(level, piece);
         TardisRooms.debug("{}: what's in the way of #{}{}: {}", TardisRooms.who(player), piece.id, arm ? " (confirmation window opened, countdown started)" : "",
