@@ -12,6 +12,7 @@
 | `compat.mekanism` | `true` | Mekanism chemicals through the TARDIS Interface |
 | `compat.ae2` | `true` | AE2 ME networks through the TARDIS Interface and the Memory Card for IDs |
 | `compat.jade` | `true` | Interface status in the Jade tooltip |
+| `compat.acuaTardisGadgets` | `true` | Permissions to grow rooms, manage rooms and set up interfaces in the AcuaTARDISGadgets Security Manager, see [Permissions](permissions.md). Off: the permissions aren't added and everyone may build. Read once at startup, so restart the game after changing it |
 
 A `compat` option only matters if that mod is installed.
 

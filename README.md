@@ -17,6 +17,7 @@ Full documentation: [docs](docs/README.md).
 - Your things inside also keep a room from being removed: containers or machines you placed or filled. Blocks that came with the room and haven't been touched don't count. The addon names what is in the way, outlines it through walls, and can still remove the room together with it after a 10-second countdown. See [Rooms](docs/rooms.md).
 - Where a passage leads nowhere, a **Passage Seal** closes it. When a neighbouring space is free, the seal becomes a new growth node.
 - Datapacks can add their own rooms, and any built room can be exported as one. See [Rooms from datapacks](docs/datapack-rooms.md).
+- With AcuaTARDISGadgets, its Security Manager decides who may grow rooms, manage them and set up interfaces in a TARDIS. See [Permissions](docs/permissions.md).
 
 ### TARDIS Interface
 
@@ -54,8 +55,9 @@ Optional integrations. Each one turns on only if that mod is installed:
 | Applied Energistics 2 15+ | ✓ | ✓ | ME networks through the interface; a Memory Card copies and pastes the interface ID |
 | Jade 11+ | ✓ | ✓ | Interface status in the tooltip |
 | Team Reborn Energy 3+ | — | ✓ | Energy through the interface. Most Fabric tech mods bundle it; on Forge energy works out of the box |
+| AcuaTARDISGadgets 1.0.6+ | ✓ | ✓ | Permissions to grow rooms, manage rooms and set up interfaces in its Security Manager, see [Permissions](docs/permissions.md) |
 
-Mekanism, AE2 and Jade support can also be turned off in the config.
+Mekanism, AE2, Jade and AcuaTARDISGadgets support can also be turned off in the config.
 
 ## Custom rooms from datapacks
 
@@ -67,7 +69,7 @@ The config is `config/tardis_rooms/common.toml`. It switches off Tardis Refined'
 
 ## Building
 
-You need JDK 21. Tardis Refined, Mekanism, AE2, Jade and Team Reborn Energy come from Maven automatically:
+You need JDK 21. Tardis Refined, Mekanism, AE2, Jade, Team Reborn Energy, AcuaTARDISGadgets and Architectury API come from Maven automatically:
 
 ```sh
 ./gradlew build
@@ -78,6 +80,8 @@ The jars end up in `forge/build/libs/` and `fabric/build/libs/`. On Windows, `bu
 The code shared by both loaders lives in `common/`; `forge/` and `fabric/` hold only what differs between them.
 
 The interface code in `common/.../iface` doesn't depend on Tardis Refined. What it transfers (energy, items, fluids, chemicals, ME, redstone) are entries of an internal registry (`iface/kind`), each with its own per-interface part. The TARDIS-specific pieces, which interfaces link to which and the screwdriver, are in `iface/tardis`.
+
+Permission checks go through `room/RoomPermissions`, which allows everything by default. The AcuaTARDISGadgets integration plugs into it from `compat/acua`; nothing else depends on that mod.
 
 ### Tests
 

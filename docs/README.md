@@ -6,6 +6,7 @@
 - [TARDIS Interface](interface.md): linking interfaces, what they carry, sides, the screwdriver and wrenches.
 - [Rooms from datapacks](datapack-rooms.md): adding your own rooms, the room JSON, template requirements and exporting a built room.
 - [Block entries](block-entries.md): how to name blocks in `removable_with_room.toml` and in datapack rooms (`@mod`, `*`, tags, block descriptions).
+- [Permissions](permissions.md): who may grow rooms and set up interfaces, with AcuaTARDISGadgets' Security Manager.
 - [Configuration and commands](configuration.md): every config option and command.
 
-This documentation describes the 1.20.1 version (the `1.20.1` branch, Forge and Fabric). The 1.21.1 version (the `main` branch, NeoForge and Fabric) has the same features; its documentation is in that branch.
+This documentation describes the 1.20.1 version (the `1.20.1` branch, Forge and Fabric). The 1.21.1 version (the `main` branch, NeoForge and Fabric) has the same features except [Permissions](permissions.md): AcuaTARDISGadgets is only available for 1.20.1. Its documentation is in that branch.
