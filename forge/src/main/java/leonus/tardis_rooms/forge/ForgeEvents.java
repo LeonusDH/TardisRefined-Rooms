@@ -11,7 +11,6 @@ import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
 import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -33,7 +32,7 @@ final class ForgeEvents {
         bus.addListener(ForgeEvents::onRightClickItem);
         // Интерфейс ломает только тот, кому можно его настраивать (событие — на сервере, до поломки).
         bus.addListener((BlockEvent.BreakEvent e) -> {
-            if (e.getLevel() instanceof Level level && !InterfaceTools.onBreakBlock(e.getPlayer(), level, e.getPos())) e.setCanceled(true);
+            if (!InterfaceTools.onBreakBlock(e.getPlayer(), e.getPos(), e.getState())) e.setCanceled(true);
         });
         bus.addListener((ItemTooltipEvent e) -> ScrewdriverTools.appendTooltip(e.getItemStack(), e.getToolTip()));
         bus.addListener((AddReloadListenerEvent e) -> e.addListener(CustomRooms.INSTANCE));

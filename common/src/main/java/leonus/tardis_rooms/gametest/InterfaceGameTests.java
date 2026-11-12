@@ -314,12 +314,12 @@ public final class InterfaceGameTests {
             InterfacePayload.handle(new InterfacePayload(pos, InterfacePayload.FLOW, Flow.OUT.ordinal()), player);
             h.assertTrue(be.flow() == Flow.IN, "без права направление сменилось: " + be.flow());
             h.assertTrue(asked.equals(List.of(TEST_TARDIS.location() + " CONFIGURE_INTERFACE")), "спросили не то: " + asked);
-            h.assertTrue(!InterfaceTools.onBreakBlock(player, h.getLevel(), pos), "без права интерфейс можно сломать");
+            h.assertTrue(!InterfaceTools.onBreakBlock(player, pos, h.getLevel().getBlockState(pos)), "без права интерфейс можно сломать");
 
             RoomPermissions.set(RoomPermissions.ALLOW_ALL);
             InterfacePayload.handle(new InterfacePayload(pos, InterfacePayload.FLOW, Flow.OUT.ordinal()), player);
             h.assertTrue(be.flow() == Flow.OUT, "с правом направление не сменилось: " + be.flow());
-            h.assertTrue(InterfaceTools.onBreakBlock(player, h.getLevel(), pos), "с правом интерфейс нельзя сломать");
+            h.assertTrue(InterfaceTools.onBreakBlock(player, pos, h.getLevel().getBlockState(pos)), "с правом интерфейс нельзя сломать");
         } finally {
             InterfaceHost.set(host);
             RoomPermissions.set(check);

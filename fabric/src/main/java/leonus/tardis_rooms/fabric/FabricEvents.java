@@ -43,7 +43,7 @@ final class FabricEvents {
         // Интерфейс ломает только тот, кому можно его настраивать.
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, be) ->
                 (!(state.getBlock() instanceof ProtectedBlock pb) || pb.onDestroyedByPlayer(state, level, pos, player, false, level.getFluidState(pos)))
-                        && InterfaceTools.onBreakBlock(player, level, pos));
+                        && InterfaceTools.onBreakBlock(player, pos, state));
         UseItemCallback.EVENT.register((player, level, hand) -> {
             var stack = player.getItemInHand(hand);
             if (player.isSpectator() || !ScrewdriverTools.onUseItem(player, level, stack)) return InteractionResultHolder.pass(stack);

@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
 /**
@@ -121,8 +122,8 @@ public final class InterfaceTools {
      * Игрок ломает блок (платформа зовёт на сервере до поломки). {@code false} — не давать: интерфейс ломает только
      * тот, кому можно его настраивать ({@link InterfaceHost#mayConfigure}).
      */
-    public static boolean onBreakBlock(Player player, Level level, BlockPos pos) {
-        if (!(player instanceof ServerPlayer sp) || !(level.getBlockEntity(pos) instanceof InterfaceBlockEntity)) return true;
+    public static boolean onBreakBlock(Player player, BlockPos pos, BlockState state) {
+        if (!(player instanceof ServerPlayer sp) || !(state.getBlock() instanceof InterfaceBlock)) return true;
         return InterfaceHost.mayConfigure(sp, pos, "breaking the interface at " + pos.toShortString());
     }
 
