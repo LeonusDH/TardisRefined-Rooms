@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -217,9 +218,9 @@ public class RoomManageScreen extends RoomMonitorScreen {
     }
 
     /**
-     * Удаление вместе с тем, что мешает: сколько вещей и каких, предупреждение, а под рамкой монитора — «Убрать всё»
-     * (нажимается через {@value #WAIT_SECONDS} с, отсчёт на ней же) и «Отмена». Пока окно открыто, мешающие блоки
-     * обведены. Отсчёт проверяет и сервер.
+     * Удаление вместе с тем, что мешает: сколько вещей и каких и предупреждение, а рядом со стрелкой «назад» — кнопка
+     * «Удалить», которая нажимается через {@value #WAIT_SECONDS} с (отсчёт на ней же). Пока окно открыто, мешающие
+     * блоки обведены. Отсчёт проверяет и сервер.
      */
     static class RoomForceScreen extends RoomMonitorScreen {
         static final int WAIT_SECONDS = 10;
@@ -240,17 +241,17 @@ public class RoomManageScreen extends RoomMonitorScreen {
         protected void init() {
             super.init();
             monitorButtons(null, () -> switchScreenToLeft(parent));
-            yes = bottomButton(0, 2, Component.empty(), TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED), () -> {
+            // Рядом со стрелкой «назад», до правого края списка; внутри экрана монитора TR рисует её сам.
+            int x = width / 2 + 27;
+            yes = Button.builder(Component.empty(), b -> {
                 if (secondsLeft() > 0) return;
                 click();
                 Platform.sendToServer(new ManagePayloads.Remove(parent.core, true));
                 Minecraft.getInstance().setScreen(null);
-            });
+            }).bounds(x, height - (height - monitorHeight) / 2 - 25, listLeft() + LIST_WIDTH - x, 20)
+                    .tooltip(Tooltip.create(TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED))).build();
             updateYes();
-            bottomButton(1, 2, TRoomsText.SCREEN_REMOVE_NO.text(), null, () -> {
-                click();
-                switchScreenToLeft(parent);
-            });
+            addRenderableWidget(yes);
             if (!armed) { // init зовётся и при каждом обновлении списка — сервер просим один раз
                 armed = true;
                 Platform.sendToServer(new ManagePayloads.ShowBlockers(parent.core, true));
