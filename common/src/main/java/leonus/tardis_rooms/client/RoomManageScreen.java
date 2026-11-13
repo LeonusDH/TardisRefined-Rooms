@@ -7,6 +7,7 @@ import leonus.tardis_rooms.room.PieceCatalog;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
@@ -216,8 +217,9 @@ public class RoomManageScreen extends RoomMonitorScreen {
     }
 
     /**
-     * Удаление вместе с тем, что мешает: сколько вещей и каких, предупреждение и кнопка, которая становится нажимаемой
-     * через {@value #WAIT_SECONDS} с. Пока окно открыто, мешающие блоки обведены. Отсчёт проверяет и сервер.
+     * Удаление вместе с тем, что мешает: сколько вещей и каких, предупреждение, а под рамкой монитора — «Убрать всё»
+     * (нажимается через {@value #WAIT_SECONDS} с, отсчёт на ней же) и «Отмена». Пока окно открыто, мешающие блоки
+     * обведены. Отсчёт проверяет и сервер.
      */
     static class RoomForceScreen extends RoomMonitorScreen {
         static final int WAIT_SECONDS = 10;
@@ -225,8 +227,8 @@ public class RoomManageScreen extends RoomMonitorScreen {
         private static final int KINDS_SHOWN = 4;
         private final RoomManageScreen parent;
         private final long openedAt = System.currentTimeMillis();
-        private int shownLeft = -1;
         private boolean armed;
+        private Button yes;
 
         RoomForceScreen(RoomManageScreen parent) {
             super(TRoomsText.SCREEN_FORCE_TITLE.text(), parent.nodePos, parent.node);
@@ -238,6 +240,17 @@ public class RoomManageScreen extends RoomMonitorScreen {
         protected void init() {
             super.init();
             monitorButtons(null, () -> switchScreenToLeft(parent));
+            yes = bottomButton(0, 2, Component.empty(), TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED), () -> {
+                if (secondsLeft() > 0) return;
+                click();
+                Platform.sendToServer(new ManagePayloads.Remove(parent.core, true));
+                Minecraft.getInstance().setScreen(null);
+            });
+            updateYes();
+            bottomButton(1, 2, TRoomsText.SCREEN_REMOVE_NO.text(), null, () -> {
+                click();
+                switchScreenToLeft(parent);
+            });
             if (!armed) { // init зовётся и при каждом обновлении списка — сервер просим один раз
                 armed = true;
                 Platform.sendToServer(new ManagePayloads.ShowBlockers(parent.core, true));
@@ -249,10 +262,18 @@ public class RoomManageScreen extends RoomMonitorScreen {
             return left <= 0 ? 0 : (int) ((left + 999) / 1000);
         }
 
+        /** Отсчёт на кнопке: меняем только её, список не перестраиваем (не сбрасывается прокрутка). */
+        private void updateYes() {
+            int left = secondsLeft();
+            yes.active = left == 0;
+            yes.setMessage((left == 0 ? TRoomsText.SCREEN_FORCE_YES.text() : TRoomsText.SCREEN_FORCE_YES_WAIT.text(left))
+                    .withStyle(ChatFormatting.RED));
+        }
+
         @Override
         public void tick() {
             super.tick();
-            if (secondsLeft() != shownLeft) rebuildWidgets(); // отсчёт на кнопке
+            if (yes != null && !yes.active) updateYes();
         }
 
         @Override
@@ -263,6 +284,9 @@ public class RoomManageScreen extends RoomMonitorScreen {
             SelectionListEntry count = new SelectionListEntry(TRoomsText.SCREEN_FORCE_COUNT.text(total).withStyle(ChatFormatting.GOLD), e -> {}, listLeft(), false);
             tip(count, Component.translatable(parent.info.problem()).withStyle(ChatFormatting.RED));
             list.children().add(count);
+            SelectionListEntry warn = new SelectionListEntry(TRoomsText.SCREEN_FORCE_WARNING.text().withStyle(ChatFormatting.RED), e -> {}, listLeft(), false);
+            tip(warn, TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED));
+            list.children().add(warn);
             // Виды вещей — по убыванию числа, при равенстве — по id (порядок не прыгает).
             List<Map.Entry<ResourceLocation, Integer>> sorted = new ArrayList<>(kinds.entrySet());
             sorted.sort(Map.Entry.<ResourceLocation, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()));
@@ -276,23 +300,6 @@ public class RoomManageScreen extends RoomMonitorScreen {
             if (sorted.size() > KINDS_SHOWN) {
                 list.children().add(new SelectionListEntry(TRoomsText.SCREEN_FORCE_MORE.text(sorted.size() - KINDS_SHOWN).withStyle(ChatFormatting.GRAY), e -> {}, listLeft(), false));
             }
-            SelectionListEntry warn = new SelectionListEntry(TRoomsText.SCREEN_FORCE_WARNING.text().withStyle(ChatFormatting.RED), e -> {}, listLeft(), false);
-            tip(warn, TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED));
-            list.children().add(warn);
-            shownLeft = secondsLeft();
-            boolean ready = shownLeft == 0;
-            SelectionListEntry yes = new SelectionListEntry((ready ? TRoomsText.SCREEN_FORCE_YES.text()
-                    : TRoomsText.SCREEN_FORCE_YES_WAIT.text(shownLeft)).withStyle(ChatFormatting.RED), e -> {
-                click();
-                Platform.sendToServer(new ManagePayloads.Remove(parent.core, true));
-                Minecraft.getInstance().setScreen(null);
-            }, listLeft(), ready);
-            tip(yes, TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED));
-            list.children().add(yes);
-            list.children().add(new SelectionListEntry(TRoomsText.SCREEN_REMOVE_NO.text(), e -> {
-                click();
-                switchScreenToLeft(parent);
-            }, listLeft()));
             return list;
         }
     }

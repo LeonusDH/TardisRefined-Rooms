@@ -7,6 +7,7 @@ import leonus.tardis_rooms.room.PieceCatalog;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.BlockPos;
@@ -67,7 +68,7 @@ public abstract class RoomMonitorScreen extends MonitorOS {
     protected static final int FRAME_W = 256;
 
     /** Кнопки вокруг рамки монитора: принимают клики как обычно, а рисуются в {@link #render} поверх рамки. */
-    private final List<SpriteIconButton> sideButtons = new ArrayList<>();
+    private final List<AbstractWidget> sideButtons = new ArrayList<>();
     /** Последняя добавленная кнопка (чтобы, например, сделать её неактивной). */
     protected SpriteIconButton lastButton;
 
@@ -81,7 +82,6 @@ public abstract class RoomMonitorScreen extends MonitorOS {
     /** Правая колонка кнопок — вплотную справа от рамки. */
     protected int rightColumn() { return (width + FRAME_W) / 2 + 4; }
 
-    /** Верх колонок кнопок — на уровне экрана монитора. */
     /** Квадратная кнопка 20×20 со значком в точке (x, y); подсказка — заголовок (золотым) и пояснение. */
     static SpriteIconButton iconButton(int x, int y, ResourceLocation icon, MutableComponent title, MutableComponent hint, Runnable onPress) {
         SpriteIconButton b = SpriteIconButton.builder(title, btn -> onPress.run(), true).width(20).sprite(icon, 20, 20).build();
@@ -90,6 +90,7 @@ public abstract class RoomMonitorScreen extends MonitorOS {
         return b;
     }
 
+    /** Верх колонок кнопок — на уровне экрана монитора. */
     protected int columnTop() { return (height - monitorHeight) / 2 + 2; }
 
     /**
@@ -104,10 +105,36 @@ public abstract class RoomMonitorScreen extends MonitorOS {
         return y + 22;
     }
 
+    /** Высота рамки монитора TR (снизу у неё планка толще, чем сверху). */
+    protected static final int FRAME_H = 180;
+    /** Ширина кнопки под рамкой и промежуток между кнопками. */
+    protected static final int BOTTOM_W = 100;
+    protected static final int BOTTOM_GAP = 6;
+
+    /** Ряд кнопок под рамкой: сразу под ней, а если окно низкое — у нижнего края окна (поверх планки рамки). */
+    protected int bottomRow() {
+        int frameBottom = (height - monitorHeight) / 2 - 13 + FRAME_H;
+        return Math.min(frameBottom + 4, height - 22);
+    }
+
+    /**
+     * Прямоугольная кнопка с текстом — {@code index}-я из ряда в {@code count} штук по центру под рамкой монитора.
+     * Рисуется в {@link #render} поверх рамки, как {@link #sideButton}.
+     */
+    protected Button bottomButton(int index, int count, Component text, @Nullable Component tip, Runnable onPress) {
+        int left = (width - count * BOTTOM_W - (count - 1) * BOTTOM_GAP) / 2;
+        Button b = Button.builder(text, btn -> onPress.run())
+                .bounds(left + index * (BOTTOM_W + BOTTOM_GAP), bottomRow(), BOTTOM_W, 20).build();
+        if (tip != null) b.setTooltip(Tooltip.create(tip));
+        addWidget(b);
+        sideButtons.add(b);
+        return b;
+    }
+
     @Override
     public void render(@NotNull GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        for (SpriteIconButton b : sideButtons) b.render(g, mouseX, mouseY, partialTick);
+        for (AbstractWidget b : sideButtons) b.render(g, mouseX, mouseY, partialTick);
         for (Map.Entry<SelectionListEntry, Component> e : tips.entrySet()) {
             if (overList(mouseX, mouseY) && e.getKey().isMouseOver(mouseX, mouseY)) {
                 g.renderTooltip(font, font.split(e.getValue(), 180), mouseX, mouseY);
