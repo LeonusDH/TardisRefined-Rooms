@@ -99,7 +99,7 @@ public class InterfaceBlock extends BaseEntityBlock {
             if (r != null) return r;
         }
         if (InterfaceHost.isConfigurator(stack)) {
-            if (level.isClientSide()) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);
+            if (level.isClientSide() && InterfaceHost.mayConfigureOnClient(player, pos)) leonus.tardis_rooms.client.ClientAccess.openInterface(pos);
             return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;

@@ -20,15 +20,19 @@ public record InterfaceHost(LinkScope scope, Predicate<ItemStack> configurator, 
 
     private static volatile InterfaceHost current = NONE;
 
-    /**
-     * Можно ли игроку поставить, снять или настроить интерфейс на месте {@code pos} (в его мире). При отказе сам
-     * объясняет игроку почему; {@code what} — что игрок пытался сделать (для лога). Только на сервере.
-     */
-    @FunctionalInterface
+    /** Кому можно ставить, снимать и настраивать интерфейс. При отказе сам объясняет игроку почему. */
     public interface Access {
-        Access ALLOW_ALL = (player, pos, what) -> true;
+        Access ALLOW_ALL = new Access() {
+            @Override public boolean mayConfigure(ServerPlayer player, BlockPos pos, String what) { return true; }
 
+            @Override public boolean mayConfigureOnClient(Player player, BlockPos pos) { return true; }
+        };
+
+        /** Сервер: решение для места {@code pos} (в мире игрока); {@code what} — что игрок пытался сделать (для лога). */
         boolean mayConfigure(ServerPlayer player, BlockPos pos, String what);
+
+        /** Клиент: то же по сведениям сервера — чтобы не открывать меню и не ставить блок зря. Решает всё равно сервер. */
+        boolean mayConfigureOnClient(Player player, BlockPos pos);
     }
 
     public InterfaceHost {
@@ -50,8 +54,13 @@ public record InterfaceHost(LinkScope scope, Predicate<ItemStack> configurator, 
         return isConfigurator(player.getMainHandItem()) || isConfigurator(player.getOffhandItem());
     }
 
-    /** См. {@link Access}. */
+    /** См. {@link Access#mayConfigure}. */
     public static boolean mayConfigure(ServerPlayer player, BlockPos pos, String what) {
         return current.access.mayConfigure(player, pos, what);
+    }
+
+    /** См. {@link Access#mayConfigureOnClient}. */
+    public static boolean mayConfigureOnClient(Player player, BlockPos pos) {
+        return current.access.mayConfigureOnClient(player, pos);
     }
 }

@@ -32,6 +32,11 @@ public class InterfaceItem extends BlockItem {
             }
             return InteractionResult.FAIL;
         }
+        // Клиент знает права от сервера: без права блок даже не пытается встать (как и не в ТАРДИС).
+        if (context.getLevel().isClientSide() && context.getPlayer() != null
+                && !InterfaceHost.mayConfigureOnClient(context.getPlayer(), context.getClickedPos())) {
+            return InteractionResult.FAIL;
+        }
         if (context.getPlayer() instanceof ServerPlayer sp
                 && !InterfaceHost.mayConfigure(sp, context.getClickedPos(), "placing an interface at " + context.getClickedPos().toShortString())) {
             // Клиент уже поставил блок и списал предмет у себя: блок игра вернёт сама, а предмет — только так.

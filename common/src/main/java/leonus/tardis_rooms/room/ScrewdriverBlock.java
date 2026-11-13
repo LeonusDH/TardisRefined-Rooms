@@ -21,11 +21,14 @@ public abstract class ScrewdriverBlock extends ProtectedBlock {
     /** Открыть экран блока (клиент). */
     protected abstract void openScreen(BlockPos pos);
 
+    /** Право, без которого экран не открывается. */
+    protected abstract RoomPermissions.Action action();
+
     @Override
     @SuppressWarnings("deprecation")
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (Screwdriver.is(player.getItemInHand(hand))) {
-            if (level.isClientSide()) openScreen(pos);
+            if (level.isClientSide() && RoomPermissions.allowedOnClient(player, level.dimension(), action())) openScreen(pos);
             return InteractionResult.sidedSuccess(level.isClientSide());
         }
         if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS;

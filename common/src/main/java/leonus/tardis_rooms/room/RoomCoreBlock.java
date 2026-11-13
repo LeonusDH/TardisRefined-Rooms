@@ -18,4 +18,9 @@ public class RoomCoreBlock extends ScrewdriverBlock {
     protected void openScreen(BlockPos pos) {
         leonus.tardis_rooms.client.ClientAccess.openManage(pos);
     }
+
+    @Override
+    protected RoomPermissions.Action action() {
+        return RoomPermissions.Action.MANAGE;
+    }
 }

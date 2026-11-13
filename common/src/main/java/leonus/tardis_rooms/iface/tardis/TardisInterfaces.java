@@ -7,7 +7,10 @@ import leonus.tardis_rooms.iface.kind.BuiltinKinds;
 import leonus.tardis_rooms.iface.kind.TransferKind;
 import leonus.tardis_rooms.iface.kind.TransferKinds;
 import leonus.tardis_rooms.room.RoomPermissions;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.List;
 import java.util.function.Function;
@@ -17,6 +20,19 @@ import java.util.function.Function;
  * права — те же, что на помещения ({@link RoomPermissions}): у оболочки нужно право в ТАРДИС этой оболочки.
  */
 public final class TardisInterfaces {
+    /** У оболочки — право в ТАРДИС этой оболочки (их может быть несколько: нужно в каждой). */
+    private static final InterfaceHost.Access ACCESS = new InterfaceHost.Access() {
+        @Override
+        public boolean mayConfigure(ServerPlayer player, BlockPos pos, String what) {
+            return RoomPermissions.allowedInAll(player, LinkScope.of(player.level(), pos), RoomPermissions.Action.CONFIGURE_INTERFACE, what);
+        }
+
+        @Override
+        public boolean mayConfigureOnClient(Player player, BlockPos pos) {
+            return RoomPermissions.allowedInAllOnClient(player, LinkScope.of(player.level(), pos), RoomPermissions.Action.CONFIGURE_INTERFACE);
+        }
+    };
+
     private TardisInterfaces() {}
 
     /**
@@ -25,7 +41,6 @@ public final class TardisInterfaces {
      */
     public static void bootstrap(Function<ResourceLocation, TransferKind.PartFactory> parts) {
         TransferKinds.bootstrap(List.of(BuiltinKinds.plugin(parts)));
-        InterfaceHost.set(new InterfaceHost(TardisLinkScope.INSTANCE, Screwdriver::is, (player, pos, what) -> RoomPermissions.allowedInAll(
-                player, LinkScope.of(player.level(), pos), RoomPermissions.Action.CONFIGURE_INTERFACE, what)));
+        InterfaceHost.set(new InterfaceHost(TardisLinkScope.INSTANCE, Screwdriver::is, ACCESS));
     }
 }
