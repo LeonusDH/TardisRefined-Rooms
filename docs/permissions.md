@@ -10,13 +10,14 @@ AcuaTARDISGadgets 1.20.1-1.0.6 or newer, on Forge or Fabric. Its **Security Mana
 
 | Permission | What it allows |
 |---|---|
-| **Grow Rooms** | Growing a new room or corridor from a Room Growth Node |
-| **Manage Rooms** | Replacing, removing (including **Remove all**) and renaming a room |
-| **Set Up Interfaces** | Placing and breaking a TARDIS Interface, changing anything in its menu, picking it up or turning its sides with a wrench, pasting an ID with the screwdriver or an AE2 Memory Card |
+| **Grow Rooms** | Opening the room catalogue at a Room Growth Node and growing a new room or corridor from it |
+| **Manage Rooms** | Opening the room menu at its core block, replacing, removing (including **Remove all**) and renaming a room |
+| **Set Up Interfaces** | Placing and breaking a TARDIS Interface, opening its menu, picking it up or turning its sides with a wrench, pasting an ID with the screwdriver or an AE2 Memory Card |
 
 - For an interface outside, next to a shell, the permission is checked in the TARDIS of that shell.
-- A player without the permission sees a message above the hotbar, and nothing changes. With `debug = true` the refusal also goes to the log.
-- Looking isn't restricted: opening the catalogue, the floor map, the room or interface menu, outlining what's in the way, copying an interface ID.
+- A player without the permission sees a message above the hotbar: the menu doesn't open, the interface isn't placed, nothing changes. With `debug = true` the refusal also goes to the log.
+- The server tells each player what they may not do, so the client knows it without asking. After a permission is given or taken away in the Security Manager, it takes up to a second to apply. Whatever the client thinks, the server checks every action itself.
+- Copying an interface ID (screwdriver or Memory Card) only reads it and isn't restricted.
 
 ### When the permissions start to apply
 

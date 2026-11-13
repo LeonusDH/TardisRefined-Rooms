@@ -81,7 +81,7 @@ The code shared by both loaders lives in `common/`; `forge/` and `fabric/` hold 
 
 The interface code in `common/.../iface` doesn't depend on Tardis Refined. What it transfers (energy, items, fluids, chemicals, ME, redstone) are entries of an internal registry (`iface/kind`), each with its own per-interface part. The TARDIS-specific pieces, which interfaces link to which and the screwdriver, are in `iface/tardis`.
 
-Permission checks go through `room/RoomPermissions`, which allows everything by default. The AcuaTARDISGadgets integration plugs into it from `compat/acua`; nothing else depends on that mod.
+Permission checks go through `room/RoomPermissions`, which allows everything by default; `room/RoomPermissionSync` tells each client what it may not do, so menus stay closed. The AcuaTARDISGadgets integration plugs into it from `compat/acua`; nothing else depends on that mod.
 
 ### Tests
 
