@@ -93,7 +93,7 @@ English translations are generated from `TRoomsText` with `./gradlew :forge:runD
 
 ## Contributing
 
-Bug reports, ideas and pull requests are welcome.
+Bug reports, ideas and pull requests are welcome. Commit messages follow the rules in [CONTRIBUTING](CONTRIBUTING.md).
 
 ## AI assistance
 

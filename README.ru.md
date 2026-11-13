@@ -93,7 +93,7 @@ Jar появятся в `forge/build/libs/` и `fabric/build/libs/`. На Window
 
 ## Участие
 
-Сообщения об ошибках, идеи и pull request'ы приветствуются.
+Сообщения об ошибках, идеи и pull request'ы приветствуются. Как писать сообщения коммитов — в [CONTRIBUTING](CONTRIBUTING.ru.md).
 
 ## Использование ИИ
 
