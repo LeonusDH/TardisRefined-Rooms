@@ -241,14 +241,14 @@ public class RoomManageScreen extends RoomMonitorScreen {
         protected void init() {
             super.init();
             monitorButtons(null, () -> switchScreenToLeft(parent));
-            // Рядом со стрелкой «назад», до правого края списка; внутри экрана монитора TR рисует её сам.
+            // Справа от стрелки «назад» (она 20 px от width / 2 + 5) до правого края списка; внутри экрана монитора TR рисует её сам.
             int x = width / 2 + 27;
             yes = Button.builder(Component.empty(), b -> {
                 if (secondsLeft() > 0) return;
                 click();
                 Platform.sendToServer(new ManagePayloads.Remove(parent.core, true));
                 Minecraft.getInstance().setScreen(null);
-            }).bounds(x, height - (height - monitorHeight) / 2 - 25, listLeft() + LIST_WIDTH - x, 20)
+            }).bounds(x, buttonRow(), listLeft() + LIST_WIDTH - x, 20)
                     .tooltip(Tooltip.create(TRoomsText.SCREEN_FORCE_WARNING_TOOLTIP.text().withStyle(ChatFormatting.RED))).build();
             updateYes();
             addRenderableWidget(yes);

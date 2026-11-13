@@ -153,14 +153,18 @@ public abstract class RoomMonitorScreen extends MonitorOS {
      */
     protected @Nullable AbstractWidget monitorButtons(@Nullable MonitorOSRun submit, MonitorOSRun back) {
         setEvents(submit, back);
-        int y = height - (height - monitorHeight) / 2 - 25;
         AbstractWidget ok = null;
         if (submit != null) {
-            addSubmitButton(width / 2 + 25, y);
+            addSubmitButton(width / 2 + 25, buttonRow());
             if (children().get(children().size() - 1) instanceof AbstractWidget w) ok = w;
         }
-        addCancelButton(width / 2 + 5, y);
+        addCancelButton(width / 2 + 5, buttonRow());
         return ok;
+    }
+
+    /** Верх ряда кнопок внизу экрана монитора («назад», «выбрать»). */
+    protected int buttonRow() {
+        return height - (height - monitorHeight) / 2 - 25;
     }
 
     /** Отступ содержимого от края экрана монитора. */

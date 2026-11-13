@@ -19,7 +19,7 @@ The interior sits on a fixed grid of modules, 24×24 blocks each, across five fl
 Every room has a **Room Control Block** in its floor. Right-click it with the screwdriver to manage the room:
 
 - **Rename**: up to 32 characters. An empty name brings back the room type.
-- **Replace…**: grow another option in the same place. The old room is removed first, under the same rules as removal below, except that **Remove all** isn't offered.
+- **Replace…**: grow another option in the same place. The old room is removed first, under the same rules as removal below, except that removal together with what's inside isn't offered.
 - **Remove**: the room becomes TARDIS stone again. Players, mobs and dropped items inside are moved out to a passage; item frames and paintings drop as items.
 - **What's in the way?**: shown when things inside keep the room from being removed, see below.
 - **Map** opens the floor map.
@@ -75,9 +75,9 @@ When only things inside keep a room from being removed, **Remove** opens a confi
 
 - how many things are in the way, and of which kinds;
 - a warning that they and everything in them will be lost;
-- **Remove all**, which unlocks after a 10-second countdown.
+- **Remove** next to the back arrow, which unlocks after a 10-second countdown shown on it.
 
-The things in the way are outlined while the window is open. The server checks the countdown too: removal together with things inside is accepted only for the room whose window was opened, between 10 seconds and 5 minutes after opening it, and only once. Closing the window, by Cancel, Escape or anything else, starts the countdown over next time.
+The things in the way are outlined while the window is open. The server checks the countdown too: removal together with things inside is accepted only for the room whose window was opened, between 10 seconds and 5 minutes after opening it, and only once. Closing the window, by the back arrow, Escape or anything else, starts the countdown over next time.
 
 Contents of removed blocks are not dropped: they vanish with the room. TARDIS Interfaces removed with the room unlink at once, and redstone carried through them goes off.
 
