@@ -8,6 +8,7 @@ import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.room.ForceRemoval;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
+import leonus.tardis_rooms.room.RoomPermissionSync;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -59,6 +60,7 @@ final class FabricEvents {
             if (be instanceof InterfaceBlockEntity ibe) ibe.onChunkUnloaded();
         });
         ServerTickEvents.END_SERVER_TICK.register(HubInitializer::onServerTick);
+        ServerTickEvents.END_SERVER_TICK.register(RoomPermissionSync::onServerTick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> TardisRooms.onServerStarted());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             HubInitializer.onServerStopped();

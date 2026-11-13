@@ -4,6 +4,7 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.lang.TRoomsText;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
@@ -11,7 +12,8 @@ import java.util.Objects;
 
 /**
  * Права игрока на действия аддона в чужой ТАРДИС. Своей системы прав у аддона нет: по умолчанию разрешено всё, а решение
- * подставляет совместимость с модом, у которого такая система есть ({@link #set}). Проверяет только сервер.
+ * подставляет совместимость с модом, у которого такая система есть ({@link #set}). Решает сервер; клиент знает его
+ * решения ({@link RoomPermissionSync}), чтобы не открывать меню и не ставить блок зря.
  */
 public final class RoomPermissions {
     /** Что игрок делает. */
@@ -75,6 +77,24 @@ public final class RoomPermissions {
     public static boolean allowedInAll(ServerPlayer player, List<ResourceKey<Level>> tardises, Action action, String what) {
         for (ResourceKey<Level> tardis : tardises) {
             if (!allowed(player, tardis, action, what)) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Клиент: можно ли игроку {@code action} в ТАРДИС {@code tardis} по последним сведениям сервера. Нет — то же
+     * сообщение, что дал бы сервер. Только подсказка: сервер всё равно проверяет сам.
+     */
+    public static boolean allowedOnClient(Player player, ResourceKey<Level> tardis, Action action) {
+        if (leonus.tardis_rooms.client.ClientPermissions.allowed(tardis, action)) return true;
+        player.displayClientMessage(action.denied().text(), true);
+        return false;
+    }
+
+    /** {@link #allowedOnClient} для места, которое относится к нескольким ТАРДИС (см. {@link #allowedInAll}). */
+    public static boolean allowedInAllOnClient(Player player, List<ResourceKey<Level>> tardises, Action action) {
+        for (ResourceKey<Level> tardis : tardises) {
+            if (!allowedOnClient(player, tardis, action)) return false;
         }
         return true;
     }

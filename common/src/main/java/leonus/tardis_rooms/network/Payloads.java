@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  */
 public final class Payloads {
     /** Версия протокола: у сервера и клиента должна совпадать. */
-    public static final String VERSION = "10";
+    public static final String VERSION = "11";
 
     /** Пакет: {@code toServer} — с обработчиком на сервере, иначе — на клиенте. */
     public record Entry<T extends Payload>(Payload.Type<T> type, Class<T> cls, StreamCodec<FriendlyByteBuf, T> codec,
@@ -43,7 +43,8 @@ public final class Payloads {
             client(MapPayloads.Info.TYPE, MapPayloads.Info.class, MapPayloads.Info.STREAM_CODEC, MapPayloads.Info::handle),
             client(CustomRoomsPayload.TYPE, CustomRoomsPayload.class, CustomRoomsPayload.STREAM_CODEC, CustomRoomsPayload::handle),
             server(InterfacePayload.TYPE, InterfacePayload.class, InterfacePayload.STREAM_CODEC, InterfacePayload::handle),
-            server(ScrewdriverModePayload.TYPE, ScrewdriverModePayload.class, ScrewdriverModePayload.STREAM_CODEC, ScrewdriverModePayload::handle));
+            server(ScrewdriverModePayload.TYPE, ScrewdriverModePayload.class, ScrewdriverModePayload.STREAM_CODEC, ScrewdriverModePayload::handle),
+            client(PermissionsPayload.TYPE, PermissionsPayload.class, PermissionsPayload.STREAM_CODEC, PermissionsPayload::handle));
 
     private static final Map<ResourceLocation, Entry<?>> BY_ID = new HashMap<>();
 

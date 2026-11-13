@@ -101,4 +101,7 @@ public final class ForgeGameTests {
 
     @GameTest(template = InterfaceGameTests.TEMPLATE)
     public static void permissionChecks(GameTestHelper h) { RoomGameTests.permissionChecks(h); }
+
+    @GameTest(template = InterfaceGameTests.TEMPLATE)
+    public static void permissionSyncMasks(GameTestHelper h) { RoomGameTests.permissionSyncMasks(h); }
 }

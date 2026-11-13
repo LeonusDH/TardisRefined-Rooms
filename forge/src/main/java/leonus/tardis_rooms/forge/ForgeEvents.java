@@ -9,6 +9,7 @@ import leonus.tardis_rooms.iface.tardis.ScrewdriverTools;
 import leonus.tardis_rooms.room.ForceRemoval;
 import leonus.tardis_rooms.room.HubInitializer;
 import leonus.tardis_rooms.room.ProtectedBlock;
+import leonus.tardis_rooms.room.RoomPermissionSync;
 import leonus.tardis_rooms.room.custom.CustomRooms;
 import net.minecraft.world.InteractionResult;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -46,7 +47,11 @@ final class ForgeEvents {
         });
         bus.addListener((RegisterCommandsEvent e) -> TRoomsCommands.register(e.getDispatcher()));
         bus.addListener((EntityJoinLevelEvent e) -> HubInitializer.onEntityJoin(e.getLevel(), e.getEntity()));
-        bus.addListener((TickEvent.ServerTickEvent e) -> { if (e.phase == TickEvent.Phase.END) HubInitializer.onServerTick(e.getServer()); });
+        bus.addListener((TickEvent.ServerTickEvent e) -> {
+            if (e.phase != TickEvent.Phase.END) return;
+            HubInitializer.onServerTick(e.getServer());
+            RoomPermissionSync.onServerTick(e.getServer());
+        });
         bus.addListener((ServerStartedEvent e) -> TardisRooms.onServerStarted());
         bus.addListener((ServerStoppedEvent e) -> {
             HubInitializer.onServerStopped();

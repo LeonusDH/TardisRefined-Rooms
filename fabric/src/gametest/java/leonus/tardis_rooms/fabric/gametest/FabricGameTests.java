@@ -97,4 +97,7 @@ public final class FabricGameTests {
 
     @GameTest(template = TEMPLATE)
     public static void permissionChecks(GameTestHelper h) { RoomGameTests.permissionChecks(h); }
+
+    @GameTest(template = TEMPLATE)
+    public static void permissionSyncMasks(GameTestHelper h) { RoomGameTests.permissionSyncMasks(h); }
 }

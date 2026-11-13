@@ -5,6 +5,7 @@ import leonus.tardis_rooms.TardisRooms;
 import leonus.tardis_rooms.room.BlockMatcher;
 import leonus.tardis_rooms.room.BlockerHighlight;
 import leonus.tardis_rooms.room.RoomBlockEntities;
+import leonus.tardis_rooms.room.RoomPermissionSync;
 import leonus.tardis_rooms.room.RoomPermissions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -227,6 +228,24 @@ public final class RoomGameTests {
         } finally {
             RoomPermissions.set(saved);
         }
+        h.succeed();
+    }
+
+    /** Что сообщить клиенту: в каких ТАРДИС какие действия запрещены; где можно всё — нет; сломанная проверка — запрет. */
+    public static void permissionSyncMasks(GameTestHelper h) {
+        ServerPlayer player = InterfaceGameTests.mockPlayer(h, BlockPos.ZERO);
+        ResourceKey<Level> mine = h.getLevel().dimension();
+        ResourceKey<Level> other = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(TardisRooms.MODID, "gametest_other"));
+        int manage = 1 << RoomPermissions.Action.MANAGE.ordinal();
+        int iface = 1 << RoomPermissions.Action.CONFIGURE_INTERFACE.ordinal();
+        int all = (1 << RoomPermissions.Action.values().length) - 1;
+        Map<ResourceLocation, Integer> denied = RoomPermissionSync.denied(player, List.of(mine, other),
+                (p, tardis, action) -> !tardis.equals(other) || action == RoomPermissions.Action.GROW);
+        h.assertTrue(denied.equals(Map.of(other.location(), manage | iface)), "не те запреты: " + denied);
+        denied = RoomPermissionSync.denied(player, List.of(mine, other), RoomPermissions.ALLOW_ALL);
+        h.assertTrue(denied.isEmpty(), "запреты там, где можно всё: " + denied);
+        denied = RoomPermissionSync.denied(player, List.of(mine), (p, tardis, action) -> { throw new IllegalStateException("game test"); });
+        h.assertTrue(denied.equals(Map.of(mine.location(), all)), "сломанная проверка не запретила: " + denied);
         h.succeed();
     }
 }
